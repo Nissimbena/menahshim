@@ -16,6 +16,10 @@ import { CreateChallengeModal } from "./challenges/CreateChallengeModal";
 import { JoinChallengePrompt } from "./challenges/JoinChallengePrompt";
 import { MyChallengesScreen } from "./challenges/MyChallengesScreen";
 import { CancellationNotice } from "./challenges/CancellationNotice";
+import { SportsHomeScreen } from "./sportsHub/SportsHomeScreen";
+import { LeaguesScreen } from "./sportsHub/LeaguesScreen";
+import { TeamsScreen } from "./sportsHub/TeamsScreen";
+import { TeamPageScreen } from "./sportsHub/TeamPageScreen";
 import { InstallPrompt } from "./pwa/InstallPrompt";
 import { auth, onAuthChange } from "./firebase/firebase";
 import {
@@ -77,6 +81,12 @@ const timeKillerRootEl = document.getElementById("time-killer-root")!;
 const privacyRootEl = document.getElementById("privacy-root")!;
 const aboutRootEl = document.getElementById("about-root")!;
 const myChallengesRootEl = document.getElementById("my-challenges-root")!;
+const sportsHomeRootEl = document.getElementById("sports-home-root")!;
+const sportsLeaguesRootEl = document.getElementById("sports-leagues-root")!;
+const sportsTeamsRootEl = document.getElementById("sports-teams-root")!;
+const sportsTeamPageRootEl = document.getElementById(
+  "sports-team-page-root",
+)!;
 
 const nicknamePrompt = new NicknamePrompt();
 const cancellationNotice = new CancellationNotice();
@@ -194,6 +204,52 @@ async function bootstrap() {
     homeScreen.show();
   });
 
+  const sportsHomeScreen = new SportsHomeScreen(
+    sportsHomeRootEl,
+    () => {
+      sportsHomeScreen.hide();
+      homeScreen.show();
+    },
+    (sportId) => {
+      sportsHomeScreen.hide();
+      leaguesScreen.show(sportId);
+    },
+  );
+
+  const leaguesScreen = new LeaguesScreen(
+    sportsLeaguesRootEl,
+    () => {
+      leaguesScreen.hide();
+      sportsHomeScreen.show();
+    },
+    (sportId, leagueId) => {
+      leaguesScreen.hide();
+      teamsScreen.show(sportId, leagueId);
+    },
+  );
+
+  const teamsScreen = new TeamsScreen(
+    sportsTeamsRootEl,
+    games,
+    (sportId) => {
+      teamsScreen.hide();
+      leaguesScreen.show(sportId);
+    },
+    (teamId, sportId, leagueId) => {
+      teamsScreen.hide();
+      teamPageScreen.show(teamId, sportId, leagueId);
+    },
+  );
+
+  const teamPageScreen = new TeamPageScreen(
+    sportsTeamPageRootEl,
+    games,
+    (sportId, leagueId) => {
+      teamPageScreen.hide();
+      teamsScreen.show(sportId, leagueId);
+    },
+  );
+
   const homeScreen = new HomeScreen(
     homeRootEl,
     games,
@@ -242,6 +298,10 @@ async function bootstrap() {
     () => {
       homeScreen.hide();
       myChallengesScreen.show();
+    },
+    () => {
+      homeScreen.hide();
+      sportsHomeScreen.show();
     },
   );
 

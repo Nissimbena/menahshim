@@ -71,6 +71,7 @@ export class HomeScreen {
   private onOpenAbout: () => void;
   private onChallengeGame: (game: ScheduleGame) => void;
   private onOpenMyChallenges: () => void;
+  private onOpenSportsHub: () => void;
   private currentUser: User | null = auth.currentUser;
   private authError: string | null = null;
   private myPredictions = new Map<string, MyPrediction>();
@@ -97,6 +98,7 @@ export class HomeScreen {
     onOpenAbout: () => void,
     onChallengeGame: (game: ScheduleGame) => void,
     onOpenMyChallenges: () => void,
+    onOpenSportsHub: () => void,
   ) {
     this.container = container;
     this.games = games;
@@ -113,6 +115,7 @@ export class HomeScreen {
     this.onOpenAbout = onOpenAbout;
     this.onChallengeGame = onChallengeGame;
     this.onOpenMyChallenges = onOpenMyChallenges;
+    this.onOpenSportsHub = onOpenSportsHub;
 
     onAuthChange((user) => {
       this.currentUser = user;
@@ -419,6 +422,15 @@ export class HomeScreen {
       this.closeMenuAnd(() => this.onOpenTimeKiller()),
     );
     nav.appendChild(timeKillerBtn);
+
+    const sportsWorldBtn = document.createElement("button");
+    sportsWorldBtn.type = "button";
+    sportsWorldBtn.className = "btn-secondary";
+    sportsWorldBtn.textContent = t("home.menu.sportsWorld");
+    sportsWorldBtn.addEventListener("click", () =>
+      this.closeMenuAnd(() => this.onOpenSportsHub()),
+    );
+    nav.appendChild(sportsWorldBtn);
 
     if (this.currentUser) {
       const createLeagueBtn = document.createElement("button");

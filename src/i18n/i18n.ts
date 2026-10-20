@@ -60,6 +60,16 @@ const translations: Record<Lang, Dict> = {
     "home.menu.admin": "הזנת תוצאה (אדמין)",
     "home.menu.myChallenges": "האתגרים שלי",
     "home.whatsappGroup.label": "הצטרפו לקבוצת הדיונים בוואטסאפ",
+    "home.menu.sportsWorld": "עולם הספורט 🌍",
+
+    "sportsHub.home.title": "עולם הספורט",
+    "sportsHub.home.subtitle": "בחרו ענף ספורט כדי לראות את הליגות והקבוצות",
+    "sportsHub.comingSoon": "בקרוב",
+    "sportsHub.leagues.title": "ליגות {sport}",
+    "sportsHub.leagues.none": "עדיין אין ליגות פעילות לענף הספורט הזה - בקרוב!",
+    "sportsHub.teams.title": "בחרו קבוצה",
+    "sportsHub.teams.none": "לא נמצאו קבוצות לליגה זו.",
+    "sportsHub.teamPage.noGames": "אין עדיין משחקים שמורים לקבוצה זו.",
 
     "prediction.step.score": "תוצאה סופית",
     "prediction.step.stats": "שאלות אישיות",
@@ -419,6 +429,16 @@ const translations: Record<Lang, Dict> = {
     "home.menu.admin": "Enter result (admin)",
     "home.menu.myChallenges": "My Challenges",
     "home.whatsappGroup.label": "Join the discussion group on WhatsApp",
+    "home.menu.sportsWorld": "Sports World 🌍",
+
+    "sportsHub.home.title": "Sports World",
+    "sportsHub.home.subtitle": "Choose a sport to see its leagues and teams",
+    "sportsHub.comingSoon": "Coming soon",
+    "sportsHub.leagues.title": "{sport} leagues",
+    "sportsHub.leagues.none": "No leagues for this sport yet - coming soon!",
+    "sportsHub.teams.title": "Choose a team",
+    "sportsHub.teams.none": "No teams found for this league.",
+    "sportsHub.teamPage.noGames": "No games found for this team yet.",
 
     "prediction.step.score": "Final score",
     "prediction.step.stats": "Personal questions",

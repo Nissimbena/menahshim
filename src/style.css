@@ -1639,6 +1639,90 @@ body {
   justify-content: center;
 }
 
+/* ---- Sports hub: sport/league/team drill-down ---- */
+.sports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sport-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 18px 10px;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-family: inherit;
+  position: relative;
+}
+
+.sport-card:hover {
+  border-color: rgba(221, 27, 34, 0.5);
+}
+
+.sport-card.disabled {
+  opacity: 0.55;
+}
+
+.sport-card-icon {
+  font-size: 34px;
+}
+
+.sport-card-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.sport-card-name {
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+}
+
+.coming-soon-badge {
+  background: rgba(255, 183, 3, 0.18);
+  color: #ffb703;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.sports-league-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.sport-league-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sport-league-card.disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .bonus-question-choice.selected {
   background: #2dd4bf;
   color: #04201c;
