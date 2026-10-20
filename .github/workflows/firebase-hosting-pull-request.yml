@@ -1,0 +1,21 @@
+name: Deploy preview on pull request
+on: pull_request
+jobs:
+  build_and_preview:
+    # Never runs for PRs from forks - that would expose the deploy secret to
+    # untrusted code. Collaborators must push branches to this repo directly
+    # (give them "Write" access, not a fork) to get preview deploys.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_HAPOEL_JERUSALEM_GUESS }}"
+          projectId: hapoel-jerusalem-guess
