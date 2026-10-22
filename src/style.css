@@ -423,7 +423,7 @@ body {
 }
 
 .home-wordmark {
-  font-variation-settings: "slnt" 0, "wght" 1000, "wdth" 100;
+  font-variation-settings: "slnt" 0, "wght" 900, "wdth" 150;
   font-family: var(--font-display);
   font-weight: 1000;
   font-stretch: 100%;
@@ -486,7 +486,7 @@ body {
 }
 
 .vip-title {
-  font-variation-settings: "slnt" 0, "wght" 1000, "wdth" 100;
+  font-variation-settings: "slnt" 0, "wght" 900, "wdth" 150;
   font-family: var(--font-display);
   font-weight: 1000;
   line-height: 0.95;
@@ -853,7 +853,7 @@ body {
 }
 
 .home-footer-mark {
-  font-variation-settings: "slnt" 0, "wght" 1000, "wdth" 100;
+  font-variation-settings: "slnt" 0, "wght" 900, "wdth" 150;
   margin: 22px 0 0;
   font-family: var(--font-display);
   font-weight: 1000;
