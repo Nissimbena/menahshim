@@ -41,3 +41,11 @@ npm run dev
 - נתוני הסגל וצבעי המותג (אדום `#DD1B22` / שחור / לבן) נשלפו מ-
   https://hapoel.co.il/team ויש לרענן אותם אם הסגל משתנה.
 - שליחת ניחוש כרגע רק מדפיסה ל-console - עדיין אין backend/ניקוד.
+
+## עיצוב
+
+- צבעים: אדום `#CF0D2F`, שחור, לבן, וצהוב VIP `#F2CE62` (משתני CSS ב-`src/style.css`).
+- פונטים: Heebo (מוגש מקומית מ-`public/fonts/Heebo-VF.woff2`) לטקסט, ו-CoFo Peshka לכותרות התצוגה.
+  CoFo Peshka הוא פונט מסחרי - כדי להגיש אותו לכל הגולשים יש להוסיף את קובץ ה-webfont
+  ל-`public/fonts/CoFoPeshka-VF.woff2` ולהוסיף אותו ל-`@font-face` בראש `src/style.css`.
+- כותרות הענק (`מנאחסים`, `לו"ז העונה`) נמתחות לרוחב המלא בעזרת `src/ui/fitText.ts`.

@@ -89,6 +89,30 @@ const sportsTeamPageRootEl = document.getElementById(
   "sports-team-page-root",
 )!;
 
+// Screens are sibling roots toggled with the "hidden" class, so the window
+// keeps whatever scroll position the home page had. Jump to the top when an
+// inner screen opens, and restore the home position when coming back.
+let homeScrollY = 0;
+const screenObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    const el = m.target as HTMLElement;
+    const wasHidden = (m.oldValue ?? "").split(" ").includes("hidden");
+    const isHidden = el.classList.contains("hidden");
+    if (el === homeRootEl && !wasHidden && isHidden) {
+      homeScrollY = window.scrollY;
+    } else if (wasHidden && !isHidden) {
+      window.scrollTo(0, el === homeRootEl ? homeScrollY : 0);
+    }
+  }
+});
+document.querySelectorAll<HTMLElement>("body > [id$='-root']").forEach((el) =>
+  screenObserver.observe(el, {
+    attributes: true,
+    attributeFilter: ["class"],
+    attributeOldValue: true,
+  }),
+);
+
 const nicknamePrompt = new NicknamePrompt();
 const cancellationNotice = new CancellationNotice();
 
