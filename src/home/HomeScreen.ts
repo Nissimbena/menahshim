@@ -35,6 +35,10 @@ import { t, tDynamic, getLang, setLang, type Lang } from "../i18n/i18n";
 // managing existing challenges as before. Flip back to true to re-enable.
 const CHALLENGE_FEATURE_ENABLED = false;
 
+// The multi-sport hub is local-only for now (explicit request) - keep this
+// false in anything that gets deployed; flip to true only for local dev.
+const SPORTS_HUB_ENABLED = false;
+
 /** "1 יום 03:24:10" style countdown, or a locked message once time runs out. */
 function formatCountdown(msRemaining: number): string {
   if (msRemaining <= 0) return t("common.countdown.locked");
@@ -430,7 +434,7 @@ export class HomeScreen {
     sportsWorldBtn.addEventListener("click", () =>
       this.closeMenuAnd(() => this.onOpenSportsHub()),
     );
-    nav.appendChild(sportsWorldBtn);
+    if (SPORTS_HUB_ENABLED) nav.appendChild(sportsWorldBtn);
 
     if (this.currentUser) {
       const createLeagueBtn = document.createElement("button");
