@@ -13,21 +13,6 @@
   font-display: swap;
 }
 
-/* CoFo Peshka (commercial, Contrast Foundry). Until the licensed webfont is
-   added at public/fonts/CoFoPeshka-VF.woff2, this only picks it up when it's
-   installed locally; everyone else gets the heavy Heebo fallback. To ship it,
-   add the file and put url("/fonts/CoFoPeshka-VF.woff2") format("woff2")
-   first in the src list below. */
-@font-face {
-  font-family: "CoFo Peshka";
-  src: local("CoFo Peshka Variable"), local("CoFoPeshkaVF"),
-    local("CoFo Peshka");
-  font-weight: 100 1000;
-  font-stretch: 50% 150%;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   color-scheme: light;
 
@@ -49,7 +34,7 @@
 
   --font-body: "Heebo", system-ui, -apple-system, "Segoe UI", Arial,
     sans-serif;
-  --font-display: "CoFo Peshka", "Heebo", system-ui, sans-serif;
+  --font-display: "cofo-peshka-variable", "Heebo", system-ui, sans-serif;
 
   /* One design pixel of the 1920px layout, never larger than 1px. */
   --px: min(1px, calc(100vw / 1920));
@@ -75,6 +60,7 @@ h1,
 h2,
 h3,
 h4 {
+  font-variation-settings: "slnt" 0, "wght" 800, "wdth" 100;
   font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: 0;
@@ -437,6 +423,7 @@ body {
 }
 
 .home-wordmark {
+  font-variation-settings: "slnt" 0, "wght" 1000, "wdth" 100;
   font-family: var(--font-display);
   font-weight: 1000;
   font-stretch: 100%;
@@ -446,6 +433,7 @@ body {
 }
 
 .home-tagline {
+  font-variation-settings: "slnt" 0, "wght" 417, "wdth" 113;
   margin-top: max(16px, calc(44 * var(--px)));
   min-height: max(54px, calc(149 * var(--px)));
   display: flex;
@@ -498,6 +486,7 @@ body {
 }
 
 .vip-title {
+  font-variation-settings: "slnt" 0, "wght" 1000, "wdth" 100;
   font-family: var(--font-display);
   font-weight: 1000;
   line-height: 0.95;
@@ -505,6 +494,7 @@ body {
 }
 
 .vip-desc {
+  font-variation-settings: "slnt" 0, "wght" 200, "wdth" 96;
   margin-top: max(8px, calc(26 * var(--px))) !important;
   font-family: var(--font-display);
   font-weight: 200;
@@ -515,6 +505,7 @@ body {
 
 .vip-prize,
 .vip-btn {
+  font-variation-settings: "slnt" 0, "wght" 700, "wdth" 96;
   width: 100%;
   min-height: max(50px, calc(130 * var(--px)));
   display: flex;
@@ -561,6 +552,7 @@ body {
 }
 
 .home-schedule-title {
+  font-variation-settings: "slnt" 0, "wght" 700, "wdth" 96;
   font-family: var(--font-display);
   font-weight: 800;
   font-stretch: 96%;
@@ -861,6 +853,7 @@ body {
 }
 
 .home-footer-mark {
+  font-variation-settings: "slnt" 0, "wght" 1000, "wdth" 100;
   margin: 22px 0 0;
   font-family: var(--font-display);
   font-weight: 1000;
@@ -1057,6 +1050,7 @@ body {
 }
 
 .prediction-title h1 {
+  font-variation-settings: "slnt" 0, "wght" 900, "wdth" 100;
   margin: 0;
   font-family: var(--font-display);
   font-weight: 900;
@@ -2307,6 +2301,7 @@ body {
 .summary-leader-card h4 {
   margin: 4px 0 0;
   font-family: var(--font-body);
+  font-variation-settings: normal;
   font-size: 13px;
   color: var(--muted);
   font-weight: 500;
