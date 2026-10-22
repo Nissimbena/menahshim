@@ -6,11 +6,12 @@ import {
   getAdminChallenges,
   resolveChallenge,
   cancelChallenge,
+  setGameBonusQuestion,
   type LinkEventStat,
   type Challenge,
 } from "../api/backend";
 import type { ScheduleGame } from "../schedule/schedule";
-import { BONUS_QUESTIONS } from "../schedule/schedule";
+import { getBonusQuestion, setBonusQuestion } from "../schedule/schedule";
 import { TEAMS, HAPOEL_JERUSALEM_TEAM_ID, teamName } from "../schedule/teams";
 import { t } from "../i18n/i18n";
 
@@ -38,6 +39,8 @@ export class AdminScreen {
   private teamRebounds: number | null = null;
   private teamAssists: number | null = null;
   private bonusAnswer: boolean | null = null;
+  private bonusQuestionDraft: string | null = null;
+  private bonusStatus = "";
   private statusMessage = "";
   private predictionCounts: Record<string, number> = {};
   private linkEventStats: LinkEventStat[] = [];
@@ -120,6 +123,7 @@ export class AdminScreen {
     wrapper.appendChild(this.renderGameSelect());
 
     if (this.gameId) {
+      wrapper.appendChild(this.renderBonusQuestionSetup());
       wrapper.appendChild(this.renderStatsForm());
       wrapper.appendChild(this.renderTeamStatsForm());
       wrapper.appendChild(this.renderScoreForm());
@@ -440,6 +444,8 @@ export class AdminScreen {
       this.teamRebounds = null;
       this.teamAssists = null;
       this.bonusAnswer = null;
+      this.bonusQuestionDraft = null;
+      this.bonusStatus = "";
       this.statusMessage = "";
       this.render();
     });
@@ -455,6 +461,84 @@ export class AdminScreen {
       section.appendChild(countLine);
     }
 
+    return section;
+  }
+
+  /** Lets the admin add/edit/remove the optional yes/no bonus question for the selected game. */
+  private renderBonusQuestionSetup(): HTMLElement {
+    const section = document.createElement("div");
+    section.className = "prediction-section";
+    const gameId = this.gameId!;
+    const current = getBonusQuestion(gameId)?.question ?? "";
+    if (this.bonusQuestionDraft === null) this.bonusQuestionDraft = current;
+
+    const title = document.createElement("p");
+    title.className = "counter-text";
+    title.textContent = t("admin.bonusSetup.title");
+    section.appendChild(title);
+
+    const hint = document.createElement("p");
+    hint.className = "counter-text";
+    hint.textContent = t("admin.bonusSetup.hint");
+    section.appendChild(hint);
+
+    const input = document.createElement("textarea");
+    input.className = "nickname-input";
+    input.maxLength = 300;
+    input.rows = 2;
+    input.dir = "auto";
+    input.placeholder = t("admin.bonusSetup.placeholder");
+    input.value = this.bonusQuestionDraft;
+    input.addEventListener("input", () => {
+      this.bonusQuestionDraft = input.value;
+    });
+    section.appendChild(input);
+
+    const save = async (question: string | null) => {
+      try {
+        const res = await setGameBonusQuestion(gameId, question);
+        setBonusQuestion(gameId, res.question);
+        const game = this.games.find((g) => g.id === gameId);
+        if (game) game.bonusQuestion = res.question ?? undefined;
+        this.bonusQuestionDraft = res.question ?? "";
+        this.bonusAnswer = null;
+        this.bonusStatus = res.question
+          ? t("admin.bonusSetup.saved")
+          : t("admin.bonusSetup.removed");
+      } catch (err) {
+        console.error("Failed to save bonus question:", err);
+        this.bonusStatus = t("admin.bonusSetup.failed");
+      }
+      this.render();
+    };
+
+    const buttons = document.createElement("div");
+    buttons.className = "prediction-nav";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-secondary";
+    removeBtn.textContent = t("admin.bonusSetup.remove");
+    removeBtn.disabled = !current;
+    removeBtn.addEventListener("click", () => save(null));
+    buttons.appendChild(removeBtn);
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "btn-primary";
+    saveBtn.textContent = t("admin.bonusSetup.save");
+    saveBtn.addEventListener("click", () =>
+      save((this.bonusQuestionDraft ?? "").trim() || null),
+    );
+    buttons.appendChild(saveBtn);
+
+    section.appendChild(buttons);
+    if (this.bonusStatus) {
+      const status = document.createElement("p");
+      status.className = "counter-text";
+      status.textContent = this.bonusStatus;
+      section.appendChild(status);
+    }
     return section;
   }
 
@@ -596,7 +680,7 @@ export class AdminScreen {
     });
 
     const bonusQuestion = this.gameId
-      ? BONUS_QUESTIONS.get(this.gameId)
+      ? getBonusQuestion(this.gameId)
       : undefined;
     if (bonusQuestion) {
       const bonusField = document.createElement("div");

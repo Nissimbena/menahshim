@@ -511,6 +511,20 @@ export function cancelChallenge(
   );
 }
 
+// Admin-only - sets the optional yes/no bonus question for a game (null/empty removes it).
+export function setGameBonusQuestion(
+  gameId: string,
+  question: string | null,
+): Promise<{ ok: boolean; question: string | null }> {
+  return authedFetch(
+    `/admin/games/${encodeURIComponent(gameId)}/bonus-question`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ question }),
+    },
+  );
+}
+
 // Authed - cancelled challenges involving the signed-in user that they
 // haven't been shown a notice for yet - checked once per app load.
 export function getUnseenCancellations(): Promise<Challenge[]> {

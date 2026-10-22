@@ -15,7 +15,7 @@ import {
   finalScorePoints,
   teamStatPoints,
 } from "../prediction/PredictionScreen";
-import { BONUS_QUESTIONS } from "../schedule/schedule";
+import { getBonusQuestion } from "../schedule/schedule";
 import { t, tDynamic } from "../i18n/i18n";
 
 /**
@@ -182,7 +182,7 @@ export class UserPredictionModal {
         });
       });
 
-      const bonusQuestion = BONUS_QUESTIONS.get(gameId);
+      const bonusQuestion = getBonusQuestion(gameId);
       if (bonusQuestion && result?.actualBonusAnswer != null) {
         const predicted = prediction.predictedBonusAnswer;
         const actual = result.actualBonusAnswer;

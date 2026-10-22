@@ -32,6 +32,7 @@ import {
   trackLinkEvent,
 } from "./api/backend";
 import type { ScheduleGame } from "./schedule/schedule";
+import { registerBonusQuestions } from "./schedule/schedule";
 import type { Player } from "./prediction/types";
 
 if ("serviceWorker" in navigator) {
@@ -139,6 +140,7 @@ async function bootstrap() {
   } catch (err) {
     console.error("Could not load games/players:", err);
   }
+  registerBonusQuestions(games);
 
   const predictionScreen = new PredictionScreen(
     predictionRootEl,

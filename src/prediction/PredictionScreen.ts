@@ -1,7 +1,7 @@
 import type { Player, GamePrediction } from "./types";
 import { EMPTY_PREDICTION } from "./types";
 import type { ScheduleGame, BonusQuestion } from "../schedule/schedule";
-import { BONUS_QUESTIONS } from "../schedule/schedule";
+import { getBonusQuestion } from "../schedule/schedule";
 import {
   TEAMS,
   HAPOEL_JERUSALEM_TEAM_ID,
@@ -900,7 +900,7 @@ export class PredictionScreen {
     });
 
     const bonusQuestion = this.currentGame
-      ? BONUS_QUESTIONS.get(this.currentGame.id)
+      ? getBonusQuestion(this.currentGame.id)
       : undefined;
     if (bonusQuestion) {
       section.appendChild(this.buildBonusQuestionField(bonusQuestion));
@@ -919,7 +919,7 @@ export class PredictionScreen {
     return section;
   }
 
-  /** The one-off yes/no bonus question field, only shown for specific games (see BONUS_QUESTIONS). */
+  /** The one-off yes/no bonus question field, only shown for specific games (set by an admin). */
   private buildBonusQuestionField(bonusQuestion: BonusQuestion): HTMLElement {
     const field = document.createElement("div");
     field.className = "bonus-question-field";
@@ -1047,7 +1047,7 @@ export class PredictionScreen {
     });
 
     const bonusQuestion = this.currentGame
-      ? BONUS_QUESTIONS.get(this.currentGame.id)
+      ? getBonusQuestion(this.currentGame.id)
       : undefined;
     if (bonusQuestion && result.actualBonusAnswer !== null) {
       const predicted = this.prediction.predictedBonusAnswer;
@@ -1168,7 +1168,7 @@ export class PredictionScreen {
     });
 
     const bonusQuestion = this.currentGame
-      ? BONUS_QUESTIONS.get(this.currentGame.id)
+      ? getBonusQuestion(this.currentGame.id)
       : undefined;
     if (bonusQuestion && this.prediction.predictedBonusAnswer !== null) {
       const p = document.createElement("p");

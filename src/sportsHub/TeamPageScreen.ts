@@ -1,3 +1,4 @@
+import "./sportsHub.css";
 import type { ScheduleGame } from "../schedule/schedule";
 import { TEAMS, teamName } from "../schedule/teams";
 import { t, tDynamic } from "../i18n/i18n";
@@ -46,14 +47,14 @@ export class TeamPageScreen {
   private renderHeader(): HTMLElement {
     const team = TEAMS[this.teamId];
     const header = document.createElement("div");
-    header.className = "prediction-header";
+    header.className = "sh-header";
     header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1 dir="auto">${team ? teamName(team) : ""}</h1></div>
-      <div class="prediction-header-spacer"></div>
+      <button type="button" class="sh-back-btn">&rarr; ${t("common.back")}</button>
+      <div class="sh-header-title sh-display" dir="auto">${team ? teamName(team) : ""}</div>
+      <div style="width:70px;"></div>
     `;
     header
-      .querySelector(".btn-back")
+      .querySelector(".sh-back-btn")
       ?.addEventListener("click", () => this.onBack(this.sportId, this.leagueId));
     return header;
   }
@@ -63,25 +64,25 @@ export class TeamPageScreen {
     const away = TEAMS[game.awayTeamId];
 
     const card = document.createElement("div");
-    card.className = "game-card";
+    card.className = "sh-hologram-card sh-game-card";
 
     const meta = document.createElement("div");
-    meta.className = "game-meta";
+    meta.className = "sh-game-meta";
     meta.innerHTML = `
-      <span class="game-competition">${tDynamic(game.competition)}</span>
-      <span class="game-date">${game.date}${game.time ? ` &middot; ${game.time}` : ` &middot; ${t("home.game.timeTBD")}`}</span>
+      <span>${tDynamic(game.competition)}</span>
+      <span>${game.date}${game.time ? ` &middot; ${game.time}` : ` &middot; ${t("home.game.timeTBD")}`}</span>
     `;
     card.appendChild(meta);
 
     const matchup = document.createElement("div");
-    matchup.className = "game-matchup";
+    matchup.className = "sh-game-matchup";
     matchup.innerHTML = `
-      <div class="game-team">
+      <div class="sh-game-team">
           ${home ? `<img src="${home.logo}" alt="${teamName(home)}" />` : ""}
           <span dir="auto">${home ? teamName(home) : ""}</span>
       </div>
-      <span class="game-vs">${t("home.game.vs")}</span>
-      <div class="game-team">
+      <span class="sh-game-vs">${t("home.game.vs")}</span>
+      <div class="sh-game-team">
           ${away ? `<img src="${away.logo}" alt="${teamName(away)}" />` : ""}
           <span dir="auto">${away ? teamName(away) : ""}</span>
       </div>
@@ -90,7 +91,7 @@ export class TeamPageScreen {
 
     if (game.result) {
       const resultEl = document.createElement("div");
-      resultEl.className = "game-result";
+      resultEl.className = "sh-game-result";
       resultEl.textContent = `${game.result.home} - ${game.result.away}`;
       card.appendChild(resultEl);
     }
@@ -101,8 +102,16 @@ export class TeamPageScreen {
   private render() {
     this.container.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "sports-hub-screen";
+
+    const bgGrid = document.createElement("div");
+    bgGrid.className = "sh-cyber-grid";
+    wrapper.appendChild(bgGrid);
+
     wrapper.appendChild(this.renderHeader());
+
+    const content = document.createElement("div");
+    content.className = "sh-content";
 
     const teamGames = this.games.filter(
       (g) => g.homeTeamId === this.teamId || g.awayTeamId === this.teamId,
@@ -112,23 +121,21 @@ export class TeamPageScreen {
 
     if (teamGames.length === 0) {
       const p = document.createElement("p");
-      p.className = "counter-text";
+      p.className = "sh-empty-text";
       p.textContent = t("sportsHub.teamPage.noGames");
-      wrapper.appendChild(p);
+      content.appendChild(p);
+      wrapper.appendChild(content);
       this.container.appendChild(wrapper);
       return;
     }
 
-    const section = document.createElement("div");
-    section.className = "home-schedule";
-
     const tabs = document.createElement("div");
-    tabs.className = "schedule-tabs";
+    tabs.className = "sh-tabs";
 
     const upcomingTab = document.createElement("button");
     upcomingTab.type = "button";
     upcomingTab.className =
-      "schedule-tab" + (this.activeTab === "upcoming" ? " active" : "");
+      "sh-tab" + (this.activeTab === "upcoming" ? " active" : "");
     upcomingTab.textContent = t("home.tab.upcoming", {
       n: upcomingGames.length,
     });
@@ -141,7 +148,7 @@ export class TeamPageScreen {
     const finishedTab = document.createElement("button");
     finishedTab.type = "button";
     finishedTab.className =
-      "schedule-tab" + (this.activeTab === "finished" ? " active" : "");
+      "sh-tab" + (this.activeTab === "finished" ? " active" : "");
     finishedTab.textContent = t("home.tab.finished", {
       n: finishedGames.length,
     });
@@ -150,18 +157,15 @@ export class TeamPageScreen {
       this.render();
     });
     tabs.appendChild(finishedTab);
-    section.appendChild(tabs);
+    content.appendChild(tabs);
 
-    const list = document.createElement("div");
-    list.className = "schedule-list";
     const gamesToShow =
       this.activeTab === "upcoming"
         ? upcomingGames
         : finishedGames.slice().reverse();
-    gamesToShow.forEach((game) => list.appendChild(this.buildGameCard(game)));
-    section.appendChild(list);
+    gamesToShow.forEach((game) => content.appendChild(this.buildGameCard(game)));
 
-    wrapper.appendChild(section);
+    wrapper.appendChild(content);
     this.container.appendChild(wrapper);
   }
 }

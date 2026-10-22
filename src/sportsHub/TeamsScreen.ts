@@ -1,3 +1,4 @@
+import "./sportsHub.css";
 import type { ScheduleGame } from "../schedule/schedule";
 import { TEAMS, teamName } from "../schedule/teams";
 import { leagueById } from "./sportsData";
@@ -45,14 +46,14 @@ export class TeamsScreen {
 
   private renderHeader(title: string): HTMLElement {
     const header = document.createElement("div");
-    header.className = "prediction-header";
+    header.className = "sh-header";
     header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1 dir="auto">${title}</h1></div>
-      <div class="prediction-header-spacer"></div>
+      <button type="button" class="sh-back-btn">&rarr; ${t("common.back")}</button>
+      <div class="sh-header-title sh-display" dir="auto">${title}</div>
+      <div style="width:70px;"></div>
     `;
     header
-      .querySelector(".btn-back")
+      .querySelector(".sh-back-btn")
       ?.addEventListener("click", () => this.onBack(this.sportId));
     return header;
   }
@@ -62,14 +63,23 @@ export class TeamsScreen {
 
     this.container.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "sports-hub-screen";
+
+    const bgGrid = document.createElement("div");
+    bgGrid.className = "sh-cyber-grid";
+    wrapper.appendChild(bgGrid);
+
     wrapper.appendChild(this.renderHeader(t("sportsHub.teams.title")));
+
+    const content = document.createElement("div");
+    content.className = "sh-content";
 
     if (!league?.competitionId) {
       const p = document.createElement("p");
-      p.className = "counter-text";
+      p.className = "sh-empty-text";
       p.textContent = t("sportsHub.leagues.none");
-      wrapper.appendChild(p);
+      content.appendChild(p);
+      wrapper.appendChild(content);
       this.container.appendChild(wrapper);
       return;
     }
@@ -89,29 +99,31 @@ export class TeamsScreen {
 
     if (teams.length === 0) {
       const p = document.createElement("p");
-      p.className = "counter-text";
+      p.className = "sh-empty-text";
       p.textContent = t("sportsHub.teams.none");
-      wrapper.appendChild(p);
+      content.appendChild(p);
+      wrapper.appendChild(content);
       this.container.appendChild(wrapper);
       return;
     }
 
     const grid = document.createElement("div");
-    grid.className = "sports-grid";
+    grid.className = "sh-team-grid";
     teams.forEach((team) => {
       const card = document.createElement("button");
       card.type = "button";
-      card.className = "sport-card";
+      card.className = "sh-hologram-card sh-team-card";
       card.innerHTML = `
-        <img class="sport-card-logo" src="${team.logo}" alt="${teamName(team)}" />
-        <span class="sport-card-name" dir="auto">${teamName(team)}</span>
+        <img class="sh-card-logo" src="${team.logo}" alt="${teamName(team)}" />
+        <span class="sh-card-name" dir="auto">${teamName(team)}</span>
       `;
       card.addEventListener("click", () =>
         this.onSelectTeam(team.id, this.sportId, this.leagueId),
       );
       grid.appendChild(card);
     });
-    wrapper.appendChild(grid);
+    content.appendChild(grid);
+    wrapper.appendChild(content);
 
     this.container.appendChild(wrapper);
   }

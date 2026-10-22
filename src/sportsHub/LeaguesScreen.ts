@@ -1,3 +1,4 @@
+import "./sportsHub.css";
 import { sportById, LEAGUES_BY_SPORT } from "./sportsData";
 import { t, getLang } from "../i18n/i18n";
 
@@ -34,14 +35,14 @@ export class LeaguesScreen {
 
   private renderHeader(title: string): HTMLElement {
     const header = document.createElement("div");
-    header.className = "prediction-header";
+    header.className = "sh-header";
     header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1 dir="auto">${title}</h1></div>
-      <div class="prediction-header-spacer"></div>
+      <button type="button" class="sh-back-btn">&rarr; ${t("common.back")}</button>
+      <div class="sh-header-title sh-display" dir="auto">${title}</div>
+      <div style="width:70px;"></div>
     `;
     header
-      .querySelector(".btn-back")
+      .querySelector(".sh-back-btn")
       ?.addEventListener("click", () => this.onBack());
     return header;
   }
@@ -56,40 +57,47 @@ export class LeaguesScreen {
 
     this.container.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "sports-hub-screen";
+
+    const grid = document.createElement("div");
+    grid.className = "sh-cyber-grid";
+    wrapper.appendChild(grid);
+
     wrapper.appendChild(
       this.renderHeader(t("sportsHub.leagues.title", { sport: sportName })),
     );
 
+    const content = document.createElement("div");
+    content.className = "sh-content";
+
     const leagues = LEAGUES_BY_SPORT[this.sportId] ?? [];
     if (leagues.length === 0) {
       const p = document.createElement("p");
-      p.className = "counter-text";
+      p.className = "sh-empty-text";
       p.textContent = t("sportsHub.leagues.none");
-      wrapper.appendChild(p);
+      content.appendChild(p);
+      wrapper.appendChild(content);
       this.container.appendChild(wrapper);
       return;
     }
 
-    const list = document.createElement("div");
-    list.className = "sports-league-list";
     leagues.forEach((league) => {
       const card = document.createElement("button");
       card.type = "button";
-      card.className = "sport-league-card" + (league.enabled ? "" : " disabled");
+      card.className = "sh-hologram-card" + (league.enabled ? "" : " disabled");
       card.innerHTML = `
-        <span dir="auto">${getLang() === "en" ? league.nameEn : league.nameHe}</span>
-        ${!league.enabled ? `<span class="coming-soon-badge">${t("sportsHub.comingSoon")}</span>` : ""}
+        <span class="sh-card-name" dir="auto">${getLang() === "en" ? league.nameEn : league.nameHe}</span>
+        ${!league.enabled ? `<span class="sh-badge">${t("sportsHub.comingSoon")}</span>` : ""}
       `;
       if (league.enabled) {
         card.addEventListener("click", () =>
           this.onSelectLeague(this.sportId, league.id),
         );
       }
-      list.appendChild(card);
+      content.appendChild(card);
     });
-    wrapper.appendChild(list);
 
+    wrapper.appendChild(content);
     this.container.appendChild(wrapper);
   }
 }

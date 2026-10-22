@@ -7,6 +7,8 @@ export interface ScheduleGame {
   homeTeamId: string;
   awayTeamId: string;
   result?: { home: number; away: number };
+  /** Optional yes/no bonus question for this game, set by an admin. */
+  bonusQuestion?: string;
 }
 
 /**
@@ -45,20 +47,30 @@ export interface BonusQuestion {
   points: number;
 }
 
-export const BONUS_QUESTIONS = new Map<string, BonusQuestion>([
-  ["ec-2", { question: "האם לורנזו בראון ישחק מעל 10 דקות?", points: 10 }],
-  ["26647", { question: "האם רועי הובר יקלע לפחות שלשלה אחת?", points: 10 }],
-  ["ec-3", { question: "האם נקלע מעל 72% מהקו?", points: 10 }],
-  [
-    "26653",
-    {
-      question:
-        "האם יהיו לנו 2 שחקנים או יותר עם 4 עבירות אישיות או יותר כל אחד?",
-      points: 10,
-    },
-  ],
-  ["ec-4", { question: "האם רועי הובר ישחק מעל 3 דקות?", points: 10 }],
-]);
+export const BONUS_QUESTION_POINTS = 10;
+
+const bonusQuestionsByGame = new Map<string, string>();
+
+/** Loads every game's admin-set bonus question (from GET /games) into the lookup used by getBonusQuestion. */
+export function registerBonusQuestions(games: ScheduleGame[]) {
+  bonusQuestionsByGame.clear();
+  games.forEach((g) => {
+    if (g.bonusQuestion) bonusQuestionsByGame.set(g.id, g.bonusQuestion);
+  });
+}
+
+/** Updates the local lookup after an admin saves; an empty question removes it. */
+export function setBonusQuestion(gameId: string, question: string | null) {
+  if (question) bonusQuestionsByGame.set(gameId, question);
+  else bonusQuestionsByGame.delete(gameId);
+}
+
+export function getBonusQuestion(gameId: string): BonusQuestion | undefined {
+  const question = bonusQuestionsByGame.get(gameId);
+  return question
+    ? { question, points: BONUS_QUESTION_POINTS }
+    : undefined;
+}
 
 /**
  * Special one-off tournament scoring only the next 6 games (same scoring
