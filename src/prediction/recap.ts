@@ -7,7 +7,6 @@ import { t, tDynamic } from "../i18n/i18n";
 import { icon, type IconName } from "../ui/icons";
 import { el, esc, initials } from "../ui/dom";
 import { playerPhoto } from "./playerPhotos";
-import { photoLayer } from "../ui/photos";
 import {
   CATEGORY_ORDER,
   CATEGORY_CONFIG,
@@ -108,7 +107,6 @@ export function predictionSlip(
 
   slip.innerHTML = `
     <header class="slip__head">
-      ${photoLayer(game?.id ?? "slip", "slip__photo")}
       ${teamBlock(home)}
       <div class="slip__score">
         <span class="slip__label">${t("prediction.step.score")}</span>
@@ -173,6 +171,53 @@ export function predictionSlip(
 
 // ------------------------------------------------------------------ compare
 
+/**
+ * Predicted vs. actual as an aligned table - one row per question:
+ *   stat | predicted (photo, name, value) | actual (photo, name, value) | points
+ * Phones fold the stat and points onto a line above the two values.
+ */
+type Cell = { player?: Player | null; value: string; picked?: boolean };
+
+function cellHTML(c: Cell, withPlayer: boolean): string {
+  const who = withPlayer
+    ? `${playerMedia(c.player, "sm")}<span class="ctable__who">${
+        c.player ? playerNameHTML(c.player) : `<span class="pname c-3">${c.picked === false ? t("prediction.summary.notSelected") : "–"}</span>`
+      }</span>`
+    : "";
+  return `<div class="ctable__cell${withPlayer ? " has-player" : ""}">${who}<span class="ctable__val">${c.value}</span></div>`;
+}
+
+function ctableRow(opts: {
+  iconName: IconName;
+  label: string;
+  pred: Cell;
+  actual: Cell;
+  withPlayer?: boolean;
+  points?: number | null;
+  match?: boolean;
+  labelIsText?: boolean;
+}): HTMLElement {
+  const row = el(
+    "div",
+    `ctable__row${opts.match ? " is-match" : ""}`,
+    `<div class="ctable__stat">${icon(opts.iconName)}<span class="ctable__label" dir="auto"></span></div>
+     ${cellHTML(opts.pred, !!opts.withPlayer).replace('class="ctable__cell', 'class="ctable__cell ctable__cell--pred')}
+     ${cellHTML(opts.actual, !!opts.withPlayer).replace('class="ctable__cell', 'class="ctable__cell ctable__cell--actual')}
+     ${opts.points === undefined ? "" : `<div class="ctable__pts">${opts.points === null ? "" : pointsChip(opts.points)}</div>`}`,
+  );
+  row.querySelector(".ctable__label")!.textContent = opts.label;
+  return row;
+}
+
+function ctableHead(predLabel: string, withPoints: boolean): string {
+  return `<div class="ctable__head">
+      <span class="ctable__h-stat"></span>
+      <span class="ctable__h ctable__h--pred">${esc(predLabel)}</span>
+      <span class="ctable__h ctable__h--actual">${t("prediction.breakdown.header.actual")}</span>
+      ${withPoints ? `<span class="ctable__h ctable__h--pts">${t("prediction.breakdown.header.points")}</span>` : ""}
+    </div>`;
+}
+
 /** Predicted vs. actual, with the points each line earned. */
 export function predictionCompare(opts: {
   prediction: GamePrediction;
@@ -186,63 +231,45 @@ export function predictionCompare(opts: {
   predictedLabel?: string;
 }): HTMLElement {
   const { prediction: p, result: r, rules, playerById } = opts;
-  const wrap = el("section", "compare card");
+  const wrap = el("section", "ctable card");
   const home = opts.game ? TEAMS[opts.game.homeTeamId] : undefined;
   const away = opts.game ? TEAMS[opts.game.awayTeamId] : undefined;
+  wrap.innerHTML = ctableHead(opts.predictedLabel ?? t("prediction.breakdown.header.predicted"), true);
+  const body = el("div", "ctable__body");
 
   const pHome = p.predictedHomeScore;
   const pAway = p.predictedAwayScore;
   const aHome = r?.actualHomeScore ?? null;
   const aAway = r?.actualAwayScore ?? null;
-  const scorePts =
-    pHome !== null && pAway !== null && aHome !== null && aAway !== null
-      ? finalScorePoints(pHome, pAway, aHome, aAway, rules)
-      : 0;
+  body.appendChild(
+    ctableRow({
+      iconName: "statScore",
+      label: t("prediction.step.score"),
+      pred: { value: scorePair(String(pHome ?? "–"), String(pAway ?? "–"), home, away) },
+      actual: { value: scorePair(String(aHome ?? "–"), String(aAway ?? "–"), home, away) },
+      points:
+        pHome !== null && pAway !== null && aHome !== null && aAway !== null
+          ? finalScorePoints(pHome, pAway, aHome, aAway, rules)
+          : 0,
+    }),
+  );
 
-  wrap.innerHTML = `
-    <header class="compare__head">
-      <span class="compare__col">${opts.predictedLabel ?? t("prediction.breakdown.header.predicted")}</span>
-      <span class="compare__col compare__col--end">${t("prediction.breakdown.header.actual")}</span>
-    </header>
-    <div class="compare__score">
-      <div class="compare__side">${scorePair(String(pHome ?? "–"), String(pAway ?? "–"), home, away)}</div>
-      <div class="compare__mid">
-        <span class="compare__stat">${icon("statScore")}<span>${t("prediction.step.score")}</span></span>
-        ${pointsChip(scorePts)}
-      </div>
-      <div class="compare__side compare__side--end">${scorePair(String(aHome ?? "–"), String(aAway ?? "–"), home, away)}</div>
-    </div>`;
-
-  const rows = el("div", "compare__rows");
   CATEGORY_ORDER.forEach((category) => {
     const config = CATEGORY_CONFIG[category];
     const pid = p[config.playerKey];
     const pAmount = p[config.amountKey];
     const aid = r ? r[config.actualPlayerKey] : null;
     const aAmount = r ? r[config.actualAmountKey] : null;
-    const pPlayer = pid ? playerById(pid) : undefined;
-    const aPlayer = aid ? playerById(aid) : undefined;
-    const pts = topStatPoints(pid, pAmount, aid, aAmount, rules);
-    const samePlayer = !!pid && pid === aid;
-    rows.appendChild(
-      el(
-        "div",
-        `compare-row${samePlayer ? " is-match" : ""}`,
-        `<div class="compare-row__side">
-           ${playerMedia(pPlayer, "md")}
-           <span class="compare-row__who">${pPlayer ? playerNameHTML(pPlayer) : `<span class="pname c-3">${t("prediction.summary.notSelected")}</span>`}</span>
-           <span class="compare-row__num num">${pAmount ?? "–"}</span>
-         </div>
-         <div class="compare-row__mid">
-           <span class="compare__stat">${icon(CATEGORY_ICON[category])}<span>${t(config.labelKey)}</span></span>
-           ${pointsChip(pts)}
-         </div>
-         <div class="compare-row__side compare-row__side--end">
-           <span class="compare-row__num num">${aAmount ?? "–"}</span>
-           <span class="compare-row__who">${aPlayer ? playerNameHTML(aPlayer) : `<span class="pname c-3">–</span>`}</span>
-           ${playerMedia(aPlayer, "md")}
-         </div>`,
-      ),
+    body.appendChild(
+      ctableRow({
+        iconName: CATEGORY_ICON[category],
+        label: t(config.labelKey),
+        withPlayer: true,
+        pred: { player: pid ? playerById(pid) : null, value: String(pAmount ?? "–"), picked: !!pid },
+        actual: { player: aid ? playerById(aid) : null, value: String(aAmount ?? "–") },
+        points: topStatPoints(pid, pAmount, aid, aAmount, rules),
+        match: !!pid && pid === aid,
+      }),
     );
   });
 
@@ -253,18 +280,14 @@ export function predictionCompare(opts: {
   ];
   teamLines.forEach(({ key, labelKey, actual }) => {
     const predicted = p[key];
-    const pts = predicted !== null && actual !== null ? teamStatPoints(predicted, actual, rules) : 0;
-    rows.appendChild(
-      el(
-        "div",
-        "compare-row compare-row--plain",
-        `<div class="compare-row__side"><span class="compare-row__num num">${predicted ?? "–"}</span></div>
-         <div class="compare-row__mid">
-           <span class="compare__stat">${icon(TEAM_STAT_ICON[key])}<span>${t(labelKey)}</span></span>
-           ${pointsChip(pts)}
-         </div>
-         <div class="compare-row__side compare-row__side--end"><span class="compare-row__num num">${actual ?? "–"}</span></div>`,
-      ),
+    body.appendChild(
+      ctableRow({
+        iconName: TEAM_STAT_ICON[key],
+        label: t(labelKey),
+        pred: { value: String(predicted ?? "–") },
+        actual: { value: String(actual ?? "–") },
+        points: predicted !== null && actual !== null ? teamStatPoints(predicted, actual, rules) : 0,
+      }),
     );
   });
 
@@ -272,28 +295,25 @@ export function predictionCompare(opts: {
   if (bonus && r?.actualBonusAnswer != null) {
     const predicted = p.predictedBonusAnswer;
     const actual = r.actualBonusAnswer;
-    const pts = predicted !== null && predicted === actual ? bonus.points : 0;
-    const row = el(
-      "div",
-      "compare-row compare-row--plain compare-row--bonus",
-      `<div class="compare-row__side"><span class="compare-row__word">${predicted === null ? "–" : predicted ? t("common.yes") : t("common.no")}</span></div>
-       <div class="compare-row__mid">
-         <span class="compare__stat">${icon("statBonus")}<span class="compare__q" dir="auto"></span></span>
-         ${pointsChip(pts)}
-       </div>
-       <div class="compare-row__side compare-row__side--end"><span class="compare-row__word">${actual ? t("common.yes") : t("common.no")}</span></div>`,
+    const yn = (v: boolean | null) => (v === null ? "–" : v ? t("common.yes") : t("common.no"));
+    body.appendChild(
+      ctableRow({
+        iconName: "statBonus",
+        label: tDynamic(bonus.question),
+        pred: { value: yn(predicted) },
+        actual: { value: yn(actual) },
+        points: predicted !== null && predicted === actual ? bonus.points : 0,
+      }),
     );
-    row.querySelector(".compare__q")!.textContent = tDynamic(bonus.question);
-    rows.appendChild(row);
   }
-  wrap.appendChild(rows);
+  wrap.appendChild(body);
 
   if (opts.total !== null) {
     wrap.appendChild(
       el(
         "footer",
-        "compare__total",
-        `<span>${t("prediction.breakdown.totalLabel")}</span><span class="num--display">${opts.total}</span>`,
+        "ctable__total",
+        `<span>${t("prediction.breakdown.totalLabel")}</span><span class="ctable__total-n">${opts.total}</span>`,
       ),
     );
   }
@@ -393,8 +413,7 @@ export function resultHeader(game: ScheduleGame, result: GameResultData | null):
   return el(
     "section",
     "final",
-    `${photoLayer(game.id, "final__photo")}
-     <div class="final__inner">
+    `<div class="final__inner">
        <p class="final__label">${t("prediction.result.final")}</p>
        <div class="final__teams">
          ${side(home, h, h !== null && a !== null && h > a)}
@@ -413,29 +432,28 @@ export function crowdCompare(
   game: ScheduleGame | null,
   playerById: (id: string) => Player | undefined,
 ): HTMLElement {
-  const wrap = el("section", "compare compare--crowd card");
+  const wrap = el("section", "ctable ctable--crowd card");
   const fmt = (v: number | null) => (v === null ? "–" : String(Math.round(v * 10) / 10));
   const home = game ? TEAMS[game.homeTeamId] : undefined;
   const away = game ? TEAMS[game.awayTeamId] : undefined;
 
   wrap.innerHTML = `
-    <header class="compare__title">
+    <header class="ctable__title">
       <h2>${t("prediction.crowd.title")}</h2>
       <span class="tag">${icon("users")}${esc(t("prediction.aggregate.count", { n: agg.totalPredictions }))}</span>
     </header>
-    <header class="compare__head">
-      <span class="compare__col">${t("prediction.crowd.side")}</span>
-      <span class="compare__col compare__col--end">${t("prediction.breakdown.header.actual")}</span>
-    </header>
-    <div class="compare__score">
-      <div class="compare__side">${scorePair(fmt(agg.avgHomeScore), fmt(agg.avgAwayScore), home, away)}</div>
-      <div class="compare__mid">
-        <span class="compare__stat">${icon("statScore")}<span>${t("prediction.step.score")}</span></span>
-      </div>
-      <div class="compare__side compare__side--end">${scorePair(fmt(r.actualHomeScore), fmt(r.actualAwayScore), home, away)}</div>
-    </div>`;
+    ${ctableHead(t("prediction.crowd.side"), false)}`;
+  const body = el("div", "ctable__body");
 
-  const rows = el("div", "compare__rows");
+  body.appendChild(
+    ctableRow({
+      iconName: "statScore",
+      label: t("prediction.step.score"),
+      pred: { value: scorePair(fmt(agg.avgHomeScore), fmt(agg.avgAwayScore), home, away) },
+      actual: { value: scorePair(fmt(r.actualHomeScore), fmt(r.actualAwayScore), home, away) },
+    }),
+  );
+
   const lines: { cat: StatCategory; id: string | null; avg: number | null }[] = [
     { cat: "scorer", id: agg.topScorerPlayerId, avg: agg.avgTopScorerPoints },
     { cat: "rebounder", id: agg.topRebounderPlayerId, avg: agg.avgTopRebounds },
@@ -444,27 +462,15 @@ export function crowdCompare(
   lines.forEach(({ cat, id, avg }) => {
     const config = CATEGORY_CONFIG[cat];
     const aid = r[config.actualPlayerKey];
-    const aAmount = r[config.actualAmountKey];
-    const pPlayer = id ? playerById(id) : undefined;
-    const aPlayer = aid ? playerById(aid) : undefined;
-    rows.appendChild(
-      el(
-        "div",
-        `compare-row${id && id === aid ? " is-match" : ""}`,
-        `<div class="compare-row__side">
-           ${playerMedia(pPlayer, "md")}
-           <span class="compare-row__who">${pPlayer ? playerNameHTML(pPlayer) : `<span class="pname c-3">–</span>`}</span>
-           <span class="compare-row__num num">${fmt(avg)}</span>
-         </div>
-         <div class="compare-row__mid">
-           <span class="compare__stat">${icon(CATEGORY_ICON[cat])}<span>${t(config.labelKey)}</span></span>
-         </div>
-         <div class="compare-row__side compare-row__side--end">
-           <span class="compare-row__num num">${aAmount ?? "–"}</span>
-           <span class="compare-row__who">${aPlayer ? playerNameHTML(aPlayer) : `<span class="pname c-3">–</span>`}</span>
-           ${playerMedia(aPlayer, "md")}
-         </div>`,
-      ),
+    body.appendChild(
+      ctableRow({
+        iconName: CATEGORY_ICON[cat],
+        label: t(config.labelKey),
+        withPlayer: true,
+        pred: { player: id ? playerById(id) : null, value: fmt(avg) },
+        actual: { player: aid ? playerById(aid) : null, value: String(r[config.actualAmountKey] ?? "–") },
+        match: !!id && id === aid,
+      }),
     );
   });
 
@@ -474,16 +480,10 @@ export function crowdCompare(
     ["statTeamAssists", "prediction.breakdown.teamAssists", agg.avgTeamAssists, r.actualTeamAssists],
   ];
   teamLines.forEach(([ic, key, avg, actual]) => {
-    rows.appendChild(
-      el(
-        "div",
-        "compare-row compare-row--plain",
-        `<div class="compare-row__side"><span class="compare-row__num num">${fmt(avg)}</span></div>
-         <div class="compare-row__mid"><span class="compare__stat">${icon(ic)}<span>${t(key)}</span></span></div>
-         <div class="compare-row__side compare-row__side--end"><span class="compare-row__num num">${actual ?? "–"}</span></div>`,
-      ),
+    body.appendChild(
+      ctableRow({ iconName: ic, label: t(key), pred: { value: fmt(avg) }, actual: { value: String(actual ?? "–") } }),
     );
   });
-  wrap.appendChild(rows);
+  wrap.appendChild(body);
   return wrap;
 }

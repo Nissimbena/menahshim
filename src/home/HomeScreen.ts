@@ -477,7 +477,6 @@ export class HomeScreen {
     const ticket = el("section", "ticket");
     const desc = this.currentUser ? t("home.tournamentDescRules") : t("home.tournamentDesc");
     ticket.innerHTML = `
-      ${photoLayer("vip-tournament", "ticket__photo")}
       <div class="ticket__body">
         <span class="tag tag--gold">${icon("ticket")}${t("home.tournamentBadge")}</span>
         <h2 class="t-h3 ticket__title">${t("home.tournamentTitle")}</h2>
