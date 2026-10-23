@@ -93,7 +93,7 @@
 
   /* ---- Layout ---- */
   --container: 760px;
-  --container-wide: 1200px;
+  --container-wide: 1440px;
   --sidebar: 360px;
   --gutter: 16px;
   --topbar-h: 64px;
@@ -130,5 +130,11 @@
   :root {
     --gutter: 24px;
     --t-h2: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 40px;
   }
 }

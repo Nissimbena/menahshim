@@ -25,6 +25,7 @@ import { icon } from "../ui/icons";
 import { el, esc, opponentOf, shortDate, ltr } from "../ui/dom";
 import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
+import { photoLayer } from "../ui/photos";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -225,20 +226,17 @@ export class HomeScreen {
       page.appendChild(banner);
     }
 
-    const layout = el("div", "home-layout");
-    const main = el("div", "home-main");
-    const side = el("aside", "home-side");
+    // One 12-column grid: my season across the top, schedule (8) beside the
+    // leaders (4), then the VIP tournament as a full-width photo banner.
+    const grid = el("div", "home-grid");
+    grid.appendChild(this.currentUser ? this.renderPersonalStrip() : this.renderSignInCard());
+    grid.appendChild(this.renderSchedule());
+    grid.appendChild(this.renderLeadersPreview());
+    grid.appendChild(this.renderTournamentTicket());
+    page.appendChild(grid);
 
-    main.appendChild(this.renderHero());
-    main.appendChild(this.renderSchedule());
-
-    side.appendChild(this.currentUser ? this.renderPersonalStrip() : this.renderSignInCard());
-    side.appendChild(this.renderTournamentTicket());
-    side.appendChild(this.renderLeadersPreview());
-
-    layout.append(main, side);
-    page.appendChild(layout);
     this.container.appendChild(this.renderTicker());
+    this.container.appendChild(this.renderHero());
     this.container.appendChild(page);
     this.container.appendChild(this.renderFooter());
     this.scrollTickerToCurrent();
@@ -305,7 +303,7 @@ export class HomeScreen {
     track.scrollLeft += rtl ? tile.right - box.right : tile.left - box.left;
   }
 
-  // ---- 1. Hero: the next game ----
+  // ---- 1. Hero: the next game, full-bleed over a match photo ----
   private renderHero(): HTMLElement {
     const game = this.heroGame;
     const hero = el("section", "hero home-hero");
@@ -314,9 +312,11 @@ export class HomeScreen {
     if (!game) {
       hero.classList.add("hero--empty");
       hero.innerHTML = `
-        ${icon("basketball", { size: "lg", className: "c-3" })}
-        <h2 class="t-h3">${t("home.hero.empty")}</h2>
-        <p class="c-2">${t("home.hero.emptyText")}</p>`;
+        ${photoLayer("empty", "hero__photo")}
+        <div class="hero__inner"><div class="hero__content">
+          <h2 class="hero__empty-title">${t("home.hero.empty")}</h2>
+          <p class="hero__empty-text">${t("home.hero.emptyText")}</p>
+        </div></div>`;
       return hero;
     }
 
@@ -325,52 +325,57 @@ export class HomeScreen {
     const prize = PRIZE_GAME_IDS.get(game.id);
     const lockAt = gameDateTime(game).getTime() - SCORE_LOCK_MS;
     const parts = countdownParts(lockAt - Date.now());
+    const { isHome } = opponentOf(game);
 
     const team = (tm: typeof home) =>
       tm
-        ? `<div class="hero__team">
-             <span class="logo-disc logo-disc--xl"><img src="${tm.logo}" alt="" /></span>
+        ? `<li class="hero__team">
+             <span class="logo-disc logo-disc--lg"><img src="${tm.logo}" alt="" /></span>
              <span class="hero__team-name" dir="auto">${esc(teamName(tm))}</span>
-           </div>`
-        : `<div class="hero__team"></div>`;
+           </li>`
+        : "";
 
     hero.innerHTML = `
-      <div class="hero__top">
-        <span class="hero__eyebrow" id="hero-overline"><span class="dot"></span>${t("home.hero.next")}</span>
-        <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
-        ${prize ? `<span class="tag tag--gold hero__prize-tag">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
-      </div>
-      <div class="hero__matchup">
-        ${team(home)}
-        <div class="hero__when">
-          <span class="hero__vs">${t("home.game.vs")}</span>
-          <span class="hero__date num">${shortDate(game.date)}</span>
-          <span class="hero__time num">${game.time ?? t("home.game.timeTBD")}</span>
+      ${photoLayer(game.id, "hero__photo")}
+      <div class="hero__inner">
+        <div class="hero__content">
+          <p class="hero__top">
+            <span class="hero__eyebrow" id="hero-overline">${t("home.hero.next")}</span>
+            <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
+          </p>
+          <ul class="hero__teams">${team(home)}${team(away)}</ul>
+          <p class="hero__when">
+            <span class="num">${shortDate(game.date)}</span>
+            <span class="hero__sep" aria-hidden="true"></span>
+            <span class="num">${game.time ?? t("home.game.timeTBD")}</span>
+            <span class="hero__sep" aria-hidden="true"></span>
+            <span>${isHome ? t("home.row.home") : t("home.row.away")}</span>
+            ${prize ? `<span class="tag tag--gold hero__prize-tag">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
+          </p>
+          <div class="hero__countdown">
+            ${
+              parts
+                ? `<p class="countdown__caption">${t("home.hero.lockIn")}</p>
+                   <div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
+                     ${this.countdownUnit("d", parts.d, t("home.countdown.days"))}
+                     ${this.countdownUnit("h", parts.h, t("home.countdown.hours"))}
+                     ${this.countdownUnit("m", parts.m, t("home.countdown.minutes"))}
+                   </div>`
+                : `<div class="countdown is-locked">${icon("lock")}<span>${t("common.countdown.locked")}</span></div>`
+            }
+          </div>
+          <div class="hero__actions"></div>
         </div>
-        ${team(away)}
-      </div>
-      <div class="hero__countdown">
-        ${
-          parts
-            ? `<p class="countdown__caption">${t("home.hero.lockIn")}</p>
-               <div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
-                 ${this.countdownUnit("d", parts.d, t("home.countdown.days"))}
-                 <span class="countdown__sep" aria-hidden="true">:</span>
-                 ${this.countdownUnit("h", parts.h, t("home.countdown.hours"))}
-                 <span class="countdown__sep" aria-hidden="true">:</span>
-                 ${this.countdownUnit("m", parts.m, t("home.countdown.minutes"))}
-               </div>`
-            : `<div class="countdown is-locked">${icon("lock")}<span>${t("common.countdown.locked")}</span></div>`
-        }
       </div>
     `;
 
-    hero.appendChild(this.buildHeroCta(game));
+    const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
+    actions.appendChild(this.buildHeroCta(game));
 
     if (prize) {
       const prizeLine = el("p", "hero__prize", `${icon("gift", { size: "sm" })}<span dir="auto"></span>`);
       prizeLine.querySelector("span")!.textContent = t("home.game.prizeLabel", { prize: tDynamic(prize) });
-      hero.appendChild(prizeLine);
+      actions.appendChild(prizeLine);
 
       const linkUrl = PRIZE_LINK_URLS.get(game.id);
       if (linkUrl) {
@@ -379,7 +384,7 @@ export class HomeScreen {
         link.target = "_blank";
         link.rel = "noopener noreferrer";
         link.addEventListener("click", () => trackLinkEvent(`prize_link_${game.id}`));
-        hero.appendChild(link);
+        actions.appendChild(link);
       }
     }
 
@@ -388,10 +393,10 @@ export class HomeScreen {
         this.challengeEligibilityGameId === game.id &&
         this.challengeEligibility?.alreadyInChallenge;
       if (!alreadyInChallenge) {
-        const challengeBtn = el("button", "btn btn--secondary btn--block hero__challenge", `${icon("zap")}<span>${t("challenge.gameBtn")}</span>`);
+        const challengeBtn = el("button", "btn btn--secondary hero__challenge", `${icon("zap")}<span>${t("challenge.gameBtn")}</span>`);
         challengeBtn.type = "button";
         challengeBtn.addEventListener("click", () => this.actions.onChallengeGame(game));
-        hero.appendChild(challengeBtn);
+        actions.appendChild(challengeBtn);
       }
     }
 
@@ -407,7 +412,7 @@ export class HomeScreen {
 
   /** Same states as the old game card: view/edit, predict, or a locked/not-yet grey button. */
   private buildHeroCta(game: ScheduleGame): HTMLElement {
-    const btn = el("button", "btn btn--block hero__cta");
+    const btn = el("button", "btn hero__cta");
     btn.type = "button";
     const alreadyPredicted = this.myPredictions.has(game.id);
     const isActive = game.id === getActiveGameId(this.games);
@@ -475,6 +480,7 @@ export class HomeScreen {
     const ticket = el("section", "ticket");
     const desc = this.currentUser ? t("home.tournamentDescRules") : t("home.tournamentDesc");
     ticket.innerHTML = `
+      ${photoLayer("vip-tournament", "ticket__photo")}
       <div class="ticket__body">
         <span class="tag tag--gold">${icon("ticket")}${t("home.tournamentBadge")}</span>
         <h2 class="t-h3 ticket__title">${t("home.tournamentTitle")}</h2>
@@ -548,8 +554,17 @@ export class HomeScreen {
       const jlm = isHome ? game.result.home : game.result.away;
       const other = isHome ? game.result.away : game.result.home;
       const won = jlm > other;
-      end = `<span class="game-row__result num${won ? " is-win" : ""}">${ltr(`${jlm}–${other}`)}</span>
-             <span class="game-row__wl ${won ? "is-win" : "is-loss"}">${won ? t("home.row.win") : t("home.row.loss")}</span>
+      const mine = this.myPredictions.get(game.id);
+      const pts = mine?.score;
+      end = `${
+        mine
+          ? `<span class="game-row__pts${pts ? " is-earned" : ""}"><span class="num">${pts != null ? `+${pts}` : "–"}</span><span>${t("home.row.myPoints")}</span></span>`
+          : ""
+      }
+             <span class="game-row__score">
+               <span class="game-row__wl ${won ? "is-win" : "is-loss"}">${won ? t("home.row.win") : t("home.row.loss")}</span>
+               <span class="game-row__result num${won ? " is-win" : ""}">${ltr(`${jlm}–${other}`)}</span>
+             </span>
              ${icon("chevronForward", { size: "sm", className: "c-3" })}`;
     } else if (predicted) {
       end = `<span class="tag tag--success">${icon("check")}${t("home.row.predicted")}</span>`;

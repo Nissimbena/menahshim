@@ -57,6 +57,7 @@ export class LeaguesHubScreen {
         title: t("leaguesHub.title"),
         subtitle: t("leaguesHub.subtitle"),
         onBack: this.actions.onBack,
+        photo: "leagues",
       }),
     );
 

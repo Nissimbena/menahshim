@@ -116,7 +116,7 @@ export class LeaderboardScreen {
   }
 
   private renderHeader(): HTMLElement {
-    return screenHeader({ title: this.titleText, onBack: () => this.onBack() });
+    return screenHeader({ title: this.titleText, onBack: () => this.onBack(), photo: "leaderboard" });
   }
 
   private page(): HTMLElement {

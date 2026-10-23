@@ -74,31 +74,42 @@
   font-weight: 700;
 }
 
-/* The Hapoel brand field: three reds on a diagonal, like the club's EuroCup pages */
-.brand-field,
-.hero,
-.slip__head {
-  background-color: var(--red);
-  background-image: linear-gradient(
-    calc(105deg * var(--dir)),
-    var(--red-deep) 0 24%,
-    var(--red) 24% 70%,
-    var(--red-bright) 70% 100%
-  );
-  color: var(--on-red);
+/* ================================================================== */
+/* Match photos - one treatment everywhere                              */
+/* ================================================================== */
+
+/*
+ * Black & white on Hapoel's deep red (luminosity blend): whites stay white,
+ * shadows go to oxblood, and the arena's blue seats never fight the brand.
+ */
+.photo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--red-deep);
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.18) brightness(1.04);
+  mix-blend-mode: luminosity;
 }
 
 /* ================================================================== */
-/* Scoreboard ticker (home)                                             */
+/* Scoreboard ticker (home) - one continuous strip, broadcast style     */
 /* ================================================================== */
 
 .ticker {
-  padding-block: var(--s-3);
+  background: var(--surface-1);
+  border-block-end: 1px solid var(--line);
 }
 
 .ticker__track {
   display: flex;
-  gap: var(--s-2);
   max-width: var(--container-wide);
   margin-inline: auto;
   padding-inline: var(--gutter);
@@ -115,38 +126,44 @@
 
 .ticker__game {
   position: relative;
-  flex: 0 0 176px;
+  flex: 0 0 184px;
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
-  padding: var(--s-3);
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
   border: 0;
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  box-shadow: var(--shadow-1);
+  border-inline-end: 1px solid var(--line);
+  background: transparent;
   color: var(--text);
   text-align: start;
   scroll-snap-align: start;
   cursor: pointer;
-  transition: box-shadow var(--dur) var(--ease);
+  transition: background-color var(--dur) var(--ease);
+}
+
+.ticker__game:first-child {
+  border-inline-start: 1px solid var(--line);
 }
 
 .ticker__game:not(:disabled):hover {
-  box-shadow: inset 0 0 0 1px var(--text-3);
+  background: var(--surface-2);
 }
 
 .ticker__game:disabled {
   cursor: default;
 }
 
+/* The next game: a red bar along the top edge, like a live game on a scores strip */
 .ticker__game.is-next {
-  box-shadow: inset 0 0 0 2px var(--red);
+  background: var(--red-tint);
+  box-shadow: inset 0 3px 0 var(--red);
 }
 
 .ticker__status {
   display: flex;
   align-items: center;
   gap: var(--s-1);
+  margin-block-end: var(--s-1);
   color: var(--text-2);
   font-size: 12px;
   font-weight: 500;
@@ -176,17 +193,17 @@
 
 .ticker__team {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--s-2);
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .ticker__team img {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
 }
 
@@ -197,7 +214,7 @@
 }
 
 .ticker__score {
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .ticker__team.is-loser {
@@ -205,93 +222,83 @@
 }
 
 /* ================================================================== */
-/* Home layout                                                          */
-/* ================================================================== */
-
-.home {
-  padding-block-start: 0;
-}
-
-.home-banner {
-  margin-block-end: var(--s-4);
-}
-
-.home-layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-}
-
-.home-main,
-.home-side {
-  display: contents;
-}
-
-.home-hero {
-  order: 1;
-}
-.personal-strip,
-.signin-card {
-  order: 2;
-}
-.home-side .ticket {
-  order: 3;
-}
-.home-schedule {
-  order: 4;
-  margin-block-start: var(--s-4);
-}
-.home-leaders {
-  order: 5;
-}
-
-@media (min-width: 1024px) {
-  .home-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--sidebar);
-    gap: var(--s-5);
-    align-items: start;
-  }
-
-  .home-main,
-  .home-side {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-5);
-  }
-
-  .home-schedule {
-    margin-block-start: 0;
-  }
-}
-
-/* ================================================================== */
-/* Hero - the next game on the Hapoel brand field                        */
+/* Hero - the next game, full-bleed over a match photo                  */
 /* ================================================================== */
 
 .hero {
   position: relative;
+  isolation: isolate;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s-6);
-  padding: var(--s-5) var(--s-4) var(--s-6);
-  border-radius: var(--r-lg);
+  min-height: 640px;
+  background: var(--ink);
+  color: var(--on-ink);
   overflow: hidden;
-  text-align: center;
 }
 
-@media (min-width: 768px) {
+/* Phones: the photo fills the block, text sits on a dark fade at the bottom */
+.hero__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 22%,
+    color-mix(in srgb, var(--ink) 75%, transparent) 42%,
+    var(--ink) 62%
+  );
+}
+
+.hero__photo img {
+  object-position: 50% 12%;
+}
+
+.hero__inner {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: var(--container-wide);
+  margin-inline: auto;
+  /* Phones: leave the top of the photo - the player - clear of text */
+  padding: 260px var(--gutter) var(--s-6);
+}
+
+.hero__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Desktop: the photo takes the end half, faded into black on its inner edge */
+@media (min-width: 900px) {
   .hero {
-    padding: var(--s-6) var(--s-7) var(--s-7);
+    min-height: 600px;
+  }
+
+  .hero__photo {
+    inset-inline-start: auto;
+    width: 60%;
+  }
+
+  .hero__photo::after {
+    background: linear-gradient(
+      calc(90deg * var(--dir)),
+      var(--ink) 0,
+      color-mix(in srgb, var(--ink) 55%, transparent) 26%,
+      transparent 60%
+    );
+  }
+
+  .hero__inner {
+    align-items: center;
+    padding-block: var(--s-8);
   }
 }
 
 .hero__top {
-  align-self: stretch;
   display: flex;
   align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
   gap: var(--s-2) var(--s-3);
 }
@@ -299,54 +306,41 @@
 .hero__eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-2);
-  min-height: 26px;
-  padding-inline: var(--s-3);
-  border-radius: var(--r-full);
-  background: var(--surface-1);
-  color: var(--red);
+  min-height: 24px;
+  padding-inline: var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--red);
+  color: var(--on-red);
   font-size: 12px;
   font-weight: 700;
 }
 
-.hero__eyebrow .dot {
-  width: 6px;
-  height: 6px;
-}
-
 .hero__comp {
-  color: var(--on-red-2);
-  font-size: 13px;
+  color: var(--on-ink-2);
+  font-size: 14px;
   font-weight: 500;
 }
 
 :root[lang="en"] .hero__eyebrow,
-:root[lang="en"] .hero__vs,
 :root[lang="en"] .countdown__caption,
 :root[lang="en"] .countdown__label {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.hero__prize-tag {
-  background: var(--gold-bright);
-  color: var(--text);
-}
-
-.hero__matchup {
-  align-self: stretch;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: start;
+.hero__teams {
+  display: flex;
+  flex-direction: column;
   gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .hero__team {
-  container-type: inline-size;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--s-3);
+  gap: var(--s-4);
   min-width: 0;
 }
 
@@ -355,92 +349,77 @@
 }
 
 .hero__team-name {
+  min-width: 0;
   font-family: var(--font-display);
   font-variation-settings: var(--display-axes);
-  /* Sized to its own column so a long single word never breaks mid-word */
-  font-size: clamp(26px, 24cqi, 64px);
+  font-size: clamp(44px, 32px + 3vw, 80px);
   font-weight: 700;
   line-height: var(--lh-display);
-  text-wrap: balance;
 }
 
 .hero__when {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--s-1);
-  padding-block-start: var(--s-5);
-  white-space: nowrap;
-}
-
-@media (min-width: 768px) {
-  .hero__when {
-    padding-block-start: var(--s-7);
-  }
-}
-
-.hero__vs {
-  color: var(--on-red-3);
-  font-size: 12px;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-3);
+  color: var(--on-ink-2);
+  font-size: 16px;
   font-weight: 700;
 }
 
-.hero__date {
-  font-size: clamp(32px, 26px + 1.6vw, 48px);
-}
-
-.hero__time {
+.hero__when .num {
   font-family: var(--font);
   font-variation-settings: normal;
-  color: var(--on-red-2);
   font-size: 16px;
-  font-weight: 500;
   line-height: 1.3;
+  color: var(--on-ink);
+}
+
+.hero__sep {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: var(--on-ink-3);
+}
+
+.hero__prize-tag {
+  background: var(--gold-bright);
+  color: var(--text);
 }
 
 .hero__countdown {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--s-2);
+  padding-block-start: var(--s-5);
+  border-block-start: 1px solid var(--ink-line);
 }
 
 .countdown {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
-  gap: var(--s-3);
+  gap: var(--s-6);
 }
 
 .countdown__unit {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-1);
   min-width: 2ch;
 }
 
 .countdown__value {
-  font-size: var(--t-display);
-}
-
-.countdown__sep {
-  font-family: var(--font-num);
-  font-variation-settings: var(--display-axes);
-  font-size: calc(var(--t-display) * 0.6);
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--on-red-3);
+  font-size: clamp(56px, 44px + 2.6vw, 80px);
 }
 
 .countdown__label {
+  color: var(--on-ink-2);
   font-size: 12px;
   font-weight: 700;
-  color: var(--on-red-2);
 }
 
 .countdown__caption {
-  color: var(--on-red-2);
+  color: var(--on-ink-2);
   font-size: 13px;
   font-weight: 500;
 }
@@ -448,33 +427,39 @@
 .countdown.is-locked {
   align-items: center;
   gap: var(--s-2);
-  color: var(--on-red-2);
+  color: var(--on-ink-2);
   font-weight: 700;
 }
 
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-4);
+}
+
 .hero__cta {
-  width: 100%;
-  max-width: 340px;
   min-height: 56px;
+  padding-inline: var(--s-6);
   font-size: 17px;
 }
 
-.hero__cta.btn--primary {
-  background: var(--surface-1);
-  color: var(--red);
+@media (max-width: 599px) {
+  .hero__cta {
+    width: 100%;
+  }
 }
 
-.hero__cta.btn--primary:hover:not(:disabled) {
-  background: var(--surface-2);
+.hero__cta.btn--locked {
+  background: var(--ink-3);
+  color: var(--on-ink-2);
 }
 
 .hero__prize {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--s-2);
-  margin-block-start: calc(var(--s-4) * -1);
-  color: var(--on-red);
+  color: var(--on-ink);
   font-size: var(--t-small);
   font-weight: 700;
 }
@@ -484,34 +469,77 @@
 }
 
 .hero__prize-link {
-  margin-block-start: calc(var(--s-5) * -1);
-  color: var(--on-red-2);
+  color: var(--on-ink-2);
 }
 
 .hero__prize-link:hover:not(:disabled) {
   background: transparent;
-  color: var(--on-red);
+  color: var(--on-ink);
 }
 
 .hero__challenge {
-  max-width: 340px;
-  margin-block-start: calc(var(--s-4) * -1);
   background: transparent;
-  border-color: var(--on-red-3);
-  color: var(--on-red);
+  border-color: var(--on-ink-3);
+  color: var(--on-ink);
 }
 
-.hero--empty {
-  gap: var(--s-2);
-  padding-block: var(--s-8);
+.hero--empty .hero__content {
+  gap: var(--s-3);
 }
 
-.hero--empty p {
-  color: var(--on-red-2);
+.hero__empty-title {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: var(--t-h1);
+  line-height: var(--lh-display);
+}
+
+.hero__empty-text {
+  color: var(--on-ink-2);
 }
 
 /* ================================================================== */
-/* Sidebar cards                                                        */
+/* Home grid                                                            */
+/* ================================================================== */
+
+.home {
+  padding-block-start: var(--s-6);
+}
+
+.home-banner {
+  margin-block-end: var(--s-4);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .home-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--s-5);
+  }
+
+  .home-grid > .personal-strip,
+  .home-grid > .signin-card,
+  .home-grid > .ticket {
+    grid-column: 1 / -1;
+  }
+
+  .home-grid > .home-schedule {
+    grid-column: span 8;
+  }
+
+  .home-grid > .home-leaders {
+    grid-column: span 4;
+  }
+}
+
+/* ================================================================== */
+/* My season - a stats band across the page                             */
 /* ================================================================== */
 
 .personal-strip {
@@ -537,14 +565,8 @@
   transition: background-color var(--dur) var(--ease);
 }
 
-.personal-strip__cell .num {
-  font-size: 44px;
-}
-
-@media (min-width: 600px) {
-  .personal-strip__cell {
-    padding: var(--s-4) var(--s-5) var(--s-5);
-  }
+.personal-strip__cell .stat__value {
+  font-size: 48px;
 }
 
 .personal-strip__cell + .personal-strip__cell {
@@ -555,10 +577,47 @@
   background: var(--surface-2);
 }
 
+@media (min-width: 768px) {
+  .personal-strip {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .personal-strip .card__head {
+    align-items: center;
+    padding: var(--s-5);
+  }
+
+  .personal-strip__cells {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--line);
+  }
+
+  .personal-strip__cell {
+    padding: var(--s-5);
+  }
+
+  .personal-strip__cell .stat__value {
+    font-size: 64px;
+  }
+}
+
 .signin-card {
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
+}
+
+@media (min-width: 768px) {
+  .signin-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .signin-card > .btn {
+    width: auto;
+  }
 }
 
 .signin-card__text {
@@ -572,21 +631,35 @@
   font-size: var(--t-h2);
 }
 
-/* VIP ticket */
+/* ================================================================== */
+/* VIP tournament - a photo banner                                      */
+/* ================================================================== */
+
 .ticket {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-1);
+  isolation: isolate;
+  display: grid;
   border-radius: var(--r-md);
-  box-shadow: var(--shadow-1);
+  background: var(--ink);
+  color: var(--on-ink);
   overflow: hidden;
 }
 
-.ticket::before {
+.ticket__photo {
+  position: relative;
+  height: 200px;
+  z-index: 0;
+}
+
+.ticket__photo img {
+  object-position: 50% 18%;
+}
+
+.ticket__photo::after {
   content: "";
-  height: 4px;
-  background: var(--gold-bright);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, var(--ink) 100%);
 }
 
 .ticket__body {
@@ -594,66 +667,80 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s-2);
-  padding: var(--s-5) var(--s-4) var(--s-4);
-}
-
-@media (min-width: 600px) {
-  .ticket__body {
-    padding-inline: var(--s-5);
-  }
+  padding: 0 var(--s-4) var(--s-3);
 }
 
 .ticket__title {
   margin-block-start: var(--s-1);
-  font-size: var(--t-h2);
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: var(--t-h1);
+  line-height: var(--lh-display);
 }
 
 .ticket__desc {
-  color: var(--text-2);
+  color: var(--on-ink-2);
 }
 
 .ticket__stub {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
-  padding: var(--s-4);
-  border-block-start: 1px dashed var(--line);
-}
-
-@media (min-width: 600px) {
-  .ticket__stub {
-    padding: var(--s-4) var(--s-5) var(--s-5);
-  }
-}
-
-.ticket__stub::before,
-.ticket__stub::after {
-  content: "";
-  position: absolute;
-  inset-block-start: -9px;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--r-full);
-  background: var(--bg);
-}
-
-.ticket__stub::before {
-  inset-inline-start: -9px;
-}
-
-.ticket__stub::after {
-  inset-inline-end: -9px;
+  align-items: flex-start;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4) var(--s-5);
 }
 
 .ticket__prize {
   display: flex;
   align-items: flex-start;
   gap: var(--s-2);
-  color: var(--gold);
+  color: var(--gold-bright);
   font-size: var(--t-small);
   font-weight: 700;
   line-height: 1.4;
+}
+
+.ticket__btn {
+  background: var(--surface-1);
+  border-color: var(--surface-1);
+  color: var(--text);
+}
+
+@media (min-width: 768px) {
+  .ticket {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    min-height: 320px;
+  }
+
+  .ticket__photo {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    width: 55%;
+    height: auto;
+  }
+
+  .ticket__photo::after {
+    background: linear-gradient(calc(90deg * var(--dir)), var(--ink) 0, transparent 55%);
+  }
+
+  .ticket__body {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: flex-end;
+    padding: var(--s-7) var(--s-6) var(--s-3);
+  }
+
+  .ticket__stub {
+    grid-column: 1;
+    grid-row: 2;
+    padding: var(--s-2) var(--s-6) var(--s-6);
+  }
+
+  .ticket__btn {
+    width: auto;
+  }
 }
 
 .ticket--hero .ticket__desc {
@@ -686,7 +773,6 @@
   height: 44px;
   object-fit: contain;
 }
-
 /* ================================================================== */
 /* Schedule card                                                        */
 /* ================================================================== */
@@ -1405,7 +1491,11 @@ button.standings__row:hover {
   }
 }
 
-/* EuroCup roster card: photo on a colour field, shirt number, name */
+/*
+ * Roster card. Every card is built the same way so the grid reads as one
+ * set: a flat grey field, the shirt number centred behind the player at one
+ * fixed size and height, the cut-out standing on the name bar.
+ */
 .pcard {
   position: relative;
   display: flex;
@@ -1435,35 +1525,43 @@ button.standings__row:hover {
 .pcard__media {
   position: relative;
   display: block;
-  height: 112px;
+  aspect-ratio: 4 / 4.2;
   overflow: hidden;
   isolation: isolate;
-  background-color: var(--surface-3);
-  background-image: linear-gradient(
-    calc(110deg * var(--dir)),
-    var(--surface-2) 0 38%,
-    var(--surface-3) 38% 100%
-  );
-}
-
-@media (min-width: 600px) {
-  .pcard__media {
-    height: 136px;
-  }
+  background: var(--surface-3);
 }
 
 .pcard__media .pmedia {
   position: absolute;
   inset: 0;
+  background: transparent;
 }
 
+/* Cut-outs: same scale and anchor for everyone, feet below the frame */
+.pcard__media .pmedia.is-cutout img {
+  object-position: 50% 0;
+  transform: translateY(16%);
+  transform-origin: 50% 0;
+}
+
+.pcard__media .pmedia:not(.is-cutout) {
+  inset-block-start: 16%;
+}
+
+/* Club shots on white: let the white drop out into the grey field */
+.pcard__media .pmedia:not(.is-cutout) img {
+  mix-blend-mode: multiply;
+}
+
+/* Same corner, same size, same colour on every card - above the shoulders */
 .pcard__num {
   position: absolute;
   z-index: -1;
-  inset-block-start: var(--s-1);
-  inset-inline-start: var(--s-2);
+  inset-block-start: var(--s-2);
+  inset-inline-start: var(--s-3);
   color: var(--surface-1);
-  font-size: 56px;
+  font-size: clamp(48px, 36px + 3vw, 72px);
+  line-height: 0.9;
 }
 
 .pcard__check {
@@ -1475,8 +1573,8 @@ button.standings__row:hover {
   width: 24px;
   height: 24px;
   border-radius: var(--r-full);
-  background: var(--surface-1);
-  color: var(--red);
+  background: var(--red);
+  color: var(--on-red);
 }
 
 .pcard__body {
@@ -1484,6 +1582,7 @@ button.standings__row:hover {
   flex-direction: column;
   gap: var(--s-1);
   padding: var(--s-2) var(--s-3) var(--s-3);
+  transition: background-color var(--dur) var(--ease);
 }
 
 .pcard .pname__last {
@@ -1507,27 +1606,29 @@ button.standings__row:hover {
   opacity: 0.55;
 }
 
-/* Selected: the card turns Hapoel red */
+/* Selected: red outline, red number, the name bar turns red */
 .pcard.is-selected {
   box-shadow: 0 0 0 2px var(--red);
   opacity: 1;
 }
 
-.pcard.is-selected .pcard__media {
-  background-color: var(--red);
-  background-image: linear-gradient(
-    calc(110deg * var(--dir)),
-    var(--red-deep) 0 38%,
-    var(--red) 38% 100%
-  );
-}
-
 .pcard.is-selected .pcard__num {
-  color: var(--on-red-3);
+  color: var(--red);
 }
 
 .pcard.is-selected .pcard__check {
   display: grid;
+}
+
+.pcard.is-selected .pcard__body {
+  background: var(--red);
+  color: var(--on-red);
+}
+
+.pcard.is-selected .pname__first,
+.pcard.is-selected .pcard__meta,
+.pcard.is-selected .pcard__squad {
+  color: var(--on-red-2);
 }
 
 /* The amount for the chosen player */
@@ -1647,11 +1748,26 @@ button.standings__row:hover {
 }
 
 .slip__head {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-5) var(--s-4);
+  padding: var(--s-6) var(--s-4);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.slip__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.slip__photo img {
+  object-position: 50% 22%;
 }
 
 .slip__team {
@@ -1676,7 +1792,7 @@ button.standings__row:hover {
 }
 
 .slip__label {
-  color: var(--on-red-2);
+  color: var(--on-ink-2);
   font-size: 12px;
   font-weight: 700;
 }
@@ -2670,4 +2786,213 @@ button.standings__row:hover {
 .link-stats-table th {
   color: var(--text-2);
   font-weight: 700;
+}
+
+/* ================================================================== */
+/* Finished games: result masthead, my points per row                   */
+/* ================================================================== */
+
+.final {
+  position: relative;
+  isolation: isolate;
+  margin-block-end: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--ink);
+  color: var(--on-ink);
+  overflow: hidden;
+}
+
+.final__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.final__photo img {
+  object-position: 50% 22%;
+}
+
+.final__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-6) var(--s-4) var(--s-5);
+}
+
+@media (min-width: 600px) {
+  .final__inner {
+    padding-inline: var(--s-6);
+  }
+}
+
+.final__label {
+  align-self: flex-start;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+:root[lang="en"] .final__label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.final__teams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.final__team {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-4);
+  color: var(--on-ink-2);
+}
+
+.final__team .logo-disc {
+  box-shadow: none;
+}
+
+.final__name {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: clamp(32px, 24px + 2vw, 52px);
+  font-weight: 700;
+  line-height: var(--lh-display);
+}
+
+.final__score {
+  font-size: clamp(56px, 44px + 3vw, 88px);
+}
+
+.final__team.is-winner {
+  color: var(--on-ink);
+}
+
+.compare__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-5) var(--s-4) 0;
+}
+
+@media (min-width: 600px) {
+  .compare__title {
+    padding-inline: var(--s-5);
+  }
+}
+
+.compare__title h2 {
+  font-size: var(--t-h2);
+}
+
+.compare + .compare {
+  margin-block-start: var(--s-4);
+}
+
+.game-row__score {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.game-row__pts {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.game-row__pts .num {
+  font-size: 22px;
+  color: var(--text);
+}
+
+.game-row__pts.is-earned {
+  background: var(--success-tint);
+}
+
+.game-row__pts.is-earned .num {
+  color: var(--success);
+}
+
+/* ================================================================== */
+/* Photo masthead for leaderboard / tournament / leagues                */
+/* ================================================================== */
+
+.screen-header--photo {
+  position: relative;
+  isolation: isolate;
+  align-items: flex-end;
+  min-height: 220px;
+  padding: var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--ink);
+  color: var(--on-ink);
+  overflow: hidden;
+}
+
+.screen-header__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 20%, color-mix(in srgb, var(--ink) 85%, transparent) 100%);
+}
+
+.screen-header__photo img {
+  object-position: 50% 25%;
+}
+
+.screen-header--photo .screen-header__subtitle {
+  color: var(--on-ink-2);
+}
+
+.screen-header--photo .screen-header__back {
+  position: absolute;
+  inset-block-start: var(--s-3);
+  inset-inline-start: var(--s-3);
+  margin: 0;
+}
+
+/* The tournament page reuses the ticket without a photo */
+.ticket:not(:has(.ticket__photo)) .ticket__body {
+  padding-block-start: var(--s-5);
+}
+
+/* Phones: the score comparison puts the stat label on its own line */
+@media (max-width: 520px) {
+  .compare__score {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: var(--s-3);
+  }
+
+  .compare__score .compare__mid {
+    grid-column: 1 / -1;
+    order: -1;
+    flex-wrap: nowrap;
+  }
+
+  .compare__score .compare__mid .compare__stat {
+    flex-basis: auto;
+    flex-direction: row;
+  }
+
+  .compare__score .score-digits {
+    font-size: 40px;
+  }
 }

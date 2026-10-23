@@ -7,6 +7,7 @@ import { t, tDynamic } from "../i18n/i18n";
 import { icon, type IconName } from "../ui/icons";
 import { el, esc, initials } from "../ui/dom";
 import { playerPhoto } from "./playerPhotos";
+import { photoLayer } from "../ui/photos";
 import {
   CATEGORY_ORDER,
   CATEGORY_CONFIG,
@@ -100,6 +101,7 @@ export function predictionSlip(
 
   slip.innerHTML = `
     <header class="slip__head">
+      ${photoLayer(game?.id ?? "slip", "slip__photo")}
       ${teamBlock(home)}
       <div class="slip__score">
         <span class="slip__label">${t("prediction.step.score")}</span>
@@ -367,4 +369,120 @@ export function aggregateCard(
   });
   if (team.childElementCount) card.appendChild(team);
   return card;
+}
+
+// ------------------------------------------------------------ final result
+
+/** The final score as a photo masthead - top of every finished game. */
+export function resultHeader(game: ScheduleGame, result: GameResultData | null): HTMLElement {
+  const home = TEAMS[game.homeTeamId];
+  const away = TEAMS[game.awayTeamId];
+  const h = result?.actualHomeScore ?? game.result?.home ?? null;
+  const a = result?.actualAwayScore ?? game.result?.away ?? null;
+  const side = (tm: Team | undefined, score: number | null, won: boolean) => `
+    <div class="final__team${won ? " is-winner" : ""}">
+      ${tm ? `<span class="logo-disc logo-disc--lg"><img src="${tm.logo}" alt="" /></span>` : ""}
+      <span class="final__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+      <span class="final__score num">${score ?? "–"}</span>
+    </div>`;
+  return el(
+    "section",
+    "final",
+    `${photoLayer(game.id, "final__photo")}
+     <div class="final__inner">
+       <p class="final__label">${t("prediction.result.final")}</p>
+       <div class="final__teams">
+         ${side(home, h, h !== null && a !== null && h > a)}
+         ${side(away, a, h !== null && a !== null && a > h)}
+       </div>
+     </div>`,
+  );
+}
+
+// ------------------------------------------------------ crowd vs. actual
+
+/** What everyone predicted (averages, most-picked players) next to what happened. */
+export function crowdCompare(
+  agg: PredictionsAggregate,
+  r: GameResultData,
+  game: ScheduleGame | null,
+  playerById: (id: string) => Player | undefined,
+): HTMLElement {
+  const wrap = el("section", "compare compare--crowd card");
+  const fmt = (v: number | null) => (v === null ? "–" : String(Math.round(v * 10) / 10));
+  const scoreLine = (h: number | null, a: number | null) =>
+    `<span class="score-digits num"><span>${fmt(h)}</span><span class="score-digits__dash">-</span><span>${fmt(a)}</span></span>`;
+  const home = game ? TEAMS[game.homeTeamId] : undefined;
+  const away = game ? TEAMS[game.awayTeamId] : undefined;
+
+  wrap.innerHTML = `
+    <header class="compare__title">
+      <h2>${t("prediction.crowd.title")}</h2>
+      <span class="tag">${icon("users")}${esc(t("prediction.aggregate.count", { n: agg.totalPredictions }))}</span>
+    </header>
+    <header class="compare__head">
+      <span class="compare__col">${t("prediction.crowd.side")}</span>
+      <span class="compare__col compare__col--end">${t("prediction.breakdown.header.actual")}</span>
+    </header>
+    <div class="compare__score">
+      <div class="compare__side">${scoreLine(agg.avgHomeScore, agg.avgAwayScore)}</div>
+      <div class="compare__mid">
+        ${home ? `<span class="logo-disc logo-disc--sm"><img src="${home.logo}" alt="${esc(teamName(home))}" /></span>` : ""}
+        <span class="compare__stat">${icon("statScore")}<span>${t("prediction.step.score")}</span></span>
+        ${away ? `<span class="logo-disc logo-disc--sm"><img src="${away.logo}" alt="${esc(teamName(away))}" /></span>` : ""}
+      </div>
+      <div class="compare__side compare__side--end">${scoreLine(r.actualHomeScore, r.actualAwayScore)}</div>
+    </div>`;
+
+  const rows = el("div", "compare__rows");
+  const lines: { cat: StatCategory; id: string | null; avg: number | null }[] = [
+    { cat: "scorer", id: agg.topScorerPlayerId, avg: agg.avgTopScorerPoints },
+    { cat: "rebounder", id: agg.topRebounderPlayerId, avg: agg.avgTopRebounds },
+    { cat: "assist", id: agg.topAssistPlayerId, avg: agg.avgTopAssists },
+  ];
+  lines.forEach(({ cat, id, avg }) => {
+    const config = CATEGORY_CONFIG[cat];
+    const aid = r[config.actualPlayerKey];
+    const aAmount = r[config.actualAmountKey];
+    const pPlayer = id ? playerById(id) : undefined;
+    const aPlayer = aid ? playerById(aid) : undefined;
+    rows.appendChild(
+      el(
+        "div",
+        `compare-row${id && id === aid ? " is-match" : ""}`,
+        `<div class="compare-row__side">
+           ${playerMedia(pPlayer, "md")}
+           <span class="compare-row__who">${pPlayer ? playerNameHTML(pPlayer) : `<span class="pname c-3">–</span>`}</span>
+           <span class="compare-row__num num">${fmt(avg)}</span>
+         </div>
+         <div class="compare-row__mid">
+           <span class="compare__stat">${icon(CATEGORY_ICON[cat])}<span>${t(config.labelKey)}</span></span>
+         </div>
+         <div class="compare-row__side compare-row__side--end">
+           <span class="compare-row__num num">${aAmount ?? "–"}</span>
+           <span class="compare-row__who">${aPlayer ? playerNameHTML(aPlayer) : `<span class="pname c-3">–</span>`}</span>
+           ${playerMedia(aPlayer, "md")}
+         </div>`,
+      ),
+    );
+  });
+
+  const teamLines: [IconName, string, number | null, number | null][] = [
+    ["statThrees", "prediction.breakdown.teamThrees", agg.avgTeamThrees, r.actualTeamThrees],
+    ["statTeamRebounds", "prediction.breakdown.teamRebounds", agg.avgTeamRebounds, r.actualTeamRebounds],
+    ["statTeamAssists", "prediction.breakdown.teamAssists", agg.avgTeamAssists, r.actualTeamAssists],
+  ];
+  teamLines.forEach(([ic, key, avg, actual]) => {
+    rows.appendChild(
+      el(
+        "div",
+        "compare-row compare-row--plain",
+        `<div class="compare-row__side"><span class="compare-row__num num">${fmt(avg)}</span></div>
+         <div class="compare-row__mid"><span class="compare__stat">${icon(ic)}<span>${t(key)}</span></span></div>
+         <div class="compare-row__side compare-row__side--end"><span class="compare-row__num num">${actual ?? "–"}</span></div>`,
+      ),
+    );
+  });
+  wrap.appendChild(rows);
+  return wrap;
 }

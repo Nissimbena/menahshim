@@ -1,6 +1,7 @@
 import { t } from "../i18n/i18n";
 import { icon } from "./icons";
 import { el } from "./dom";
+import { photoLayer } from "./photos";
 
 /**
  * Shared header for every inner screen: back arrow (mirrors with dir),
@@ -10,8 +11,11 @@ export function screenHeader(opts: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
+  /** Seed for a match-photo masthead (leaderboards, tournament, leagues). */
+  photo?: string;
 }): HTMLElement {
-  const header = el("header", "screen-header");
+  const header = el("header", `screen-header${opts.photo ? " screen-header--photo" : ""}`);
+  if (opts.photo) header.innerHTML = photoLayer(opts.photo, "screen-header__photo");
 
   if (opts.onBack) {
     const back = el("button", "btn btn--ghost btn--icon screen-header__back", icon("arrowBack", { size: "lg" }));

@@ -40,7 +40,7 @@ export class TournamentScreen {
   private page(): HTMLElement {
     this.container.innerHTML = "";
     const page = el("div", "screen tournament");
-    page.appendChild(screenHeader({ title: t("tournament.title"), onBack: () => this.onBack() }));
+    page.appendChild(screenHeader({ title: t("tournament.title"), onBack: () => this.onBack(), photo: "vip-tournament" }));
     this.container.appendChild(page);
     return page;
   }

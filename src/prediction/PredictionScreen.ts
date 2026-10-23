@@ -50,6 +50,8 @@ import {
   playerNameHTML,
   CATEGORY_ICON,
   TEAM_STAT_ICON,
+  resultHeader,
+  crowdCompare,
 } from "./recap";
 import { el, esc } from "../ui/dom";
 import { logoMarkSVG } from "../brand/Logo";
@@ -862,12 +864,21 @@ export class PredictionScreen {
       : t("prediction.viewOnly.noPrediction");
     section.appendChild(heading);
 
+    // Finished game: the final score up top, then my prediction against it,
+    // then everyone's (averages / most-picked) against it.
+    if (this.currentGame?.result || this.actualResult) {
+      section.prepend(resultHeader(this.currentGame!, this.actualResult));
+    }
     if (this.hasOwnPrediction && this.actualResult && this.scoringRules) {
       this.buildResultBreakdownTable(section);
     } else if (this.hasOwnPrediction) {
       this.buildSummaryContent(section);
     }
-    this.buildAggregateContent(section);
+    if (this.actualResult && this.aggregate && this.aggregate.totalPredictions > 0) {
+      section.appendChild(crowdCompare(this.aggregate, this.actualResult, this.currentGame, (id) => this.playerById(id)));
+    } else {
+      this.buildAggregateContent(section);
+    }
 
     return section;
   }

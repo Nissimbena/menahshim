@@ -477,6 +477,10 @@ const translations: Record<Lang, Dict> = {
     "prediction.breakdown.yourSide": "הניחוש שלכם",
     "prediction.aggregate.avgShort": "בממוצע",
     "leaderboard.userPrediction.theirSide": "הניחוש",
+    "prediction.result.final": "תוצאת סיום",
+    "prediction.crowd.title": "כולם מול המציאות",
+    "prediction.crowd.side": "ממוצע הניחושים",
+    "home.row.myPoints": "נק' שלי",
     "inAppBrowser.warning":
       'זיהינו שאתם גולשים מתוך אפליקציה אחרת (כמו WhatsApp) ולא מ-Safari/Chrome ישירות - ההתחברות עם Google עלולה להיכשל. פתחו את הקישור ישירות בדפדפן (לחיצה ארוכה על הקישור ← "פתח ב-Safari").',
   },
@@ -967,6 +971,10 @@ const translations: Record<Lang, Dict> = {
     "prediction.breakdown.yourSide": "Your prediction",
     "prediction.aggregate.avgShort": "avg",
     "leaderboard.userPrediction.theirSide": "Prediction",
+    "prediction.result.final": "Final",
+    "prediction.crowd.title": "Everyone vs. what happened",
+    "prediction.crowd.side": "Average prediction",
+    "home.row.myPoints": "my pts",
     "inAppBrowser.warning":
       'Looks like you opened this inside another app (like WhatsApp) instead of Safari/Chrome - Google sign-in may fail. Open the link directly in your browser (long-press the link → "Open in Safari").',
   },
