@@ -15,7 +15,6 @@ import type { Player } from "./types";
  * roster and its photos live in one place.
  */
 const EUROCUP = "https://media-cdn.cortextech.io/1dU3kpCqReRp93/1BSdBWIjCjnOS5/";
-const CLUB = "https://basket.co.il/pics/2026-2027/%D7%9E%D7%93%D7%99%D7%94%20%D7%93%D7%99%D7%99%20%D7%94%D7%A4%D7%95%D7%A2%D7%9C%20%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D/";
 
 export interface PlayerPhoto {
   url: string;
@@ -38,7 +37,8 @@ const PHOTOS: Record<string, PlayerPhoto> = {
   "יותם חנוכי": { url: `${EUROCUP}580b42ea-596c-4b63-8be8-db2b960c2366.png`, cutout: true },
   "דושאן מילטיץ'": { url: `${EUROCUP}6a70d44e-84b3-4679-bcff-9295f42803a9.png`, cutout: true },
   "גבריאל צאצאשוילי": { url: `${EUROCUP}c4ee0b1f-b9a4-4116-85bd-8576fcabb53e.png`, cutout: true },
-  "לורנזו בראון": { url: `${CLUB}%D7%9C%D7%95%D7%A8%D7%A0%D7%96%D7%95%20copy.png`, cutout: false },
+  // Club studio shot, cut out of its white background and scaled to match the EuroCup set.
+  "לורנזו בראון": { url: `${import.meta.env.BASE_URL}players/lorenzo-brown.webp`, cutout: true },
 };
 
 /** Best available photo for a player, or null (the UI then shows initials). */

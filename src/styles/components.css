@@ -597,8 +597,9 @@ body.has-tabbar .screen {
   background: var(--surface-3);
 }
 
+/* Face crop: head and the top of the shoulders, same for every player */
 .pmedia--sm.is-cutout img {
-  transform: scale(1.9) translateY(3%);
+  transform: scale(2.6) translateY(1%);
 }
 
 /* md: square, no background - the player "stands" on the row's bottom edge */
