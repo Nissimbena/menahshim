@@ -22,7 +22,7 @@ import { isRunningStandalone } from "../pwa/InstallPrompt";
 import { t, tDynamic, getLang, setLang } from "../i18n/i18n";
 import { CHALLENGE_FEATURE_ENABLED, WHATSAPP_GROUP_URL } from "../config/GameConfig";
 import { icon } from "../ui/icons";
-import { el, esc, shortDate, ltr } from "../ui/dom";
+import { el, esc, shortDate, ltr, opponentOf } from "../ui/dom";
 import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
@@ -51,6 +51,22 @@ function countdownParts(msRemaining: number): { d: string; h: string; m: string 
   };
 }
 
+function readScheduleView(): "list" | "calendar" {
+  try {
+    return localStorage.getItem("scheduleView") === "calendar" ? "calendar" : "list";
+  } catch {
+    return "list";
+  }
+}
+
+/** "DD/MM/YYYY" -> local Date at midnight. */
+function parseGameDate(ddmmyyyy: string): Date {
+  const [d, m, y] = ddmmyyyy.split("/").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
 /** How long a cached leaderboard snapshot stays fresh on the home screen. */
 const LEADERBOARD_TTL_MS = 60 * 1000;
 
@@ -72,6 +88,9 @@ export class HomeScreen {
   private myTotalScore = 0;
   private myLeagues: LeagueInfo[] = [];
   private activeTab: "upcoming" | "finished" = "upcoming";
+  private scheduleView: "list" | "calendar" = readScheduleView();
+  /** First day of the month the calendar shows; null = the next game's month. */
+  private calendarMonth: Date | null = null;
   private challengeEligibility: ChallengeEligibility | null = null;
   private challengeEligibilityGameId: string | null = null;
   private leaderboard: LeaderboardRow[] | null = null;
@@ -521,6 +540,37 @@ export class HomeScreen {
     });
     head.appendChild(seg);
 
+    // List | calendar
+    const views = el("div", "segmented segmented--sm home-schedule__views");
+    views.setAttribute("role", "group");
+    ([
+      ["list", "list", t("home.schedule.view.list")],
+      ["calendar", "calendar", t("home.schedule.view.calendar")],
+    ] as const).forEach(([id, ic, label]) => {
+      const b = el("button", "segmented__btn", `${icon(ic, { size: "sm" })}<span>${label}</span>`);
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(this.scheduleView === id));
+      b.addEventListener("click", () => {
+        if (this.scheduleView === id) return;
+        this.scheduleView = id;
+        try {
+          localStorage.setItem("scheduleView", id);
+        } catch {
+          /* private mode - the choice just isn't remembered */
+        }
+        this.render();
+      });
+      views.appendChild(b);
+    });
+    head.appendChild(views);
+
+    if (this.scheduleView === "calendar") {
+      seg.remove();
+      section.classList.add("is-calendar");
+      section.appendChild(this.renderCalendar());
+      return section;
+    }
+
     const list = el("div", "schedule-list");
     const rows =
       this.activeTab === "upcoming" ? upcoming : finished.slice().reverse();
@@ -593,6 +643,134 @@ export class HomeScreen {
       <span class="game-row__end">${end}</span>
     `;
     return row;
+  }
+
+  /**
+   * Month grid, Sunday first (Israeli week). Every game day carries the
+   * opponent's crest, home/away and the tip-off time - or the result once
+   * it's played. Arrows move between the season's months only.
+   */
+  private renderCalendar(): HTMLElement {
+    const wrap = el("div", "calendar");
+    if (this.games.length === 0) {
+      wrap.appendChild(el("p", "list-row c-2", t("home.schedule.empty")));
+      return wrap;
+    }
+    const dates = this.games.map((g) => parseGameDate(g.date));
+    const first = new Date(Math.min(...dates.map(Number)));
+    const last = new Date(Math.max(...dates.map(Number)));
+    const firstMonth = new Date(first.getFullYear(), first.getMonth(), 1);
+    const lastMonth = new Date(last.getFullYear(), last.getMonth(), 1);
+    if (!this.calendarMonth) {
+      const anchor = this.heroGame ? parseGameDate(this.heroGame.date) : new Date();
+      const m = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+      this.calendarMonth = m < firstMonth ? firstMonth : m > lastMonth ? lastMonth : m;
+    }
+    const month = this.calendarMonth;
+    const locale = getLang() === "he" ? "he-IL" : "en-GB";
+
+    const byDay = new Map<string, ScheduleGame[]>();
+    this.games.forEach((g, i) => {
+      const k = dayKey(dates[i]);
+      byDay.set(k, [...(byDay.get(k) ?? []), g]);
+    });
+
+    // Header: ‹ month year ›
+    const nav = el("div", "calendar__nav");
+    const step = (delta: number) => {
+      this.calendarMonth = new Date(month.getFullYear(), month.getMonth() + delta, 1);
+      this.render();
+    };
+    const prev = el("button", "btn btn--ghost btn--icon calendar__arrow", icon("chevronForward", { className: "calendar__prev" }));
+    prev.type = "button";
+    prev.setAttribute("aria-label", t("calendar.prev"));
+    prev.disabled = month <= firstMonth;
+    prev.addEventListener("click", () => step(-1));
+    const next = el("button", "btn btn--ghost btn--icon calendar__arrow", icon("chevronForward", { className: "calendar__next" }));
+    next.type = "button";
+    next.setAttribute("aria-label", t("calendar.next"));
+    next.disabled = month >= lastMonth;
+    next.addEventListener("click", () => step(1));
+    const title = el("h3", "calendar__title");
+    title.textContent = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(month);
+    const monthGames = this.games.filter((_, i) => dates[i].getMonth() === month.getMonth() && dates[i].getFullYear() === month.getFullYear()).length;
+    const count = el("span", "calendar__count", esc(t("calendar.gamesInMonth", { n: monthGames })));
+    const titles = el("div", "calendar__titles");
+    titles.append(title, count);
+    nav.append(prev, titles, next);
+    wrap.appendChild(nav);
+
+    // Weekday row
+    const grid = el("div", "calendar__grid");
+    grid.setAttribute("role", "grid");
+    const wd = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    for (let i = 0; i < 7; i++) {
+      // 2023-01-01 was a Sunday
+      grid.appendChild(el("span", "calendar__wd", esc(wd.format(new Date(2023, 0, 1 + i)))));
+    }
+
+    const lead = month.getDay();
+    const daysIn = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const todayKey = dayKey(new Date());
+    const heroId = this.heroGame?.id;
+    const activeId = getActiveGameId(this.games);
+    for (let i = 0; i < lead; i++) grid.appendChild(el("span", "calendar__day is-blank"));
+
+    for (let d = 1; d <= daysIn; d++) {
+      const date = new Date(month.getFullYear(), month.getMonth(), d);
+      const games = byDay.get(dayKey(date)) ?? [];
+      const game = games[0];
+      const isToday = dayKey(date) === todayKey;
+      if (!game) {
+        grid.appendChild(el("span", `calendar__day${isToday ? " is-today" : ""}`, `<span class="calendar__date">${d}</span>`));
+        continue;
+      }
+      const { team: opp, isHome } = opponentOf(game);
+      const predicted = this.myPredictions.has(game.id);
+      const isActive = game.id === activeId;
+      const enterable = !!game.result || predicted || isActive;
+      const r = game.result;
+      let status = `<span class="calendar__time">${game.time ?? t("home.row.tbd")}</span>`;
+      let won: boolean | null = null;
+      if (r) {
+        const us = isHome ? r.home : r.away;
+        const them = isHome ? r.away : r.home;
+        won = us > them;
+        status = `<span class="calendar__result ${won ? "is-win" : "is-loss"}"><b>${won ? t("home.row.win") : t("home.row.loss")}</b><span dir="ltr">${us}-${them}</span></span>`;
+      } else if (predicted) {
+        status = `<span class="calendar__time">${icon("check", { size: "sm" })}${game.time ?? ""}</span>`;
+      }
+      const cell = el(
+        enterable ? "button" : "div",
+        `calendar__day has-game${isHome ? " is-home" : " is-away"}${game.id === heroId ? " is-next" : ""}${isToday ? " is-today" : ""}${PRIZE_GAME_IDS.has(game.id) ? " has-prize" : ""}`,
+        `<span class="calendar__date">${d}</span>
+         <span class="calendar__crest">${opp ? `<img src="${opp.logo}" alt="" loading="lazy" />` : ""}</span>
+         <span class="calendar__opp" dir="auto">${esc(opp ? teamName(opp) : "")}</span>
+         <span class="calendar__ha">${isHome ? t("home.row.home") : t("home.row.away")}</span>
+         ${status}`,
+      );
+      cell.setAttribute(
+        "aria-label",
+        `${d} – ${opp ? teamName(opp) : ""}, ${isHome ? t("home.row.home") : t("home.row.away")}`,
+      );
+      if (cell instanceof HTMLButtonElement) {
+        cell.type = "button";
+        cell.addEventListener("click", () => this.actions.onEnterGame(game));
+      }
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+
+    wrap.appendChild(
+      el(
+        "p",
+        "calendar__legend",
+        `<span><i class="calendar__key is-home"></i>${t("home.row.home")}</span>
+         <span><i class="calendar__key is-away"></i>${t("home.row.away")}</span>
+         <span><i class="calendar__key is-next"></i>${t("home.hero.next")}</span>`,
+      ),
+    );
+    return wrap;
   }
 
   // ---- 5. Leaderboard preview ----

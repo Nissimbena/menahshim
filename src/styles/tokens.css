@@ -59,6 +59,20 @@
   --gold-bright: #f0b93b;
   --gold-tint: rgba(240, 185, 59, 0.18);
   --gold-line: rgba(148, 106, 8, 0.4);
+
+  /* ---- Medals: metallic gradients for the podium ---- */
+  --medal-gold-1: #f7d774;
+  --medal-gold-2: #c9961a;
+  --medal-gold-ink: #4a3500;
+  --medal-gold-tint: rgba(240, 185, 59, 0.14);
+  --medal-silver-1: #eef0f3;
+  --medal-silver-2: #a5abb4;
+  --medal-silver-ink: #2f343b;
+  --medal-silver-tint: rgba(165, 171, 180, 0.16);
+  --medal-bronze-1: #f0b88a;
+  --medal-bronze-2: #a8642e;
+  --medal-bronze-ink: #3d1f08;
+  --medal-bronze-tint: rgba(193, 120, 62, 0.14);
   --success: #11804a;
   --success-tint: rgba(17, 128, 74, 0.1);
   --warning: #b86a00;
