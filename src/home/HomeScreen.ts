@@ -200,70 +200,91 @@ export class HomeScreen {
     const wrapper = document.createElement("div");
     wrapper.className = "home-wrapper";
 
-    wrapper.appendChild(this.renderTopBar());
-    wrapper.appendChild(this.renderHero());
-    wrapper.appendChild(this.renderSchedule());
-    wrapper.appendChild(this.renderTournamentBanner());
-    wrapper.appendChild(this.renderFooter());
+    const top = document.createElement("div");
+    top.className = "home-top";
+    top.appendChild(this.renderNav());
+    top.appendChild(this.renderHero());
+    wrapper.appendChild(top);
 
-    const dock = this.renderDock();
-    if (dock) wrapper.appendChild(dock);
+    wrapper.appendChild(this.renderTournamentBanner());
+    wrapper.appendChild(this.renderSchedule());
+    wrapper.appendChild(this.renderFooter());
+    wrapper.appendChild(this.renderWhatsappGroupButton());
 
     this.container.appendChild(wrapper);
     fitText(this.container);
   }
 
-  // ---------------------------------------------------------------------
-  // Top bar: brand pill + menu button on one side, account pill on the other
-  // ---------------------------------------------------------------------
+  /** Black bar hanging from the top edge: user on one side, main links in the middle, sign-in/out on the other. */
+  private renderNav(): HTMLElement {
+    const header = document.createElement("header");
+    header.className = "site-nav" + (this.menuOpen ? " menu-open" : "");
 
-  private renderTopBar(): HTMLElement {
-    const bar = document.createElement("header");
-    bar.className = "topbar" + (this.menuOpen ? " menu-open" : "");
+    const bar = document.createElement("div");
+    bar.className = "site-nav-bar";
 
-    const start = document.createElement("div");
-    start.className = "topbar-group";
-
-    const brand = document.createElement("span");
-    brand.className = "pill pill-dark topbar-brand";
-    brand.textContent = GAME_TITLE;
-    start.appendChild(brand);
-
-    const toggleBtn = document.createElement("button");
-    toggleBtn.type = "button";
-    toggleBtn.className = "pill-round";
-    toggleBtn.setAttribute("aria-expanded", String(this.menuOpen));
-    toggleBtn.setAttribute(
-      "aria-label",
-      this.menuOpen ? t("home.menu.close") : t("home.menu.open"),
-    );
-    toggleBtn.innerHTML = `<span></span><span></span>`;
-    toggleBtn.addEventListener("click", () => {
-      this.menuOpen = !this.menuOpen;
-      this.render();
-    });
-    start.appendChild(toggleBtn);
-    bar.appendChild(start);
-
-    const end = document.createElement("div");
-    end.className = "topbar-group";
-
+    // ---- User / brand (start side) ----
+    const userEl = document.createElement("div");
+    userEl.className = "nav-user";
     if (this.currentUser) {
       const name =
         this.currentUser.displayName ?? this.currentUser.email ?? "משתמש";
-      const user = document.createElement("span");
-      user.className = "pill pill-dark topbar-user";
-      user.innerHTML = `
-        ${this.currentUser.photoURL ? `<img src="${this.currentUser.photoURL}" alt="" referrerpolicy="no-referrer" />` : ""}
-        <span class="topbar-user-name" dir="auto">${name}</span>
-        <span class="topbar-user-score">${this.myTotalScore}</span>
+      const avatar = this.currentUser.photoURL
+        ? `<img class="nav-avatar" src="${this.currentUser.photoURL}" alt="" referrerpolicy="no-referrer" />`
+        : `<span class="nav-avatar nav-avatar-empty" aria-hidden="true"></span>`;
+      userEl.innerHTML = `
+        ${avatar}
+        <span class="nav-user-text">
+          <span class="nav-user-name" dir="auto">${name}</span>
+          <span class="nav-user-score">${t("home.myScore")}: ${this.myTotalScore}</span>
+        </span>
       `;
-      user.title = `${t("home.myScore")}: ${this.myTotalScore}`;
-      end.appendChild(user);
+    } else {
+      const jerusalem = TEAMS[HAPOEL_JERUSALEM_TEAM_ID];
+      userEl.innerHTML = `
+        <img class="nav-avatar nav-brand-logo" src="${jerusalem.logo}" alt="" />
+        <span class="nav-user-text"><span class="nav-user-name">${GAME_TITLE}</span></span>
+      `;
+    }
+    bar.appendChild(userEl);
+
+    // ---- Main links (desktop) ----
+    const links = document.createElement("nav");
+    links.className = "nav-links";
+    this.primaryLinks().forEach(({ label, action }) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "nav-link";
+      btn.textContent = label;
+      btn.addEventListener("click", () => this.closeMenuAnd(action));
+      links.appendChild(btn);
+    });
+    bar.appendChild(links);
+
+    // ---- Actions (end side) ----
+    const actions = document.createElement("div");
+    actions.className = "nav-actions";
+
+    const langBtn = document.createElement("button");
+    langBtn.type = "button";
+    langBtn.className = "nav-lang";
+    langBtn.textContent = t("home.langToggle");
+    langBtn.addEventListener("click", () =>
+      setLang(getLang() === "he" ? "en" : "he"),
+    );
+    actions.appendChild(langBtn);
+
+    if (this.currentUser) {
+      const signOutBtn = document.createElement("button");
+      signOutBtn.type = "button";
+      signOutBtn.className = "nav-pill";
+      signOutBtn.textContent = t("home.signOut");
+      signOutBtn.addEventListener("click", () => signOutUser());
+      actions.appendChild(signOutBtn);
     } else {
       const signInBtn = document.createElement("button");
       signInBtn.type = "button";
-      signInBtn.className = "pill pill-dark";
+      signInBtn.className = "nav-pill nav-pill-solid";
       signInBtn.textContent = t("home.signIn");
       signInBtn.addEventListener("click", () => {
         signInWithGoogle().catch((e) => {
@@ -275,24 +296,41 @@ export class HomeScreen {
           this.setAuthError(message);
         });
       });
-      end.appendChild(signInBtn);
+      actions.appendChild(signInBtn);
     }
-    bar.appendChild(end);
 
-    if (this.menuOpen) bar.appendChild(this.renderMenuPanel());
+    const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "nav-burger";
+    toggleBtn.setAttribute("aria-expanded", String(this.menuOpen));
+    toggleBtn.setAttribute(
+      "aria-label",
+      this.menuOpen ? t("home.menu.close") : t("home.menu.open"),
+    );
+    toggleBtn.innerHTML = `<span></span><span></span><span></span>`;
+    toggleBtn.addEventListener("click", () => {
+      this.menuOpen = !this.menuOpen;
+      this.render();
+    });
+    actions.appendChild(toggleBtn);
+
+    bar.appendChild(actions);
+    header.appendChild(bar);
+
+    if (this.menuOpen) header.appendChild(this.renderMenuPanel());
 
     if (this.authError) {
       const errorEl = document.createElement("p");
       errorEl.className = "auth-error";
       errorEl.dir = "auto";
       errorEl.textContent = this.authError;
-      bar.appendChild(errorEl);
+      header.appendChild(errorEl);
     }
 
-    return bar;
+    return header;
   }
 
-  /** The always-visible destinations, in menu order. */
+  /** The always-visible links shown inline in the bar on wide screens. */
   private primaryLinks(): { label: string; action: () => void }[] {
     const items = [
       {
@@ -306,10 +344,6 @@ export class HomeScreen {
       {
         label: t("home.menu.timeKiller"),
         action: () => this.onOpenTimeKiller(),
-      },
-      {
-        label: t("home.tournamentTitle"),
-        action: () => this.onOpenTournament(),
       },
     ];
     if (SPORTS_HUB_ENABLED) {
@@ -327,148 +361,216 @@ export class HomeScreen {
     return items;
   }
 
+  private renderHero(): HTMLElement {
+    const hero = document.createElement("section");
+    hero.className = "home-hero";
+
+    const jerusalem = TEAMS[HAPOEL_JERUSALEM_TEAM_ID];
+    hero.innerHTML = `
+      <h1 class="home-wordmark fit-text" data-fit-max="420"><span>${GAME_TITLE}</span></h1>
+      <div class="home-tagline">
+        <img class="home-tagline-logo" src="${jerusalem.logo}" alt="${teamName(jerusalem)}" />
+        <span class="home-tagline-sep" aria-hidden="true">|</span>
+        <span class="home-tagline-text">${t("home.tagline")}</span>
+      </div>
+    `;
+    return hero;
+  }
+
+  private renderTournamentBanner(): HTMLElement {
+    const band = document.createElement("section");
+    band.className = "home-vip-band";
+
+    const desc = this.currentUser
+      ? t("home.tournamentDescRules")
+      : t("home.tournamentDesc");
+
+    band.innerHTML = `
+      <div class="vip-card">
+        <h2 class="vip-title fit-text" data-fit-max="170"><span>${t("home.tournamentTitle")}</span></h2>
+        <p class="vip-desc fit-text" data-fit-max="76"><span>${desc}</span></p>
+        <p class="vip-prize">${t("home.tournamentPrize")}</p>
+        <button class="vip-btn" type="button">${t("home.tournamentBtn")}</button>
+      </div>
+    `;
+    band
+      .querySelector(".vip-btn")
+      ?.addEventListener("click", () => this.onOpenTournament());
+    return band;
+  }
+
+  private renderFooter(): HTMLElement {
+    const footer = document.createElement("footer");
+    footer.className = "home-footer";
+
+    const links = document.createElement("div");
+    links.className = "home-footer-links";
+
+    const addLink = (label: string, action: () => void) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "home-footer-link";
+      btn.textContent = label;
+      btn.addEventListener("click", action);
+      links.appendChild(btn);
+    };
+
+    addLink(t("home.about"), () => this.onOpenAbout());
+    addLink(t("home.privacy"), () => this.onOpenPrivacy());
+    if (!isRunningStandalone()) {
+      addLink(t("home.install"), () => this.onInstallClick());
+    }
+
+    footer.appendChild(links);
+
+    const mark = document.createElement("p");
+    mark.className = "home-footer-mark";
+    mark.textContent = GAME_TITLE;
+    footer.appendChild(mark);
+
+    return footer;
+  }
+
+  /** Fixed bottom-corner floating invite to the game-discussion WhatsApp group. */
+  private renderWhatsappGroupButton(): HTMLElement {
+    const link = document.createElement("a");
+    link.className = "whatsapp-float-btn";
+    link.href = "https://chat.whatsapp.com/FEvheh8S3HZ89MYEFLj1qm";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.setAttribute("aria-label", t("home.whatsappGroup.label"));
+    link.title = t("home.whatsappGroup.label");
+    link.innerHTML = `
+      <svg viewBox="0 0 448 512" width="26" height="26" fill="currentColor" aria-hidden="true">
+        <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.9c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.8-186.6 184.8zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+      </svg>
+    `;
+    return link;
+  }
+
   /** Runs before navigating away from any menu item, so the panel isn't left open when the user comes back to the home screen. */
   private closeMenuAnd(action: () => void) {
     this.menuOpen = false;
     action();
   }
 
+  /** Drop-down under the bar: every destination (the inline links collapse into it on small screens). */
   private renderMenuPanel(): HTMLElement {
-    const nav = document.createElement("nav");
-    nav.className = "menu-panel";
+    const nav = document.createElement("div");
+    nav.className = "nav-panel";
 
-    const big = document.createElement("div");
-    big.className = "menu-panel-big";
-    this.primaryLinks().forEach(({ label, action }) => {
+    const addItem = (
+      label: string,
+      action: () => void,
+      extraClass = "",
+    ): HTMLButtonElement => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "menu-panel-link";
-      btn.textContent = label;
-      btn.addEventListener("click", () => this.closeMenuAnd(action));
-      big.appendChild(btn);
-    });
-    nav.appendChild(big);
-
-    const small = document.createElement("div");
-    small.className = "menu-panel-small";
-    const addSmall = (label: string, action: () => void) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "menu-panel-sub";
+      btn.className = "nav-panel-item" + (extraClass ? ` ${extraClass}` : "");
       btn.dir = "auto";
       btn.textContent = label;
       btn.addEventListener("click", () => this.closeMenuAnd(action));
-      small.appendChild(btn);
+      nav.appendChild(btn);
+      return btn;
     };
+
+    this.primaryLinks().forEach(({ label, action }) =>
+      addItem(label, action, "nav-panel-primary"),
+    );
 
     if (this.currentUser) {
       if (CHALLENGE_FEATURE_ENABLED) {
-        addSmall(t("home.menu.myChallenges"), () => this.onOpenMyChallenges());
+        addItem(t("home.menu.myChallenges"), () => this.onOpenMyChallenges());
       }
-      this.myLeagues.forEach((league) =>
-        addSmall(t("home.menu.leagueTable", { name: league.name }), () =>
+      this.myLeagues.forEach((league) => {
+        addItem(t("home.menu.leagueTable", { name: league.name }), () =>
           this.onOpenLeagueLeaderboard(league),
-        ),
-      );
+        );
+      });
     }
+
     if (isAdmin(this.currentUser)) {
-      addSmall(t("home.menu.admin"), () => this.onOpenAdmin());
+      addItem(t("home.menu.admin"), () => this.onOpenAdmin());
     }
-    addSmall(t("home.about"), () => this.onOpenAbout());
-    addSmall(t("home.privacy"), () => this.onOpenPrivacy());
+
+    const sep = document.createElement("hr");
+    sep.className = "nav-panel-sep";
+    nav.appendChild(sep);
+
+    addItem(t("home.about"), () => this.onOpenAbout(), "nav-panel-minor");
+    addItem(t("home.privacy"), () => this.onOpenPrivacy(), "nav-panel-minor");
     if (!isRunningStandalone()) {
-      addSmall(t("home.install"), () => this.onInstallClick());
+      addItem(t("home.install"), () => this.onInstallClick(), "nav-panel-minor");
     }
-    addSmall(t("home.langToggle"), () =>
-      setLang(getLang() === "he" ? "en" : "he"),
-    );
-    if (this.currentUser) {
-      addSmall(t("home.signOut"), () => signOutUser());
-    }
-    nav.appendChild(small);
 
     return nav;
   }
 
-  // ---------------------------------------------------------------------
-  // Hero: two short meta columns + a staggered, edge-to-edge headline
-  // ---------------------------------------------------------------------
-
-  private renderHero(): HTMLElement {
-    const hero = document.createElement("section");
-    hero.className = "hero";
-
-    const jerusalem = TEAMS[HAPOEL_JERUSALEM_TEAM_ID];
-    hero.innerHTML = `
-      <div class="hero-meta">
-        <p>${t("home.hero.meta1")}</p>
-        <p>${t("home.hero.meta2")}</p>
-      </div>
-      <h1 class="hero-title fit-text" data-fit-max="420">
-        <span class="fit-line hero-line hero-line-1"><span>${t("home.hero.l1a")}<sup class="hero-mark">©</sup></span><span>${t("home.hero.l1b")}</span></span>
-        <span class="fit-line hero-line hero-line-2"><span>${t("home.hero.l2")}</span></span>
-        <span class="fit-line hero-line hero-line-3"><img class="hero-logo" src="${jerusalem.logo}" alt="${teamName(jerusalem)}" /><span>${t("home.hero.l3")}</span></span>
-      </h1>
-    `;
-    return hero;
-  }
-
-  // ---------------------------------------------------------------------
-  // Schedule: heading row + a two-column grid of colour-panel game cards
-  // ---------------------------------------------------------------------
-
   private renderSchedule(): HTMLElement {
     const section = document.createElement("section");
-    section.className = "schedule";
-    section.id = "schedule";
+    section.className = "home-schedule";
+
+    const heading = document.createElement("h2");
+    heading.className = "home-schedule-title fit-text";
+    heading.dataset.fitMax = "380";
+    const headingText = document.createElement("span");
+    headingText.textContent = t("home.schedule.title");
+    heading.appendChild(headingText);
+    section.appendChild(heading);
 
     const upcomingGames = this.games.filter((g) => !g.result);
     const finishedGames = this.games.filter((g) => g.result);
     const nextGame = upcomingGames[0];
     const activeGameId = getActiveGameId(this.games);
 
-    const head = document.createElement("div");
-    head.className = "section-head";
-    head.innerHTML = `<h2 class="section-title">${t("home.schedule.title")}</h2>`;
-
     const tabs = document.createElement("div");
-    tabs.className = "segmented";
+    tabs.className = "schedule-tabs";
     tabs.setAttribute("role", "tablist");
-    const makeTab = (tab: "upcoming" | "finished", label: string) => {
+
+    const makeTab = (
+      tab: "upcoming" | "finished",
+      label: string,
+    ): HTMLButtonElement => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.setAttribute("role", "tab");
       btn.setAttribute("aria-selected", String(this.activeTab === tab));
-      btn.className = "segmented-btn" + (this.activeTab === tab ? " active" : "");
+      btn.className = "schedule-tab" + (this.activeTab === tab ? " active" : "");
       btn.textContent = label;
       btn.addEventListener("click", () => {
         this.activeTab = tab;
         this.render();
       });
-      tabs.appendChild(btn);
+      return btn;
     };
-    makeTab("upcoming", t("home.tab.upcoming", { n: upcomingGames.length }));
-    makeTab("finished", t("home.tab.finished", { n: finishedGames.length }));
-    head.appendChild(tabs);
-    section.appendChild(head);
 
-    const grid = document.createElement("div");
-    grid.className = "card-grid";
+    tabs.appendChild(
+      makeTab("upcoming", t("home.tab.upcoming", { n: upcomingGames.length })),
+    );
+    tabs.appendChild(
+      makeTab("finished", t("home.tab.finished", { n: finishedGames.length })),
+    );
+    section.appendChild(tabs);
 
-    const list =
-      this.activeTab === "upcoming"
-        ? upcomingGames
-        : finishedGames.slice().reverse();
-    list.forEach((game) => {
-      grid.appendChild(
-        this.buildGameCard(
-          game,
-          this.activeTab === "upcoming" && game === nextGame,
-          game.id === activeGameId,
-        ),
-      );
-    });
-    section.appendChild(grid);
+    const list = document.createElement("div");
+    list.className = "schedule-list";
+
+    if (this.activeTab === "upcoming") {
+      upcomingGames.forEach((game) => {
+        list.appendChild(
+          this.buildGameCard(game, game === nextGame, game.id === activeGameId),
+        );
+      });
+    } else {
+      finishedGames
+        .slice()
+        .reverse()
+        .forEach((game) => {
+          list.appendChild(this.buildGameCard(game, false, false));
+        });
+    }
+
+    section.appendChild(list);
     return section;
   }
 
@@ -479,252 +581,171 @@ export class HomeScreen {
   ): HTMLElement {
     const home = TEAMS[game.homeTeamId];
     const away = TEAMS[game.awayTeamId];
-    const homeName = teamName(home);
-    const awayName = teamName(away);
-    const prizeDescription = PRIZE_GAME_IDS.get(game.id);
-    const predicted = this.myPredictions.has(game.id);
-
-    // What happens when the panel is clicked, and how it's labelled.
-    let action: (() => void) | null = null;
-    let ctaLabel = "";
-    let lockedNote = "";
-    if (game.result) {
-      action = () => this.onEnterGame(game);
-      ctaLabel = predicted
-        ? t("home.game.viewMyPrediction")
-        : t("home.game.viewAveragePrediction");
-    } else if (predicted) {
-      action = () => this.onEnterGame(game);
-      ctaLabel = t("home.game.viewPrediction");
-    } else if (isActive) {
-      action = () => this.onEnterGame(game);
-      ctaLabel = t("home.game.predict");
-    } else {
-      lockedNote = isScoreLocked(game)
-        ? t("home.game.locked")
-        : t("home.game.opensAfterPrevious");
-    }
-
-    const tone = game.result
-      ? "tone-grey"
-      : isActive || predicted
-        ? "tone-red"
-        : prizeDescription
-          ? "tone-yellow"
-          : "tone-sand";
 
     const card = document.createElement("article");
-    card.className = `game-card ${tone}` + (action ? "" : " is-locked");
+    card.className =
+      "game-card" +
+      (isNext ? " next-game" : "") +
+      (game.result ? " finished" : "");
 
-    // ---- Colour panel ----
-    const panel = document.createElement(action ? "button" : "div");
-    panel.className = "game-panel";
-    if (panel instanceof HTMLButtonElement) {
-      panel.type = "button";
-      panel.addEventListener("click", () => action?.());
-    }
-    panel.setAttribute(
-      "aria-label",
-      `${homeName} – ${awayName}${ctaLabel ? ` · ${ctaLabel}` : ""}`,
-    );
-
-    const centre = game.result
-      ? `<span class="game-score"><span>${game.result.home}</span><span class="game-score-sep">:</span><span>${game.result.away}</span></span>`
-      : `<span class="game-when"><span class="game-when-date">${game.date.slice(0, 5).replace("/", ".")}</span><span class="game-when-time">${game.time ?? t("home.game.timeTBD")}</span></span>`;
-
-    let topLine = "";
-    if (isNext && !game.result) {
-      const lockAt = gameDateTime(game).getTime() - SCORE_LOCK_MS;
-      topLine = `<span class="game-panel-chip game-countdown" data-lock-at="${lockAt}">${formatCountdown(lockAt - Date.now())}</span>`;
-    }
-
-    panel.innerHTML = `
-      <span class="game-panel-top">${topLine}</span>
-      <span class="game-panel-main">
-        <img class="game-logo" src="${home.logo}" alt="" />
-        ${centre}
-        <img class="game-logo" src="${away.logo}" alt="" />
-      </span>
-      <span class="game-panel-bottom">${
-        ctaLabel
-          ? `<span class="game-cta">${ctaLabel} <span aria-hidden="true" class="game-cta-arrow">←</span></span>`
-          : `<span class="game-locked">${lockedNote}</span>`
-      }</span>
-    `;
-    card.appendChild(panel);
-
-    // ---- Caption row under the panel ----
-    const caption = document.createElement("div");
-    caption.className = "game-caption";
-
-    const badges: string[] = [];
-    if (isNext) badges.push(`<span class="tag tag-dark">${t("home.game.nextBadge")}</span>`);
-    if (game.result) badges.push(`<span class="tag">${t("home.game.final")}</span>`);
-    if (prizeDescription)
-      badges.push(
-        `<span class="tag tag-yellow" title="${tDynamic(prizeDescription).replace(/"/g, "&quot;")}">${t("home.game.prizeShort")}</span>`,
-      );
-
-    caption.innerHTML = `
-      <span class="game-caption-title">${badges.join("")}<span dir="auto">${homeName} – ${awayName}</span></span>
-      <span class="game-caption-meta" dir="auto">${tDynamic(game.competition)} · <bdi>${game.date}</bdi></span>
-    `;
-    card.appendChild(caption);
-
-    if (prizeDescription || (CHALLENGE_FEATURE_ENABLED && this.currentUser && isActive && !game.result)) {
-      const extra = document.createElement("div");
-      extra.className = "game-extra";
+    // ---- Badges along the top edge ----
+    const prizeDescription = PRIZE_GAME_IDS.get(game.id);
+    if (isNext || prizeDescription) {
+      const badges = document.createElement("div");
+      badges.className = "game-badges";
+      if (isNext) {
+        const badge = document.createElement("span");
+        badge.className = "next-game-badge";
+        badge.textContent = t("home.game.nextBadge");
+        badges.appendChild(badge);
+      }
       if (prizeDescription) {
-        const prize = document.createElement("span");
-        prize.dir = "auto";
-        prize.textContent = t("home.game.prizeLabel", {
-          prize: tDynamic(prizeDescription),
-        });
-        extra.appendChild(prize);
-        const linkUrl = PRIZE_LINK_URLS.get(game.id);
-        if (linkUrl) {
-          const link = document.createElement("a");
-          link.className = "text-link prize-link-btn";
-          link.href = linkUrl;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = t("home.game.festivalDetails");
-          link.addEventListener("click", () =>
-            trackLinkEvent(`prize_link_${game.id}`),
-          );
-          extra.appendChild(link);
-        }
+        const prizeBadge = document.createElement("span");
+        prizeBadge.className = "prize-game-badge";
+        prizeBadge.title = tDynamic(prizeDescription);
+        prizeBadge.textContent = t("home.game.prizeBadge");
+        badges.appendChild(prizeBadge);
       }
-      if (CHALLENGE_FEATURE_ENABLED && this.currentUser && isActive && !game.result) {
-        const alreadyInChallenge =
-          this.challengeEligibilityGameId === game.id &&
-          this.challengeEligibility?.alreadyInChallenge;
-        if (!alreadyInChallenge) {
-          const challengeBtn = document.createElement("button");
-          challengeBtn.type = "button";
-          challengeBtn.className = "text-link challenge-game-btn";
-          challengeBtn.textContent = t("challenge.gameBtn");
-          challengeBtn.addEventListener("click", () => this.onChallengeGame(game));
-          extra.appendChild(challengeBtn);
-        }
-      }
-      card.appendChild(extra);
+      card.appendChild(badges);
     }
 
-    return card;
-  }
-
-  // ---------------------------------------------------------------------
-  // VIP tournament: one full-width black panel with a caption row
-  // ---------------------------------------------------------------------
-
-  private renderTournamentBanner(): HTMLElement {
-    const section = document.createElement("section");
-    section.className = "vip";
-
-    const desc = this.currentUser
-      ? t("home.tournamentDescRules")
-      : t("home.tournamentDesc");
-
-    section.innerHTML = `
-      <button class="vip-panel" type="button">
-        <span class="vip-title fit-text" data-fit-max="260"><span>${t("home.tournamentTitle")}</span></span>
-        <span class="vip-prize">${t("home.tournamentPrize")}</span>
-      </button>
-      <div class="game-caption">
-        <span class="game-caption-title"><span class="tag tag-yellow">VIP</span><span>${desc}</span></span>
-        <span class="game-caption-meta">${t("home.tournamentBtn")} ←</span>
+    // ---- Matchup: name · logo · (score) · logo · name ----
+    const homeName = teamName(home);
+    const awayName = teamName(away);
+    const matchup = document.createElement("div");
+    matchup.className = "game-matchup";
+    matchup.innerHTML = `
+      <div class="game-team game-team-home">
+        <span class="game-team-name" dir="auto">${homeName}</span>
+        <img class="game-team-logo" src="${home.logo}" alt="${homeName}" />
+      </div>
+      ${
+        game.result
+          ? `<div class="game-result" dir="ltr"><span>${game.result.home}</span><span class="game-result-sep">:</span><span>${game.result.away}</span></div>`
+          : `<span class="game-vs">${t("home.game.vs")}</span>`
+      }
+      <div class="game-team game-team-away">
+        <img class="game-team-logo" src="${away.logo}" alt="${awayName}" />
+        <span class="game-team-name" dir="auto">${awayName}</span>
       </div>
     `;
-    section
-      .querySelector(".vip-panel")
-      ?.addEventListener("click", () => this.onOpenTournament());
-    return section;
-  }
+    card.appendChild(matchup);
 
-  // ---------------------------------------------------------------------
-  // Footer: black, link columns, giant cropped wordmark
-  // ---------------------------------------------------------------------
-
-  private renderFooter(): HTMLElement {
-    const footer = document.createElement("footer");
-    footer.className = "site-footer";
-
-    const cols = document.createElement("div");
-    cols.className = "footer-cols";
-
-    // Column 1: WhatsApp group invite (the "newsletter" slot)
-    const join = document.createElement("div");
-    join.className = "footer-col footer-join";
-    join.innerHTML = `
-      <h3 class="footer-head">${t("home.footer.joinTitle")}</h3>
-      <p class="footer-text">${t("home.footer.joinText")}</p>
-      <a class="pill pill-light" href="https://chat.whatsapp.com/FEvheh8S3HZ89MYEFLj1qm" target="_blank" rel="noopener noreferrer">${t("home.footer.joinBtn")} <span aria-hidden="true">←</span></a>
-    `;
-    cols.appendChild(join);
-
-    const makeCol = (title: string, items: { label: string; action: () => void }[]) => {
-      const col = document.createElement("div");
-      col.className = "footer-col";
-      const h = document.createElement("h3");
-      h.className = "footer-head";
-      h.textContent = title;
-      col.appendChild(h);
-      items.forEach(({ label, action }) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "footer-link";
-        btn.textContent = label;
-        btn.addEventListener("click", action);
-        col.appendChild(btn);
+    if (prizeDescription) {
+      const prizeCaption = document.createElement("p");
+      prizeCaption.className = "prize-game-caption";
+      prizeCaption.dir = "auto";
+      prizeCaption.textContent = t("home.game.prizeLabel", {
+        prize: tDynamic(prizeDescription),
       });
-      return col;
+      card.appendChild(prizeCaption);
+    }
+
+    // ---- Bottom row: competition + countdown · CTA · date/time ----
+    const footer = document.createElement("div");
+    footer.className = "game-footer";
+
+    const meta = document.createElement("div");
+    meta.className = "game-meta";
+    const competition = document.createElement("span");
+    competition.className = "game-competition";
+    competition.dir = "auto";
+    competition.textContent = tDynamic(game.competition);
+    meta.appendChild(competition);
+
+    if (isNext && !game.result) {
+      const lockAt = gameDateTime(game).getTime() - SCORE_LOCK_MS;
+      const countdown = document.createElement("span");
+      countdown.className = "game-countdown";
+      countdown.dataset.lockAt = String(lockAt);
+      countdown.textContent = formatCountdown(lockAt - Date.now());
+      meta.appendChild(countdown);
+    } else if (game.result) {
+      const final = document.createElement("span");
+      final.className = "game-countdown";
+      final.textContent = t("home.game.final");
+      meta.appendChild(final);
+    }
+    footer.appendChild(meta);
+
+    const actions = document.createElement("div");
+    actions.className = "game-actions";
+
+    const addAction = (
+      label: string,
+      variant: "primary" | "secondary",
+      onClick?: () => void,
+    ): HTMLButtonElement => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `game-guess-btn game-guess-btn-${variant}`;
+      btn.textContent = label;
+      if (onClick) btn.addEventListener("click", onClick);
+      else btn.disabled = true;
+      actions.appendChild(btn);
+      return btn;
     };
 
-    cols.appendChild(makeCol(t("home.footer.index"), this.primaryLinks()));
-
-    const general = [
-      { label: t("home.about"), action: () => this.onOpenAbout() },
-      { label: t("home.privacy"), action: () => this.onOpenPrivacy() },
-      {
-        label: t("home.langToggle"),
-        action: () => setLang(getLang() === "he" ? "en" : "he"),
-      },
-    ];
-    if (!isRunningStandalone()) {
-      general.push({ label: t("home.install"), action: () => this.onInstallClick() });
+    if (game.result) {
+      addAction(
+        this.myPredictions.has(game.id)
+          ? t("home.game.viewMyPrediction")
+          : t("home.game.viewAveragePrediction"),
+        "secondary",
+        () => this.onEnterGame(game),
+      );
+    } else if (this.myPredictions.has(game.id)) {
+      addAction(t("home.game.viewPrediction"), "primary", () =>
+        this.onEnterGame(game),
+      );
+    } else if (isActive) {
+      addAction(t("home.game.predict"), "primary", () =>
+        this.onEnterGame(game),
+      );
+    } else {
+      addAction(
+        isScoreLocked(game)
+          ? t("home.game.locked")
+          : t("home.game.opensAfterPrevious"),
+        "secondary",
+      );
     }
-    cols.appendChild(makeCol(t("home.footer.general"), general));
 
-    footer.appendChild(cols);
+    if (!game.result && CHALLENGE_FEATURE_ENABLED && this.currentUser && isActive) {
+      const alreadyInChallenge =
+        this.challengeEligibilityGameId === game.id &&
+        this.challengeEligibility?.alreadyInChallenge;
+      if (!alreadyInChallenge) {
+        const challengeBtn = addAction(t("challenge.gameBtn"), "secondary", () =>
+          this.onChallengeGame(game),
+        );
+        challengeBtn.classList.add("challenge-game-btn");
+      }
+    }
 
-    const mark = document.createElement("p");
-    mark.className = "footer-mark fit-text";
-    mark.setAttribute("aria-hidden", "true");
-    mark.innerHTML = `<span>${GAME_TITLE}</span>`;
-    footer.appendChild(mark);
+    const linkUrl = prizeDescription ? PRIZE_LINK_URLS.get(game.id) : undefined;
+    if (linkUrl) {
+      const linkBtn = document.createElement("a");
+      linkBtn.className = "game-guess-btn game-guess-btn-secondary prize-link-btn";
+      linkBtn.href = linkUrl;
+      linkBtn.target = "_blank";
+      linkBtn.rel = "noopener noreferrer";
+      linkBtn.textContent = t("home.game.festivalDetails");
+      linkBtn.addEventListener("click", () =>
+        trackLinkEvent(`prize_link_${game.id}`),
+      );
+      actions.appendChild(linkBtn);
+    }
+    footer.appendChild(actions);
 
-    return footer;
-  }
+    const when = document.createElement("div");
+    when.className = "game-date";
+    const time = game.time ?? t("home.game.timeTBD");
+    // Isolate each LTR chunk so "20:55 | 25/10/2026" keeps its order in RTL.
+    when.innerHTML = `<bdi>${time}</bdi><span class="game-date-sep">|</span><bdi>${game.date}</bdi>`;
+    footer.appendChild(when);
 
-  /** Floating pill at the bottom: jump straight into the game that's open for predictions. */
-  private renderDock(): HTMLElement | null {
-    const activeGameId = getActiveGameId(this.games);
-    const game = this.games.find((g) => g.id === activeGameId);
-    if (!game || game.result || this.myPredictions.has(game.id)) return null;
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "dock pill pill-dark";
-    btn.innerHTML = `${t("home.dock.predict", {
-      team: teamName(
-        TEAMS[
-          game.homeTeamId === HAPOEL_JERUSALEM_TEAM_ID
-            ? game.awayTeamId
-            : game.homeTeamId
-        ],
-      ),
-    })} <span aria-hidden="true">←</span>`;
-    btn.addEventListener("click", () => this.onEnterGame(game));
-    return btn;
+    card.appendChild(footer);
+    return card;
   }
 }
