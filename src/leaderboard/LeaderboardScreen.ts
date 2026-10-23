@@ -156,14 +156,14 @@ export class LeaderboardScreen {
   private renderTabs(): HTMLElement {
     const tabsWrapper = el("div", "leaderboard-tabs");
 
-    const seg = el("div", "segmented");
+    const seg = el("div", "tabs");
     seg.setAttribute("role", "group");
     const tabs: ["lastGame" | "overall", string][] = [
       ["lastGame", t("leaderboard.tab.byGame")],
       ["overall", t("leaderboard.overall")],
     ];
     tabs.forEach(([id, label]) => {
-      const b = el("button", "segmented__btn");
+      const b = el("button", "tabs__btn");
       b.type = "button";
       b.textContent = label;
       b.setAttribute("aria-pressed", String(this.activeTab === id));
@@ -260,7 +260,6 @@ export class LeaderboardScreen {
     const section = el("div", "leaderboard-table-section");
     section.appendChild(
       rankList(rows, {
-        podium: true,
         meUid: auth.currentUser?.uid,
         onRowClick: gameIdForClick
           ? (row) => this.userPredictionModal.show(gameIdForClick, row.uid, row.name)

@@ -89,7 +89,7 @@ export class TournamentScreen {
     if (rows.length === 0) {
       section.appendChild(emptyState(t("tournament.empty")));
     } else {
-      section.appendChild(rankList(rows, { podium: true, meUid: auth.currentUser?.uid }));
+      section.appendChild(rankList(rows, { meUid: auth.currentUser?.uid }));
     }
     page.appendChild(section);
   }

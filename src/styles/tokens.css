@@ -1,68 +1,68 @@
 /*
  * Design tokens - the only place in the codebase where raw color values live.
- * Everything else (components.css, style.css, inline SVG in TS) references
- * these variables.
+ *
+ * Direction: a basketball matchday program. Black broadcast chrome (top bar,
+ * scoreboard ticker, the next-game panel) over a light paper canvas with
+ * white panels, hard edges and hairline rules. Condensed poster type for
+ * headlines, a scoreboard face for every number, a quiet workhorse for text.
+ * Hapoel red is the one action color.
+ *
+ * Fonts are self-hosted (@fontsource, imported in main.ts):
+ *   Karantina 700            - headlines (Hebrew + Latin)
+ *   Barlow Condensed 600/700 - every number, scores, clocks, Latin labels
+ *   IBM Plex Sans Hebrew     - body and UI text (400/500/700)
  */
 
-@font-face {
-  font-family: "Tel Aviv Modernist";
-  src:
-    url("/fonts/TelAvivModernist-Regular.woff2") format("woff2"),
-    url("/fonts/TelAvivModernist-Regular.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Tel Aviv Modernist";
-  src:
-    url("/fonts/TelAvivModernist-Bold.woff2") format("woff2"),
-    url("/fonts/TelAvivModernist-Bold.otf") format("opentype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* ---- Surfaces ---- */
-  --bg: #0c0b0b; /* warm black, never #000 */
-  --bg-blur: rgba(12, 11, 11, 0.82); /* --bg at 82% for blurred sticky bars */
-  --surface-1: #161414; /* cards */
-  --surface-2: #201d1d; /* raised card / hover / fields */
-  --surface-3: #2b2727; /* pressed / active segment */
-  --line: #322d2d; /* borders and dividers */
-  --scrim: rgba(6, 5, 5, 0.72); /* behind sheets and modals */
+  /* ---- Canvas (light) ---- */
+  --bg: #f2f1ee; /* paper */
+  --surface-1: #ffffff; /* panels */
+  --surface-2: #f7f6f3; /* hover, fields, table heads */
+  --surface-3: #ebe9e4; /* pressed, active tab fill */
+  --line: #e2dfd9; /* hairlines */
+  --line-strong: #121212; /* section rules, focused borders */
+  --scrim: rgba(10, 10, 10, 0.6);
+
+  /* ---- Broadcast chrome (dark) ---- */
+  --ink: #0e0e0f; /* top bar, ticker, hero */
+  --ink-2: #1b1b1d; /* raised on ink */
+  --ink-3: #2a2a2d; /* pressed on ink */
+  --ink-line: rgba(255, 255, 255, 0.12);
+  --ink-blur: rgba(14, 14, 15, 0.92);
+  --on-ink: #ffffff;
+  --on-ink-2: rgba(255, 255, 255, 0.68);
+  --on-ink-3: rgba(255, 255, 255, 0.45);
 
   /* ---- Brand ---- */
-  --red: #dd1b22; /* Hapoel Jerusalem: primary CTA, next game, highlights */
-  --red-press: #b5141a;
-  --red-deep: #5a0a0d;
-  --red-tint: rgba(221, 27, 34, 0.12);
-  --red-line: rgba(221, 27, 34, 0.45);
+  --red: #d7141c; /* Hapoel Jerusalem: CTA, live/next marker, active tab */
+  --red-press: #b00f16;
+  --red-tint: rgba(215, 20, 28, 0.07);
+  --red-line: rgba(215, 20, 28, 0.5);
 
-  /* ---- Text ---- */
-  --text: #f5f1ea; /* bone white */
-  --text-2: #b4ada6;
-  --text-3: #7a736d; /* 14px+ or non-critical labels only */
+  /* ---- Text on canvas ---- */
+  --text: #121212;
+  --text-2: #57524c;
+  --text-3: #6f6a64; /* still AA on white at 14px+ */
   --on-red: #ffffff;
 
   /* ---- Functional ---- */
-  --gold: #e9b949; /* prizes, VIP tournament, 1st place - nothing else */
-  --gold-tint: rgba(233, 185, 73, 0.12);
-  --gold-line: rgba(233, 185, 73, 0.4);
+  --gold: #9a6f0a; /* prizes, VIP, 1st place - text on light */
+  --gold-bright: #e8b53e; /* the same gold on ink */
+  --gold-tint: rgba(232, 181, 62, 0.16);
+  --gold-line: rgba(154, 111, 10, 0.45);
   --on-gold: #1c1508;
-  --success: #34c67a;
-  --success-tint: rgba(52, 198, 122, 0.12);
-  --warning: #f2a33a;
-  --warning-tint: rgba(242, 163, 58, 0.14);
+  --success: #12804a;
+  --success-tint: rgba(18, 128, 74, 0.1);
+  --warning: #b86a00;
+  --warning-tint: rgba(232, 150, 30, 0.14);
   --on-warning: #1f1405;
-  --danger: #ff6a5c; /* always paired with an icon + text: it sits close to brand red */
-  --danger-tint: rgba(255, 106, 92, 0.12);
-  --focus: #ffffff;
-  --whatsapp: #25d366; /* third-party brand mark, used on the WhatsApp icon only */
+  --danger: #c4251b; /* always with an icon + text: it sits close to brand red */
+  --danger-tint: rgba(196, 37, 27, 0.08);
+  --focus: #121212;
+  --focus-on-ink: #ffffff;
+  --whatsapp: #1fa855;
 
   /* ---- Spacing: 4px grid ---- */
   --s-1: 4px;
@@ -75,15 +75,15 @@
   --s-8: 64px;
   --s-9: 96px;
 
-  /* ---- Radii: three values ---- */
-  --r-sm: 8px; /* tags, fields, small buttons */
-  --r-md: 14px; /* cards, buttons */
-  --r-lg: 22px; /* banners, sheets, hero */
+  /* ---- Radii: hard edges, like print ---- */
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
   --r-full: 999px;
 
-  /* ---- Elevation: two levels ---- */
-  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-2: 0 24px 64px rgba(0, 0, 0, 0.55);
+  /* ---- Elevation: flat; only floating layers get a shadow ---- */
+  --shadow-1: 0 1px 0 rgba(18, 18, 18, 0.04);
+  --shadow-2: 0 18px 48px rgba(10, 10, 10, 0.28);
 
   /* ---- Layout ---- */
   --container: 720px;
@@ -95,24 +95,28 @@
   --measure: 60ch;
 
   /* ---- Type ---- */
-  --font: "Tel Aviv Modernist", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --t-display: clamp(44px, 35.7px + 2.21vw, 64px);
-  --t-h1: clamp(30px, 25.9px + 1.1vw, 40px);
-  --t-h2: clamp(22px, 20.3px + 0.44vw, 26px);
-  --t-h3: clamp(18px, 17.2px + 0.22vw, 20px);
+  --font: "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-display: "Karantina", "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-num: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+
+  /* Display sizes run large: Karantina is a narrow face */
+  --t-display: clamp(52px, 41px + 2.9vw, 78px);
+  --t-h1: clamp(40px, 32px + 2vw, 56px);
+  --t-h2: clamp(30px, 26px + 1.1vw, 40px);
+  --t-h3: clamp(17px, 16.6px + 0.11vw, 18px);
   --t-body: 16px;
   --t-small: 14px;
   --t-label: 12px;
-  --lh-tight: 1.15;
-  --lh-body: 1.5;
+  --lh-tight: 0.95; /* condensed display */
+  --lh-body: 1.55;
 
   /* ---- Motion ---- */
-  --dur: 180ms;
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1); /* ease-out */
+  --dur: 160ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @media (min-width: 600px) {
   :root {
-    --gutter: 20px;
+    --gutter: 24px;
   }
 }

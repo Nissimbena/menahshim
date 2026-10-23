@@ -1,3 +1,13 @@
+import "@fontsource/karantina/hebrew-700.css";
+import "@fontsource/karantina/latin-700.css";
+import "@fontsource/barlow-condensed/latin-600.css";
+import "@fontsource/barlow-condensed/latin-700.css";
+import "@fontsource/ibm-plex-sans-hebrew/hebrew-400.css";
+import "@fontsource/ibm-plex-sans-hebrew/hebrew-500.css";
+import "@fontsource/ibm-plex-sans-hebrew/hebrew-700.css";
+import "@fontsource/ibm-plex-sans-hebrew/latin-400.css";
+import "@fontsource/ibm-plex-sans-hebrew/latin-500.css";
+import "@fontsource/ibm-plex-sans-hebrew/latin-700.css";
 import "./styles/tokens.css";
 import "./styles/components.css";
 import "./style.css";

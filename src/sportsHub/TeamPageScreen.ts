@@ -99,14 +99,14 @@ export class TeamPageScreen {
 
     const section = el("div", "home-schedule");
 
-    const tabs = el("div", "segmented home-schedule__tabs");
+    const tabs = el("div", "tabs home-schedule__tabs");
     tabs.setAttribute("role", "group");
     const tabDefs: ["upcoming" | "finished", string, number][] = [
       ["upcoming", t("home.tab.upcomingShort"), upcomingGames.length],
       ["finished", t("home.tab.finishedShort"), finishedGames.length],
     ];
     tabDefs.forEach(([id, label, n]) => {
-      const b = el("button", "segmented__btn", `<span>${label}</span><span class="segmented__count">${n}</span>`);
+      const b = el("button", "tabs__btn", `<span>${label}</span><span class="tabs__count">${n}</span>`);
       b.type = "button";
       b.setAttribute("aria-pressed", String(this.activeTab === id));
       b.addEventListener("click", () => {

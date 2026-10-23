@@ -49,6 +49,24 @@ function countdownParts(msRemaining: number): { d: string; h: string; m: string 
   };
 }
 
+/**
+ * Half-court line drawing (FIBA proportions, 1 unit = 1cm / 3) used as the
+ * texture of the next-game panel: key, free-throw circle, three-point arc,
+ * restricted area, rim and backboard.
+ */
+const COURT_SVG = `<svg class="hero__court" viewBox="0 0 500 470" aria-hidden="true" focusable="false">
+  <g fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="1" y="1" width="498" height="468"/>
+    <path d="M190 0a60 60 0 0 0 120 0"/>
+    <rect x="170" y="280" width="160" height="189"/>
+    <circle cx="250" cy="280" r="60"/>
+    <path d="M30 469V330a237.5 237.5 0 0 1 440 0v139"/>
+    <path d="M210 417.5a40 40 0 0 1 80 0"/>
+    <path d="M220 430h60"/>
+    <circle cx="250" cy="417.5" r="7.5"/>
+  </g>
+</svg>`;
+
 /** How long a cached leaderboard snapshot stays fresh on the home screen. */
 const LEADERBOARD_TTL_MS = 60 * 1000;
 
@@ -239,15 +257,76 @@ export class HomeScreen {
     page.appendChild(layout);
     page.appendChild(this.renderFooter());
 
+    this.container.appendChild(this.renderTicker());
     this.container.appendChild(page);
+    this.scrollTickerToCurrent();
     // Re-renders happen in place (data arriving, tab switches) - keep the reader where they were.
     if (scrollY) window.scrollTo({ top: scrollY });
+  }
+
+  // ---- 0. Scoreboard ticker (every game of the season, like a broadcast bug) ----
+  private renderTicker(): HTMLElement {
+    const bar = el("nav", "ticker");
+    bar.setAttribute("aria-label", t("home.ticker.label"));
+    const track = el("div", "ticker__track");
+    const heroId = this.heroGame?.id;
+    const activeId = getActiveGameId(this.games);
+
+    this.games.forEach((game) => {
+      const predicted = this.myPredictions.has(game.id);
+      const isActive = game.id === activeId;
+      const enterable = !!game.result || predicted || isActive;
+      const tile = el("button", `ticker__game${game.id === heroId ? " is-next" : ""}`);
+      tile.type = "button";
+      tile.dataset.gameId = game.id;
+      if (enterable) tile.addEventListener("click", () => this.actions.onEnterGame(game));
+      else tile.disabled = true;
+
+      const home = TEAMS[game.homeTeamId];
+      const away = TEAMS[game.awayTeamId];
+      const status = game.result
+        ? t("home.ticker.final")
+        : `${shortDate(game.date)} · ${game.time ?? t("home.row.tbd")}`;
+      const homeWon = !!game.result && game.result.home > game.result.away;
+      const awayWon = !!game.result && game.result.away > game.result.home;
+      const line = (tm: typeof home, score: number | undefined, won: boolean) => `
+        <span class="ticker__team${game.result && !won ? " is-loser" : ""}">
+          ${tm ? `<img src="${tm.logo}" alt="" width="20" height="20" loading="lazy" />` : ""}
+          <span class="ticker__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+          ${score !== undefined ? `<span class="ticker__score num">${score}</span>` : ""}
+        </span>`;
+      tile.innerHTML = `
+        <span class="ticker__status">
+          <span class="num">${status}</span>
+          ${predicted && !game.result ? `<span class="ticker__mark">${icon("check", { size: "sm" })}</span>` : ""}
+          ${PRIZE_GAME_IDS.has(game.id) ? `<span class="ticker__prize">${icon("gift", { size: "sm" })}</span>` : ""}
+        </span>
+        ${line(home, game.result?.home, homeWon)}
+        ${line(away, game.result?.away, awayWon)}`;
+      track.appendChild(tile);
+    });
+    bar.appendChild(track);
+    return bar;
+  }
+
+  /** Brings the next game into view at the start of the ticker (not the season opener). */
+  private scrollTickerToCurrent() {
+    const track = this.container.querySelector<HTMLElement>(".ticker__track");
+    const next = track?.querySelector<HTMLElement>(".ticker__game.is-next");
+    if (!track || !next) return;
+    const prev = next.previousElementSibling as HTMLElement | null;
+    const target = prev ?? next;
+    const rtl = getComputedStyle(track).direction === "rtl";
+    const tile = target.getBoundingClientRect();
+    const box = track.getBoundingClientRect();
+    // Align the tile to the track's start edge, whatever the scroll direction convention.
+    track.scrollLeft += rtl ? tile.right - box.right : tile.left - box.left;
   }
 
   // ---- 1. Hero: the next game ----
   private renderHero(): HTMLElement {
     const game = this.heroGame;
-    const hero = el("section", "hero card card--lg home-hero");
+    const hero = el("section", "hero home-hero");
     hero.setAttribute("aria-labelledby", "hero-overline");
 
     if (!game) {
@@ -268,19 +347,22 @@ export class HomeScreen {
     const team = (tm: typeof home) =>
       tm
         ? `<div class="hero__team">
-             <img class="hero__logo" src="${tm.logo}" alt="" width="64" height="64" />
-             <span class="hero__team-name t-h3" dir="auto">${esc(teamName(tm))}</span>
+             <img class="hero__logo" src="${tm.logo}" alt="" width="72" height="72" />
+             <span class="hero__team-name" dir="auto">${esc(teamName(tm))}</span>
            </div>`
         : `<div class="hero__team"></div>`;
 
     hero.innerHTML = `
+      ${COURT_SVG}
       <div class="hero__top">
-        <p class="overline" id="hero-overline" dir="auto">${esc(t("home.hero.overline", { competition: tDynamic(game.competition) }))}</p>
-        ${prize ? `<span class="tag tag--gold">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
+        <span class="hero__eyebrow" id="hero-overline"><span class="dot"></span>${t("home.hero.next")}</span>
+        <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
+        ${prize ? `<span class="tag tag--gold hero__prize-tag">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
       </div>
       <div class="hero__matchup">
         ${team(home)}
         <div class="hero__when">
+          <span class="hero__vs">${t("home.game.vs")}</span>
           <span class="hero__date num">${shortDate(game.date)}</span>
           <span class="hero__time num">${game.time ?? t("home.game.timeTBD")}</span>
         </div>
@@ -289,14 +371,14 @@ export class HomeScreen {
       <div class="hero__countdown">
         ${
           parts
-            ? `<div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
+            ? `<p class="countdown__caption">${t("home.hero.lockIn")}</p>
+               <div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
                  ${this.countdownUnit("d", parts.d, t("home.countdown.days"))}
                  <span class="countdown__sep" aria-hidden="true">:</span>
                  ${this.countdownUnit("h", parts.h, t("home.countdown.hours"))}
                  <span class="countdown__sep" aria-hidden="true">:</span>
                  ${this.countdownUnit("m", parts.m, t("home.countdown.minutes"))}
-               </div>
-               <p class="countdown__caption">${t("home.hero.lockIn")}</p>`
+               </div>`
             : `<div class="countdown is-locked">${icon("lock")}<span>${t("common.countdown.locked")}</span></div>`
         }
       </div>
@@ -433,14 +515,14 @@ export class HomeScreen {
     const upcoming = this.upcomingGames;
     const finished = this.finishedGames;
 
-    const seg = el("div", "segmented home-schedule__tabs");
+    const seg = el("div", "tabs home-schedule__tabs");
     seg.setAttribute("role", "group");
     const tabs: ["upcoming" | "finished", string, number][] = [
       ["upcoming", t("home.tab.upcomingShort"), upcoming.length],
       ["finished", t("home.tab.finishedShort"), finished.length],
     ];
     tabs.forEach(([id, label, n]) => {
-      const b = el("button", "segmented__btn", `<span>${label}</span><span class="segmented__count">${n}</span>`);
+      const b = el("button", "tabs__btn", `<span>${label}</span><span class="tabs__count">${n}</span>`);
       b.type = "button";
       b.setAttribute("aria-pressed", String(this.activeTab === id));
       b.addEventListener("click", () => {
@@ -518,7 +600,12 @@ export class HomeScreen {
   private renderLeadersPreview(): HTMLElement {
     const section = el("section", "home-leaders");
     section.setAttribute("aria-labelledby", "leaders-title");
-    section.innerHTML = `<div class="section-head"><h2 id="leaders-title">${t("home.leaders.title")}</h2></div>`;
+    const head = el("div", "section-head", `<h2 id="leaders-title">${t("home.leaders.title")}</h2>`);
+    const all = el("button", "link-arrow section-head__link", `<span>${t("home.leaders.all")}</span>${icon("arrowForward", { size: "sm" })}`);
+    all.type = "button";
+    all.addEventListener("click", () => this.actions.onOpenLeaderboard());
+    head.appendChild(all);
+    section.appendChild(head);
 
     if (this.leaderboard === null && !this.leaderboardError) {
       const list = el("div", "list");
@@ -537,10 +624,6 @@ export class HomeScreen {
       );
     }
 
-    const all = el("button", "btn btn--ghost btn--block home-leaders__all", `<span>${t("home.leaders.all")}</span>${icon("arrowForward", { size: "sm" })}`);
-    all.type = "button";
-    all.addEventListener("click", () => this.actions.onOpenLeaderboard());
-    section.appendChild(all);
     return section;
   }
 
