@@ -636,7 +636,7 @@ export class PredictionScreen {
       card.setAttribute("aria-label", `${player.jerseyNumber} ${tDynamic(player.name)}`);
       card.innerHTML = `
         <span class="pcard__media">
-          <span class="pcard__num num" aria-hidden="true">${player.jerseyNumber}</span>
+          <span class="pcard__num num--display" aria-hidden="true">${player.jerseyNumber}</span>
           ${playerMedia(player, "lg")}
           <span class="pcard__check">${icon("check", { size: "sm" })}</span>
         </span>

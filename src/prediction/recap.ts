@@ -85,7 +85,14 @@ function teamBlock(team: Team | undefined): string {
 }
 
 function scoreDigits(home: number | null, away: number | null): string {
-  return `<span class="score-digits num"><span>${home ?? "–"}</span><span class="score-digits__dash">-</span><span>${away ?? "–"}</span></span>`;
+  return `<span class="score-digits num--display"><span>${home ?? "–"}</span><span class="score-digits__dash">-</span><span>${away ?? "–"}</span></span>`;
+}
+
+/** Home score beside the home logo, away beside the away logo - no guessing which is which. */
+function scorePair(home: string, away: string, homeTeam?: Team, awayTeam?: Team): string {
+  const logo = (tm?: Team) =>
+    tm ? `<span class="logo-disc logo-disc--sm"><img src="${tm.logo}" alt="${esc(teamName(tm))}" /></span>` : "";
+  return `<span class="score-pair">${logo(homeTeam)}<span class="score-pair__n">${home}</span><span class="score-pair__dash">-</span><span class="score-pair__n">${away}</span>${logo(awayTeam)}</span>`;
 }
 
 // --------------------------------------------------------------------- slip
@@ -198,14 +205,12 @@ export function predictionCompare(opts: {
       <span class="compare__col compare__col--end">${t("prediction.breakdown.header.actual")}</span>
     </header>
     <div class="compare__score">
-      <div class="compare__side">${scoreDigits(pHome, pAway)}</div>
+      <div class="compare__side">${scorePair(String(pHome ?? "–"), String(pAway ?? "–"), home, away)}</div>
       <div class="compare__mid">
-        ${home ? `<span class="logo-disc logo-disc--sm"><img src="${home.logo}" alt="${esc(teamName(home))}" /></span>` : ""}
         <span class="compare__stat">${icon("statScore")}<span>${t("prediction.step.score")}</span></span>
         ${pointsChip(scorePts)}
-        ${away ? `<span class="logo-disc logo-disc--sm"><img src="${away.logo}" alt="${esc(teamName(away))}" /></span>` : ""}
       </div>
-      <div class="compare__side compare__side--end">${scoreDigits(aHome, aAway)}</div>
+      <div class="compare__side compare__side--end">${scorePair(String(aHome ?? "–"), String(aAway ?? "–"), home, away)}</div>
     </div>`;
 
   const rows = el("div", "compare__rows");
@@ -288,7 +293,7 @@ export function predictionCompare(opts: {
       el(
         "footer",
         "compare__total",
-        `<span>${t("prediction.breakdown.totalLabel")}</span><span class="num">${opts.total}</span>`,
+        `<span>${t("prediction.breakdown.totalLabel")}</span><span class="num--display">${opts.total}</span>`,
       ),
     );
   }
@@ -383,7 +388,7 @@ export function resultHeader(game: ScheduleGame, result: GameResultData | null):
     <div class="final__team${won ? " is-winner" : ""}">
       ${tm ? `<span class="logo-disc logo-disc--lg"><img src="${tm.logo}" alt="" /></span>` : ""}
       <span class="final__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
-      <span class="final__score num">${score ?? "–"}</span>
+      <span class="final__score num--display">${score ?? "–"}</span>
     </div>`;
   return el(
     "section",
@@ -410,8 +415,6 @@ export function crowdCompare(
 ): HTMLElement {
   const wrap = el("section", "compare compare--crowd card");
   const fmt = (v: number | null) => (v === null ? "–" : String(Math.round(v * 10) / 10));
-  const scoreLine = (h: number | null, a: number | null) =>
-    `<span class="score-digits num"><span>${fmt(h)}</span><span class="score-digits__dash">-</span><span>${fmt(a)}</span></span>`;
   const home = game ? TEAMS[game.homeTeamId] : undefined;
   const away = game ? TEAMS[game.awayTeamId] : undefined;
 
@@ -425,13 +428,11 @@ export function crowdCompare(
       <span class="compare__col compare__col--end">${t("prediction.breakdown.header.actual")}</span>
     </header>
     <div class="compare__score">
-      <div class="compare__side">${scoreLine(agg.avgHomeScore, agg.avgAwayScore)}</div>
+      <div class="compare__side">${scorePair(fmt(agg.avgHomeScore), fmt(agg.avgAwayScore), home, away)}</div>
       <div class="compare__mid">
-        ${home ? `<span class="logo-disc logo-disc--sm"><img src="${home.logo}" alt="${esc(teamName(home))}" /></span>` : ""}
         <span class="compare__stat">${icon("statScore")}<span>${t("prediction.step.score")}</span></span>
-        ${away ? `<span class="logo-disc logo-disc--sm"><img src="${away.logo}" alt="${esc(teamName(away))}" /></span>` : ""}
       </div>
-      <div class="compare__side compare__side--end">${scoreLine(r.actualHomeScore, r.actualAwayScore)}</div>
+      <div class="compare__side compare__side--end">${scorePair(fmt(r.actualHomeScore), fmt(r.actualAwayScore), home, away)}</div>
     </div>`;
 
   const rows = el("div", "compare__rows");

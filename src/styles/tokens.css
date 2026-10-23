@@ -109,10 +109,10 @@
   /* Display sizes - big contrast against a calm 16px text size */
   --t-hero: clamp(48px, 34px + 3.7vw, 88px); /* team names in the next-game hero */
   --t-display: clamp(64px, 48px + 4.3vw, 112px); /* countdown, slip score */
-  --t-h1: clamp(44px, 37px + 1.9vw, 64px); /* screen titles, flow questions */
+  --t-h1: clamp(36px, 30px + 1.6vw, 52px); /* screen titles, flow questions */
   --t-num-lg: 40px; /* stat values */
   --t-num-md: 28px; /* table numbers */
-  --t-h2: 22px; /* card + section titles: bold sans, sentence case */
+  --t-h2: 20px; /* card + section titles: bold sans, sentence case */
   --t-h3: 18px;
   --t-body: 16px;
   --t-small: 14px;
@@ -129,7 +129,7 @@
 @media (min-width: 600px) {
   :root {
     --gutter: 24px;
-    --t-h2: 24px;
+    --t-h2: 22px;
   }
 }
 

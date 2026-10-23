@@ -481,6 +481,8 @@ const translations: Record<Lang, Dict> = {
     "prediction.crowd.title": "כולם מול המציאות",
     "prediction.crowd.side": "ממוצע הניחושים",
     "home.row.myPoints": "נק' שלי",
+    "home.hero.guest": "אורחת",
+    "home.row.noPrediction": "לא ניחשת",
     "inAppBrowser.warning":
       'זיהינו שאתם גולשים מתוך אפליקציה אחרת (כמו WhatsApp) ולא מ-Safari/Chrome ישירות - ההתחברות עם Google עלולה להיכשל. פתחו את הקישור ישירות בדפדפן (לחיצה ארוכה על הקישור ← "פתח ב-Safari").',
   },
@@ -975,6 +977,8 @@ const translations: Record<Lang, Dict> = {
     "prediction.crowd.title": "Everyone vs. what happened",
     "prediction.crowd.side": "Average prediction",
     "home.row.myPoints": "my pts",
+    "home.hero.guest": "Away",
+    "home.row.noPrediction": "No prediction",
     "inAppBrowser.warning":
       'Looks like you opened this inside another app (like WhatsApp) instead of Safari/Chrome - Google sign-in may fail. Open the link directly in your browser (long-press the link → "Open in Safari").',
   },
@@ -1033,6 +1037,7 @@ const DYNAMIC_TRANSLATIONS: Dict = {
   סנטר: "Center",
   רכז: "Point Guard",
   "פורוורד-סנטר": "Forward-Center",
+  יורוקאפ: "EuroCup",
   // Citizenship
   ישראל: "Israel",
   'ארה"ב': "USA",

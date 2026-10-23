@@ -22,7 +22,7 @@ import { isRunningStandalone } from "../pwa/InstallPrompt";
 import { t, tDynamic, getLang, setLang } from "../i18n/i18n";
 import { CHALLENGE_FEATURE_ENABLED, WHATSAPP_GROUP_URL } from "../config/GameConfig";
 import { icon } from "../ui/icons";
-import { el, esc, opponentOf, shortDate, ltr } from "../ui/dom";
+import { el, esc, shortDate, ltr } from "../ui/dom";
 import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
@@ -325,47 +325,44 @@ export class HomeScreen {
     const prize = PRIZE_GAME_IDS.get(game.id);
     const lockAt = gameDateTime(game).getTime() - SCORE_LOCK_MS;
     const parts = countdownParts(lockAt - Date.now());
-    const { isHome } = opponentOf(game);
 
-    const team = (tm: typeof home) =>
-      tm
-        ? `<li class="hero__team">
-             <span class="logo-disc logo-disc--lg"><img src="${tm.logo}" alt="" /></span>
-             <span class="hero__team-name" dir="auto">${esc(teamName(tm))}</span>
-           </li>`
-        : "";
+    // Home team on the start side, away on the end side - the broadcast convention.
+    const team = (tm: typeof home, side: "home" | "away") =>
+      `<div class="hero__team hero__team--${side}">
+         ${tm ? `<span class="logo-disc logo-disc--xl"><img src="${tm.logo}" alt="" /></span>` : ""}
+         <span class="hero__team-name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+         <span class="hero__team-role">${side === "home" ? t("home.row.home") : t("home.hero.guest")}</span>
+       </div>`;
 
     hero.innerHTML = `
       ${photoLayer(game.id, "hero__photo")}
       <div class="hero__inner">
-        <div class="hero__content">
-          <p class="hero__top">
-            <span class="hero__eyebrow" id="hero-overline">${t("home.hero.next")}</span>
-            <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
-          </p>
-          <ul class="hero__teams">${team(home)}${team(away)}</ul>
-          <p class="hero__when">
-            <span class="num">${shortDate(game.date)}</span>
-            <span class="hero__sep" aria-hidden="true"></span>
-            <span class="num">${game.time ?? t("home.game.timeTBD")}</span>
-            <span class="hero__sep" aria-hidden="true"></span>
-            <span>${isHome ? t("home.row.home") : t("home.row.away")}</span>
-            ${prize ? `<span class="tag tag--gold hero__prize-tag">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
-          </p>
-          <div class="hero__countdown">
-            ${
-              parts
-                ? `<p class="countdown__caption">${t("home.hero.lockIn")}</p>
-                   <div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
-                     ${this.countdownUnit("d", parts.d, t("home.countdown.days"))}
-                     ${this.countdownUnit("h", parts.h, t("home.countdown.hours"))}
-                     ${this.countdownUnit("m", parts.m, t("home.countdown.minutes"))}
-                   </div>`
-                : `<div class="countdown is-locked">${icon("lock")}<span>${t("common.countdown.locked")}</span></div>`
-            }
+        <p class="hero__top">
+          <span class="hero__eyebrow" id="hero-overline">${t("home.hero.next")}</span>
+          <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
+          ${prize ? `<span class="tag tag--gold hero__prize-tag">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
+        </p>
+        <div class="hero__matchup">
+          ${team(home, "home")}
+          <div class="hero__when">
+            <span class="hero__date num--display">${shortDate(game.date)}</span>
+            <span class="hero__time">${game.time ?? t("home.game.timeTBD")}</span>
           </div>
-          <div class="hero__actions"></div>
+          ${team(away, "away")}
         </div>
+        <div class="hero__countdown">
+          ${
+            parts
+              ? `<p class="countdown__caption">${t("home.hero.lockIn")}</p>
+                 <div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
+                   ${this.countdownUnit("d", parts.d, t("home.countdown.days"))}
+                   ${this.countdownUnit("h", parts.h, t("home.countdown.hours"))}
+                   ${this.countdownUnit("m", parts.m, t("home.countdown.minutes"))}
+                 </div>`
+              : `<div class="countdown is-locked">${icon("lock")}<span>${t("common.countdown.locked")}</span></div>`
+          }
+        </div>
+        <div class="hero__actions"></div>
       </div>
     `;
 
@@ -405,7 +402,7 @@ export class HomeScreen {
 
   private countdownUnit(key: string, value: string, label: string): string {
     return `<div class="countdown__unit">
-      <span class="countdown__value t-display num" data-part="${key}">${value}</span>
+      <span class="countdown__value num--display" data-part="${key}">${value}</span>
       <span class="countdown__label">${label}</span>
     </div>`;
   }
@@ -538,8 +535,12 @@ export class HomeScreen {
     return section;
   }
 
+  /**
+   * One game, EuroLeague results-list style: date and competition, then the
+   * home team on the start side and the away team on the end side, with the
+   * two scores (winner filled) or "vs" between them.
+   */
   private buildGameRow(game: ScheduleGame, isHero: boolean, isActive: boolean): HTMLElement {
-    const { team: opp, isHome } = opponentOf(game);
     const prize = PRIZE_GAME_IDS.get(game.id);
     const predicted = this.myPredictions.has(game.id);
     const enterable = !!game.result || predicted || isActive;
@@ -549,49 +550,48 @@ export class HomeScreen {
     if (enterable) row.addEventListener("click", () => this.actions.onEnterGame(game));
     else row.disabled = true;
 
+    const r = game.result;
+    const homeWon = !!r && r.home > r.away;
+    const awayWon = !!r && r.away > r.home;
+    const side = (teamId: string, score: number | undefined, won: boolean, role: "home" | "away") => {
+      const tm = TEAMS[teamId];
+      return `<span class="game-row__team is-${role}${won ? " is-winner" : ""}${teamId === "jerusalem" ? " is-us" : ""}">
+          <span class="game-row__logo">${tm ? `<img src="${tm.logo}" alt="" width="28" height="28" loading="lazy" />` : ""}</span>
+          <span class="game-row__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+          ${score !== undefined ? `<span class="game-row__score">${score}</span>` : ""}
+        </span>`;
+    };
+
     let end = "";
-    if (game.result) {
-      const jlm = isHome ? game.result.home : game.result.away;
-      const other = isHome ? game.result.away : game.result.home;
-      const won = jlm > other;
+    if (r) {
       const mine = this.myPredictions.get(game.id);
       const pts = mine?.score;
-      end = `${
-        mine
-          ? `<span class="game-row__pts${pts ? " is-earned" : ""}"><span class="num">${pts != null ? `+${pts}` : "–"}</span><span>${t("home.row.myPoints")}</span></span>`
-          : ""
-      }
-             <span class="game-row__score">
-               <span class="game-row__wl ${won ? "is-win" : "is-loss"}">${won ? t("home.row.win") : t("home.row.loss")}</span>
-               <span class="game-row__result num${won ? " is-win" : ""}">${ltr(`${jlm}–${other}`)}</span>
-             </span>
-             ${icon("chevronForward", { size: "sm", className: "c-3" })}`;
+      end = mine
+        ? `<span class="game-row__pts${pts ? " is-earned" : ""}"><span class="num">${pts != null ? `+${pts}` : "–"}</span><span>${t("home.row.myPoints")}</span></span>`
+        : `<span class="game-row__later">${t("home.row.noPrediction")}</span>`;
     } else if (predicted) {
       end = `<span class="tag tag--success">${icon("check")}${t("home.row.predicted")}</span>`;
     } else if (isActive) {
-      end = `<span class="btn btn--secondary btn--sm game-row__cta">${t("home.row.predict")}</span>`;
+      end = `<span class="btn btn--primary btn--sm game-row__cta">${t("home.row.predict")}</span>`;
     } else if (isScoreLocked(game)) {
       end = `<span class="tag">${icon("lock")}${t("home.row.locked")}</span>`;
     } else {
       end = `<span class="game-row__later">${t("home.row.later")}</span>`;
     }
 
-    const metaParts = [isHome ? t("home.row.home") : t("home.row.away"), tDynamic(game.competition)];
     row.innerHTML = `
-      <span class="game-row__date">
-        <span class="num">${shortDate(game.date)}</span>
-        <span class="game-row__time num">${game.time ?? t("home.row.tbd")}</span>
+      <span class="game-row__info">
+        <span class="game-row__when"><span class="num">${shortDate(game.date)}</span> · <span class="num">${game.time ?? t("home.row.tbd")}</span></span>
+        <span class="game-row__comp" dir="auto">${esc(tDynamic(game.competition))}${
+          prize ? ` <span class="game-row__prize" title="${esc(tDynamic(prize))}">${icon("gift", { size: "sm" })}</span>` : ""
+        }</span>
       </span>
-      <span class="game-row__logo">${opp ? `<img src="${opp.logo}" alt="" width="36" height="36" loading="lazy" />` : ""}</span>
-      <span class="list-row__main">
-        <span class="list-row__title game-row__opp" dir="auto">
-          ${isHero ? `<span class="dot" aria-label="${t("home.game.nextBadge")}"></span>` : ""}
-          <span>${esc(opp ? teamName(opp) : "")}</span>
-          ${prize ? `<span class="game-row__prize" title="${esc(tDynamic(prize))}">${icon("gift", { size: "sm" })}</span>` : ""}
-        </span>
-        <span class="list-row__meta" dir="auto">${esc(metaParts.join(" · "))}</span>
+      <span class="game-row__match${r ? " is-final" : ""}">
+        ${side(game.homeTeamId, r?.home, homeWon, "home")}
+        ${r ? "" : `<span class="game-row__vs">${t("home.game.vs")}</span>`}
+        ${side(game.awayTeamId, r?.away, awayWon, "away")}
       </span>
-      <span class="list-row__end">${end}</span>
+      <span class="game-row__end">${end}</span>
     `;
     return row;
   }

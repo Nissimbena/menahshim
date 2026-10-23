@@ -108,16 +108,25 @@ a {
 
 /* The display face, wherever it's used: always 900 / width 50 */
 .display,
+/*
+ * Numbers in data (scores in lists, points, stats): the text face, bold and
+ * tabular - the way EuroLeague / NBA set their tables. The condensed display
+ * face is kept for the few headline numbers (.num--display): the countdown,
+ * a final score, shirt numbers, my season.
+ */
 .num {
-  font-family: var(--font-display);
+  font-family: var(--font);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1.15;
+}
+
+.num--display {
+  font-family: var(--font-num);
   font-variation-settings: var(--display-axes);
   font-weight: 700;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: var(--lh-display);
-}
-
-.num {
-  font-family: var(--font-num);
 }
 
 .t-h3 {
@@ -510,7 +519,7 @@ body.has-tabbar .screen {
 }
 
 .pts-chip .num {
-  font-size: 20px;
+  font-size: 14px;
 }
 
 .pts-chip.is-earned {
@@ -1407,7 +1416,7 @@ select.field,
 }
 
 .user-chip__score .num {
-  font-size: 22px;
+  font-size: 15px;
 }
 
 .user-chip__unit {
