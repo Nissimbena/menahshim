@@ -1,0 +1,25 @@
+{
+  "name": "מנאחסים",
+  "short_name": "מנאחסים",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "logos/jerusalem.png",
+      "sizes": "300x300",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logos/jerusalem-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
