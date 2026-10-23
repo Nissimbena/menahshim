@@ -5,6 +5,9 @@
  * placeholder - swap in a real photo + short bio.
  */
 import { t } from "../i18n/i18n";
+import { screenHeader } from "../ui/ScreenHeader";
+import { icon } from "../ui/icons";
+import { el } from "../ui/dom";
 
 export class AboutScreen {
   private container: HTMLElement;
@@ -24,42 +27,34 @@ export class AboutScreen {
     this.container.classList.add("hidden");
   }
 
-  private renderHeader(): HTMLElement {
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1>${t("about.title")}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
-    return header;
-  }
-
   private render() {
     this.container.innerHTML = "";
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
-    wrapper.appendChild(this.renderHeader());
+    const wrapper = el("div", "screen reading about");
+    wrapper.appendChild(screenHeader({ title: t("about.title"), onBack: () => this.onBack() }));
 
-    const card = document.createElement("div");
-    card.className = "scoring-rule-card about-card";
-    card.innerHTML = `
-      <img class="about-photo" src="about-photo.jpg" alt="Nisim" />
-      <p dir="auto">${t("about.intro")}</p>
-      <h4>${t("about.highlightsTitle")}</h4>
-      <ul class="about-highlights">
+    const article = el("article", "reading__section");
+    article.innerHTML = `
+      <div class="about__intro">
+        <img class="about__photo" src="about-photo.jpg" alt="${t("about.photoAlt")}" width="96" height="96" />
+        <p dir="auto">${t("about.intro")}</p>
+      </div>
+      <h2>${t("about.highlightsTitle")}</h2>
+      <ul class="about__highlights">
         <li dir="auto"><strong>${t("about.nonProfitTitle")}:</strong> ${t("about.nonProfitText")}</li>
         <li dir="auto"><strong>${t("about.prizesTitle")}:</strong> ${t("about.prizesText")}</li>
       </ul>
       <p dir="auto">${t("about.feedback")}</p>
       <p dir="auto">${t("about.closing")}<br />${t("about.cheer")}</p>
-      <p class="about-contact" dir="auto">${t("about.contactAvailable")} ניסים<br />0542538749</p>
+      <div class="card about__contact">
+        <span class="list-row__icon">${icon("user")}</span>
+        <div class="list-row__main">
+          <span class="list-row__meta">${t("about.contactAvailable")}</span>
+          <span class="list-row__title" dir="auto">${t("about.contactName")} · <a class="num" href="tel:+972542538749" dir="ltr">054-2538749</a></span>
+        </div>
+      </div>
     `;
-    wrapper.appendChild(card);
+    wrapper.appendChild(article);
 
     this.container.appendChild(wrapper);
   }

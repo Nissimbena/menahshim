@@ -8,6 +8,10 @@ import type { ScheduleGame } from "../schedule/schedule";
 import { TEAMS, HAPOEL_JERUSALEM_TEAM_ID, teamName } from "../schedule/teams";
 import { UserPredictionModal } from "./UserPredictionModal";
 import { t } from "../i18n/i18n";
+import { auth } from "../firebase/firebase";
+import { screenHeader, skeleton, emptyState } from "../ui/ScreenHeader";
+import { rankList } from "../ui/RankList";
+import { el } from "../ui/dom";
 
 export class LeaderboardScreen {
   private container: HTMLElement;
@@ -112,117 +116,75 @@ export class LeaderboardScreen {
   }
 
   private renderHeader(): HTMLElement {
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1>${this.titleText}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
-    return header;
+    return screenHeader({ title: this.titleText, onBack: () => this.onBack() });
+  }
+
+  private page(): HTMLElement {
+    this.container.innerHTML = "";
+    const page = el("div", "screen leaderboard");
+    page.appendChild(this.renderHeader());
+    this.container.appendChild(page);
+    return page;
   }
 
   private renderLoading() {
-    this.container.innerHTML = "";
-    const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
-    wrapper.appendChild(this.renderHeader());
-    const p = document.createElement("p");
-    p.className = "counter-text";
-    p.textContent = t("leaderboard.loading");
-    wrapper.appendChild(p);
-    this.container.appendChild(wrapper);
+    const page = this.page();
+    page.appendChild(skeleton("list", 8));
   }
 
   private renderError() {
-    this.container.innerHTML = "";
-    const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
-    wrapper.appendChild(this.renderHeader());
-    const p = document.createElement("p");
-    p.className = "counter-text";
-    p.textContent = t("leaderboard.error");
-    wrapper.appendChild(p);
-    this.container.appendChild(wrapper);
+    this.page().appendChild(emptyState(t("leaderboard.error"), "error"));
   }
 
   private render() {
-    this.container.innerHTML = "";
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
-    wrapper.appendChild(this.renderHeader());
+    const page = this.page();
 
     if (this.overallRows.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "counter-text";
-      empty.textContent = t("leaderboard.empty");
-      wrapper.appendChild(empty);
-      this.container.appendChild(wrapper);
+      page.appendChild(emptyState(t("leaderboard.empty")));
       return;
     }
 
     if (this.lastGameRows.length > 0) {
       if (this.activeTab !== "lastGame" && this.activeTab !== "overall")
         this.activeTab = "lastGame";
-      wrapper.appendChild(this.renderTabs());
+      page.appendChild(this.renderTabs());
     } else {
-      wrapper.appendChild(
-        this.renderTable(t("leaderboard.overall"), this.overallRows),
-      );
+      page.appendChild(this.renderTable(this.overallRows));
     }
-
-    this.container.appendChild(wrapper);
   }
 
   private renderTabs(): HTMLElement {
-    const tabsWrapper = document.createElement("div");
-    tabsWrapper.className = "leaderboard-tabs-wrapper";
+    const tabsWrapper = el("div", "leaderboard-tabs");
 
-    const tabsBar = document.createElement("div");
-    tabsBar.className = "leaderboard-tabs";
+    const seg = el("div", "segmented");
+    seg.setAttribute("role", "group");
+    const tabs: ["lastGame" | "overall", string][] = [
+      ["lastGame", t("leaderboard.tab.byGame")],
+      ["overall", t("leaderboard.overall")],
+    ];
+    tabs.forEach(([id, label]) => {
+      const b = el("button", "segmented__btn");
+      b.type = "button";
+      b.textContent = label;
+      b.setAttribute("aria-pressed", String(this.activeTab === id));
+      b.addEventListener("click", () => {
+        if (this.activeTab === id) return;
+        this.activeTab = id;
+        this.render();
+      });
+      seg.appendChild(b);
+    });
+    tabsWrapper.appendChild(seg);
 
-    const lastGameTab = document.createElement("button");
-    lastGameTab.type = "button";
-    lastGameTab.className =
-      "leaderboard-tab" + (this.activeTab === "lastGame" ? " active" : "");
-    lastGameTab.textContent = this.lastGameTitle;
-
-    const overallTab = document.createElement("button");
-    overallTab.type = "button";
-    overallTab.className =
-      "leaderboard-tab" + (this.activeTab === "overall" ? " active" : "");
-    overallTab.textContent = t("leaderboard.overall");
-
-    const content = document.createElement("div");
-    content.className = "leaderboard-tab-content";
+    const content = el("div", "leaderboard-tab-content");
     if (this.activeTab === "lastGame") {
       const picker = this.renderPastGamePicker();
       if (picker) content.appendChild(picker);
+      else content.appendChild(el("p", "overline leaderboard-game-title", this.lastGameTitle));
       content.appendChild(this.renderPastGameTable());
     } else {
-      content.appendChild(
-        this.renderTable(t("leaderboard.overall"), this.overallRows, true),
-      );
+      content.appendChild(this.renderTable(this.overallRows));
     }
-
-    lastGameTab.addEventListener("click", () => {
-      if (this.activeTab === "lastGame") return;
-      this.activeTab = "lastGame";
-      this.render();
-    });
-    overallTab.addEventListener("click", () => {
-      if (this.activeTab === "overall") return;
-      this.activeTab = "overall";
-      this.render();
-    });
-
-    tabsBar.appendChild(lastGameTab);
-    tabsBar.appendChild(overallTab);
-    tabsWrapper.appendChild(tabsBar);
     tabsWrapper.appendChild(content);
 
     return tabsWrapper;
@@ -235,16 +197,15 @@ export class LeaderboardScreen {
       .sort((a, b) => this.parseDdMmYyyy(b.date) - this.parseDdMmYyyy(a.date));
     if (gradedGames.length === 0) return null;
 
-    const wrap = document.createElement("div");
-    wrap.className = "leaderboard-game-picker";
+    const wrap = el("div", "leaderboard-game-picker");
 
-    const label = document.createElement("label");
-    label.className = "counter-text";
+    const label = el("label", "field-label");
     label.textContent = t("leaderboard.selectPastGame");
+    label.htmlFor = "leaderboard-game-select";
     wrap.appendChild(label);
 
-    const select = document.createElement("select");
-    select.className = "leaderboard-game-select";
+    const select = el("select", "field leaderboard-game-select");
+    select.id = "leaderboard-game-select";
     gradedGames.forEach((g) => {
       const opt = document.createElement("option");
       opt.value = g.id;
@@ -257,6 +218,7 @@ export class LeaderboardScreen {
       this.loadAndRenderPastGame(select.value);
     });
     wrap.appendChild(select);
+    wrap.appendChild(el("p", "leaderboard-hint c-3 t-small", t("leaderboard.tapHint")));
 
     return wrap;
   }
@@ -284,59 +246,27 @@ export class LeaderboardScreen {
       gameId !== this.lastGameId &&
       !this.pastGameRowsCache.has(gameId)
     ) {
-      const p = document.createElement("p");
-      p.className = "counter-text";
-      p.textContent = t("leaderboard.loading");
-      return p;
+      return skeleton("list", 6);
     }
     const rows =
       gameId === this.lastGameId
         ? this.lastGameRows
         : (gameId && this.pastGameRowsCache.get(gameId)) || [];
-    return this.renderTable(
-      this.lastGameTitle,
-      rows,
-      true,
-      gameId ?? undefined,
-    );
+    if (rows.length === 0) return emptyState(t("leaderboard.empty"));
+    return this.renderTable(rows, gameId ?? undefined);
   }
 
-  private renderTable(
-    title: string,
-    rows: LeaderboardRow[],
-    hideTitle = false,
-    gameIdForClick?: string,
-  ): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "leaderboard-table-section";
-
-    if (!hideTitle) {
-      const heading = document.createElement("h2");
-      heading.textContent = title;
-      section.appendChild(heading);
-    }
-
-    const table = document.createElement("div");
-    table.className = "leaderboard-table";
-    rows.forEach((row, i) => {
-      const rowEl = document.createElement("div");
-      rowEl.className = "leaderboard-row" + (i === 0 ? " leader" : "");
-      rowEl.innerHTML = `
-        <span class="leaderboard-rank">#${i + 1}</span>
-        <span class="leaderboard-name${gameIdForClick ? " clickable" : ""}" dir="auto">${row.name}</span>
-        <span class="leaderboard-score">${row.total}</span>
-      `;
-      if (gameIdForClick) {
-        rowEl
-          .querySelector(".leaderboard-name")
-          ?.addEventListener("click", () =>
-            this.userPredictionModal.show(gameIdForClick, row.uid, row.name),
-          );
-      }
-      table.appendChild(rowEl);
-    });
-    section.appendChild(table);
-
+  private renderTable(rows: LeaderboardRow[], gameIdForClick?: string): HTMLElement {
+    const section = el("div", "leaderboard-table-section");
+    section.appendChild(
+      rankList(rows, {
+        podium: true,
+        meUid: auth.currentUser?.uid,
+        onRowClick: gameIdForClick
+          ? (row) => this.userPredictionModal.show(gameIdForClick, row.uid, row.name)
+          : undefined,
+      }),
+    );
     return section;
   }
 }

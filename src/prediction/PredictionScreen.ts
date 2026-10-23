@@ -23,6 +23,11 @@ import {
 } from "../api/backend";
 
 import { t, tDynamic } from "../i18n/i18n";
+import { screenHeader, skeleton } from "../ui/ScreenHeader";
+import { numberStepper } from "../ui/Stepper";
+import { icon } from "../ui/icons";
+import { el, esc, initials } from "../ui/dom";
+import { logoMarkSVG } from "../brand/Logo";
 
 type StepKey = "score" | "stats" | "team" | "summary";
 export type StatCategory = "scorer" | "rebounder" | "assist";
@@ -97,12 +102,6 @@ const MAX_TEAM_STAT = {
   predictedTeamRebounds: 80,
   predictedTeamAssists: 60,
 };
-
-// Placeholder silhouette shown for players without a photoUrl.
-const AVATAR_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <circle cx="50" cy="36" r="19" />
-  <path d="M50 60c-24 0-43 14-43 31v7h86v-7c0-17-19-31-43-31z" />
-</svg>`;
 
 // Client-side mirror of HapoelJerusalemBackend/scoring.py, used only to show
 // a per-row points breakdown in the post-game recap - the real/authoritative
@@ -179,13 +178,19 @@ export function teamStatPoints(
   );
 }
 
+/** Team-score stepper starts here on the first +/− tap - a realistic basketball score. */
+const SCORE_STEPPER_START = 80;
+
 /**
  * Prediction flow:
  * 1) The final score (with both team logos).
  * 2) "Personal questions" - who will lead the team in points/rebounds/assists,
- *    and by how much - one category at a time via a swipeable carousel.
- * 3) Team-level totals: made threes, rebounds, assists.
+ *    and by how much - one category per screen, picked from a player grid.
+ * 3) Team-level totals: made threes, rebounds, assists (+ optional bonus question).
  * 4) Review & submit (saved via the backend API under the signed-in user).
+ *
+ * Layout: compact header, thin 4-segment progress, one question per screen,
+ * and a sticky action bar (back as text, next as the single red CTA).
  */
 export class PredictionScreen {
   private container: HTMLElement;
@@ -196,12 +201,12 @@ export class PredictionScreen {
   private steps: StepKey[] = ["score", "stats", "team", "summary"];
   private stepIndex = 0;
   private statSubStep = 0;
+  /** Index into `players` of the picked player per category (was the carousel position). */
   private carouselIndex: Record<CarouselKey, number> = {
     scorer: 0,
     rebounder: 0,
     assist: 0,
   };
-  private carouselDirection: 1 | -1 = 1;
   private lastDirection: 1 | -1 = 1;
   private animatePanel = false;
   private currentGame: ScheduleGame | null = null;
@@ -214,7 +219,6 @@ export class PredictionScreen {
   private scoringRules: ScoringRules | null = null;
   private myGameScore: number | null = null;
   private squadPlayerIds: Set<string> | null = null;
-  private squadPanelOpen = true;
 
   constructor(
     container: HTMLElement,
@@ -252,7 +256,6 @@ export class PredictionScreen {
     this.scoringRules = null;
     this.myGameScore = null;
     this.squadPlayerIds = null;
-    this.squadPanelOpen = true;
     this.loading = !!auth.currentUser || !!game.result;
     this.container.classList.remove("hidden");
     this.render();
@@ -287,6 +290,7 @@ export class PredictionScreen {
             predictedTeamAssists: existing.predictedTeamAssists,
             predictedBonusAnswer: existing.predictedBonusAnswer,
           };
+          this.syncPickedPlayersFromPrediction();
           this.viewMode = true;
           this.hasOwnPrediction = true;
           this.myGameScore = existing.score;
@@ -325,43 +329,56 @@ export class PredictionScreen {
     this.container.classList.add("hidden");
   }
 
+  /**
+   * When editing a saved prediction, start each player grid on the player that
+   * was actually picked (the old carousel always reset to the first player,
+   * which silently replaced the saved pick unless the user scrolled back).
+   */
+  private syncPickedPlayersFromPrediction() {
+    CATEGORY_ORDER.forEach((category) => {
+      const id = this.prediction[CATEGORY_CONFIG[category].playerKey];
+      const index = id ? this.players.findIndex((p) => p.id === id) : -1;
+      if (index >= 0) this.carouselIndex[category] = index;
+    });
+  }
+
   private playerById(id: string): Player | undefined {
     return this.players.find((p) => p.id === id);
   }
 
+  // ---------------------------------------------------------------- shell
+
   private render() {
     this.container.innerHTML = "";
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "prediction-wrapper";
-
-    wrapper.appendChild(this.renderHeader());
+    const page = el("div", "screen prediction");
+    page.appendChild(this.renderHeader());
 
     if (this.loading) {
-      const loading = document.createElement("div");
-      loading.className = "prediction-section";
-      loading.innerHTML = `<p class="counter-text">${t("prediction.loadingMyPrediction")}</p>`;
-      wrapper.appendChild(loading);
-      this.container.appendChild(wrapper);
+      page.appendChild(skeleton("text", 4));
+      this.container.appendChild(page);
       return;
     }
 
     if (this.viewMode) {
       const panel = this.renderViewOnlyStep();
       panel.classList.add("step-panel");
-      wrapper.appendChild(panel);
-      this.container.appendChild(wrapper);
+      page.appendChild(panel);
+      page.classList.add("has-action-bar");
+      this.container.appendChild(page);
+      this.container.appendChild(this.renderViewOnlyActions());
       return;
     }
 
-    wrapper.appendChild(this.renderStepIndicator());
+    page.appendChild(this.renderStepIndicator());
 
     const key = this.steps[this.stepIndex];
     let panel: HTMLElement;
-    if (key === "score") panel = this.renderScoreStep();
-    else if (key === "stats") panel = this.renderStatsStep();
-    else if (key === "team") panel = this.renderTeamStep();
-    else panel = this.renderSummaryStep();
+    let actions: HTMLElement;
+    if (key === "score") [panel, actions] = this.renderScoreStep();
+    else if (key === "stats") [panel, actions] = this.renderStatsStep();
+    else if (key === "team") [panel, actions] = this.renderTeamStep();
+    else [panel, actions] = this.renderSummaryStep();
 
     panel.classList.add("step-panel");
     if (this.animatePanel) {
@@ -370,9 +387,11 @@ export class PredictionScreen {
       );
       this.animatePanel = false;
     }
-    wrapper.appendChild(panel);
+    page.appendChild(panel);
+    page.classList.add("has-action-bar");
 
-    this.container.appendChild(wrapper);
+    this.container.appendChild(page);
+    this.container.appendChild(actions);
   }
 
   private renderHeader(): HTMLElement {
@@ -390,33 +409,37 @@ export class PredictionScreen {
           })
         : teamName(TEAMS[HAPOEL_JERUSALEM_TEAM_ID]);
 
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title">
-        <h1>${t("prediction.header.title")}</h1>
-        <p dir="auto">${subtitle}</p>
-      </div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
+    const header = screenHeader({
+      title: t("prediction.header.title"),
+      subtitle,
+      onBack: () => this.onBack(),
+    });
+    header.classList.add("screen-header--compact");
     return header;
   }
 
   private renderStepIndicator(): HTMLElement {
-    const nav = document.createElement("div");
-    nav.className = "step-indicator";
-    this.steps.forEach((key, i) => {
-      const el = document.createElement("div");
-      el.className =
-        "step-pill" +
-        (i === this.stepIndex ? " active" : i < this.stepIndex ? " done" : "");
-      el.textContent = `${i + 1}. ${t(STEP_LABEL_KEYS[key])}`;
-      nav.appendChild(el);
+    const total = this.steps.length;
+    const current = this.stepIndex + 1;
+    const nav = el("div", "progress");
+    nav.setAttribute("role", "progressbar");
+    nav.setAttribute("aria-valuemin", "1");
+    nav.setAttribute("aria-valuemax", String(total));
+    nav.setAttribute("aria-valuenow", String(current));
+    nav.setAttribute("aria-valuetext", t(STEP_LABEL_KEYS[this.steps[this.stepIndex]]));
+
+    const bars = el("div", "progress__bars");
+    this.steps.forEach((_, i) => {
+      bars.appendChild(
+        el("span", `progress__bar${i < this.stepIndex ? " is-done" : i === this.stepIndex ? " is-active" : ""}`),
+      );
     });
+    nav.appendChild(bars);
+
+    const label = el("p", "progress__label");
+    label.innerHTML = `<span class="num">${t("prediction.progress", { n: current, total })}</span><span aria-hidden="true">·</span><span></span>`;
+    label.lastElementChild!.textContent = t(STEP_LABEL_KEYS[this.steps[this.stepIndex]]);
+    nav.appendChild(label);
     return nav;
   }
 
@@ -429,6 +452,7 @@ export class PredictionScreen {
       this.animatePanel = true;
       this.statSubStep += 1;
       this.render();
+      window.scrollTo({ top: 0 });
       return;
     }
     this.lastDirection = 1;
@@ -436,6 +460,7 @@ export class PredictionScreen {
     this.stepIndex = Math.min(this.stepIndex + 1, this.steps.length - 1);
     if (this.steps[this.stepIndex] === "stats") this.statSubStep = 0;
     this.render();
+    window.scrollTo({ top: 0 });
   }
 
   private goBack() {
@@ -444,6 +469,7 @@ export class PredictionScreen {
       this.animatePanel = true;
       this.statSubStep -= 1;
       this.render();
+      window.scrollTo({ top: 0 });
       return;
     }
     if (this.stepIndex === 0) {
@@ -456,6 +482,7 @@ export class PredictionScreen {
     if (this.steps[this.stepIndex] === "stats")
       this.statSubStep = CATEGORY_ORDER.length - 1;
     this.render();
+    window.scrollTo({ top: 0 });
   }
 
   /** Label for the "next" button when leaving the current top-level step. */
@@ -465,111 +492,21 @@ export class PredictionScreen {
     return t("prediction.nav.next", { label: t(STEP_LABEL_KEYS[nextKey]) });
   }
 
-  /** Official registered squad for tonight's game (basket.co.il, published game day ~10am) - helps before picking a scorer/rebounder/assist. */
-  private renderSquadPanel(): HTMLElement | null {
-    if (!this.squadPlayerIds || this.squadPlayerIds.size === 0) return null;
-
-    const squadPlayers = this.players
-      .filter((p) => this.squadPlayerIds!.has(p.id))
-      .sort((a, b) => a.jerseyNumber - b.jerseyNumber);
-    if (squadPlayers.length === 0) return null;
-
-    const panel = document.createElement("div");
-    panel.className = "squad-panel";
-
-    const header = document.createElement("button");
-    header.type = "button";
-    header.className = "squad-panel-header";
-    header.innerHTML = `
-      <h3>${t("prediction.squadPanelTitle")}</h3>
-      <span class="squad-panel-arrow${this.squadPanelOpen ? " open" : ""}">&#9660;</span>
-    `;
-    header.addEventListener("click", () => {
-      this.squadPanelOpen = !this.squadPanelOpen;
-      this.render();
-    });
-    panel.appendChild(header);
-
-    if (this.squadPanelOpen) {
-      const list = document.createElement("div");
-      list.className = "squad-panel-players";
-      squadPlayers.forEach((player) => {
-        const chip = document.createElement("div");
-        chip.className = "squad-chip";
-        chip.innerHTML = `
-          <span class="squad-chip-avatar">${player.photoUrl ? `<img src="${player.photoUrl}" alt="" />` : AVATAR_SVG}</span>
-          <span class="squad-chip-number">#${player.jerseyNumber}</span>
-          <span class="squad-chip-name" dir="auto">${tDynamic(player.name)}</span>
-        `;
-        list.appendChild(chip);
-      });
-      panel.appendChild(list);
-    }
-
-    return panel;
+  private question(text: string): HTMLElement {
+    const h = el("h2", "step-question");
+    h.dir = "auto";
+    h.textContent = text;
+    return h;
   }
 
-  // ---- Step: final score (with team logos) ----
-  private renderScoreStep(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "prediction-section";
+  // ---------------------------------------------------------------- step 1: final score
 
-    const squadPanel = this.renderSquadPanel();
-    if (squadPanel) section.appendChild(squadPanel);
-
-    const counter = document.createElement("p");
-    counter.className = "counter-text";
-    counter.textContent = t("prediction.scoreStep.question");
-    section.appendChild(counter);
+  private renderScoreStep(): [HTMLElement, HTMLElement] {
+    const section = el("section", "prediction-section");
+    section.appendChild(this.question(t("prediction.scoreStep.question")));
 
     const home = this.currentGame ? TEAMS[this.currentGame.homeTeamId] : null;
     const away = this.currentGame ? TEAMS[this.currentGame.awayTeamId] : null;
-
-    const teams = document.createElement("div");
-    teams.className = "score-teams";
-
-    const buildTeamColumn = (
-      team: Team | null,
-      value: number | null,
-      onInput: (value: number | null) => void,
-      onValidityChange: (valid: boolean) => void,
-    ) => {
-      const col = document.createElement("div");
-      col.className = "score-team";
-      col.innerHTML = `
-        ${team ? `<img class="score-team-logo" src="${team.logo}" alt="${teamName(team)}" />` : ""}
-        <span class="score-team-name" dir="auto">${team ? teamName(team) : ""}</span>
-      `;
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.max = String(MAX_TEAM_SCORE);
-      input.className = "score-input";
-      input.value = value === null ? "" : String(value);
-      const errorEl = document.createElement("div");
-      errorEl.className = "field-error-msg";
-      input.addEventListener("input", () => {
-        if (input.value === "") {
-          input.classList.remove("field-invalid");
-          errorEl.textContent = "";
-          onInput(null);
-          onValidityChange(true);
-          return;
-        }
-        const parsed = Number(input.value);
-        const valid =
-          Number.isFinite(parsed) && parsed >= 0 && parsed <= MAX_TEAM_SCORE;
-        input.classList.toggle("field-invalid", !valid);
-        errorEl.textContent = valid
-          ? ""
-          : t("prediction.error.range", { min: 0, max: MAX_TEAM_SCORE });
-        onInput(valid ? parsed : null);
-        onValidityChange(valid);
-      });
-      col.appendChild(input);
-      col.appendChild(errorEl);
-      return col;
-    };
 
     let homeValid = true;
     let awayValid = true;
@@ -578,8 +515,37 @@ export class PredictionScreen {
       if (nextBtn) nextBtn.disabled = !(homeValid && awayValid);
     };
 
-    teams.appendChild(
-      buildTeamColumn(
+    const buildTeamRow = (
+      team: Team | null,
+      value: number | null,
+      onInput: (value: number | null) => void,
+      onValidityChange: (valid: boolean) => void,
+    ) => {
+      const row = el("div", "score-row");
+      row.innerHTML = `
+        <div class="score-row__team">
+          ${team ? `<img class="score-row__logo" src="${team.logo}" alt="" width="48" height="48" />` : ""}
+          <span class="score-row__name t-h3" dir="auto">${team ? esc(teamName(team)) : ""}</span>
+        </div>`;
+      const { root, error } = numberStepper({
+        value,
+        max: MAX_TEAM_SCORE,
+        emptyStart: SCORE_STEPPER_START,
+        label: team ? teamName(team) : "",
+        onValue: (v, valid) => {
+          onInput(v);
+          onValidityChange(valid);
+        },
+      });
+      const control = el("div", "score-row__control");
+      control.append(root, error);
+      row.appendChild(control);
+      return row;
+    };
+
+    const card = el("div", "card card--lg score-card");
+    card.appendChild(
+      buildTeamRow(
         home,
         this.prediction.predictedHomeScore,
         (v) => {
@@ -591,14 +557,8 @@ export class PredictionScreen {
         },
       ),
     );
-
-    const vs = document.createElement("div");
-    vs.className = "score-vs";
-    vs.textContent = "-";
-    teams.appendChild(vs);
-
-    teams.appendChild(
-      buildTeamColumn(
+    card.appendChild(
+      buildTeamRow(
         away,
         this.prediction.predictedAwayScore,
         (v) => {
@@ -610,8 +570,7 @@ export class PredictionScreen {
         },
       ),
     );
-
-    section.appendChild(teams);
+    section.appendChild(card);
 
     const nav = this.buildNavButtons({
       backLabel: t("common.backBtn"),
@@ -620,41 +579,37 @@ export class PredictionScreen {
       nextEnabled: true,
       onNext: () => this.goNext(),
     });
-    nextBtn = nav.querySelector(".btn-primary") as HTMLButtonElement | null;
-    section.appendChild(nav);
+    nextBtn = nav.querySelector(".btn--primary") as HTMLButtonElement | null;
 
-    return section;
+    return [section, nav];
   }
 
-  // ---- Step: top scorer / rebounder / assist man, one at a time via a swipeable carousel ----
-  private renderStatsStep(): HTMLElement {
+  // ---------------------------------------------------------------- step 2: team leaders
+
+  private renderStatsStep(): [HTMLElement, HTMLElement] {
     const category = CATEGORY_ORDER[this.statSubStep];
     const config = CATEGORY_CONFIG[category];
 
-    const section = document.createElement("div");
-    section.className = "prediction-section";
+    const section = el("section", "prediction-section");
 
-    const counter = document.createElement("p");
-    counter.className = "counter-text";
-    counter.textContent = t("prediction.statsStep.question", {
-      label: t(config.labelKey),
-    });
-    section.appendChild(counter);
-
-    const subIndicator = document.createElement("div");
-    subIndicator.className = "stat-sub-indicator";
+    const sub = el("div", "substeps");
+    sub.innerHTML = `<span class="overline">${t(config.labelKey)}</span>`;
+    const dots = el("span", "substeps__dots");
     CATEGORY_ORDER.forEach((_, i) => {
-      const dot = document.createElement("span");
-      dot.className =
-        "stat-sub-dot" +
-        (i === this.statSubStep
-          ? " active"
-          : i < this.statSubStep
-            ? " done"
-            : "");
-      subIndicator.appendChild(dot);
+      dots.appendChild(
+        el(
+          "span",
+          "substeps__dot" +
+            (i === this.statSubStep ? " is-active" : i < this.statSubStep ? " is-done" : ""),
+        ),
+      );
     });
-    section.appendChild(subIndicator);
+    sub.appendChild(dots);
+    section.appendChild(sub);
+
+    section.appendChild(
+      this.question(t("prediction.statsStep.question", { label: t(config.labelKey) })),
+    );
 
     let nextBtn: HTMLButtonElement | null = null;
     let amountValid = true;
@@ -663,56 +618,41 @@ export class PredictionScreen {
     };
 
     if (this.players.length === 0) {
-      const loading = document.createElement("p");
-      loading.className = "counter-text";
-      loading.textContent = t("prediction.loadingPlayers");
-      section.appendChild(loading);
+      section.appendChild(skeleton("cards", 2));
     } else {
-      const index = this.carouselIndex[category];
+      const index = this.carouselIndex[category] % this.players.length;
       const player = this.players[index];
       if (this.prediction[config.playerKey] !== player.id) {
         this.prediction[config.playerKey] = player.id;
       }
 
-      section.appendChild(this.renderCarousel(category, this.players));
+      if (this.squadPlayerIds && this.squadPlayerIds.size > 0) {
+        section.appendChild(
+          el("p", "squad-note", `${icon("info", { size: "sm" })}<span>${t("prediction.squadNote")}</span>`),
+        );
+      }
 
-      const amountField = document.createElement("label");
-      amountField.className = "stat-field amount-field";
-      amountField.innerHTML = `<span>${t(config.amountLabelKey)}</span>`;
-      const maxAmount = MAX_PLAYER_STAT[category];
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.max = String(maxAmount);
-      input.value =
-        this.prediction[config.amountKey] === null
-          ? ""
-          : String(this.prediction[config.amountKey]);
-      const errorEl = document.createElement("div");
-      errorEl.className = "field-error-msg";
-      input.addEventListener("input", () => {
-        if (input.value === "") {
-          input.classList.remove("field-invalid");
-          errorEl.textContent = "";
-          this.prediction[config.amountKey] = null;
-          amountValid = true;
+      section.appendChild(this.renderPlayerGrid(category));
+
+      const amount = el("div", "card amount-card");
+      const label = el("span", "amount-card__label t-h3");
+      label.textContent = t(config.amountLabelKey);
+      const { root, error } = numberStepper({
+        value: this.prediction[config.amountKey],
+        max: MAX_PLAYER_STAT[category],
+        emptyStart: 0,
+        label: t(config.amountLabelKey),
+        size: "md",
+        onValue: (v, valid) => {
+          this.prediction[config.amountKey] = v;
+          amountValid = valid;
           updateNextState();
-          return;
-        }
-        const parsed = Number(input.value);
-        const valid =
-          Number.isFinite(parsed) && parsed >= 0 && parsed <= maxAmount;
-        input.classList.toggle("field-invalid", !valid);
-        errorEl.textContent = valid
-          ? ""
-          : t("prediction.error.range", { min: 0, max: maxAmount });
-        this.prediction[config.amountKey] = valid ? parsed : null;
-        amountValid = valid;
-        updateNextState();
+        },
       });
-      amountField.appendChild(input);
-      amountField.appendChild(errorEl);
-      section.appendChild(amountField);
+      const control = el("div", "amount-card__control");
+      control.append(root, error);
+      amount.append(label, control);
+      section.appendChild(amount);
     }
 
     const nav = this.buildNavButtons({
@@ -729,104 +669,61 @@ export class PredictionScreen {
       nextEnabled: true,
       onNext: () => this.goNext(),
     });
-    nextBtn = nav.querySelector(".btn-primary") as HTMLButtonElement | null;
-    section.appendChild(nav);
+    nextBtn = nav.querySelector(".btn--primary") as HTMLButtonElement | null;
 
-    return section;
+    return [section, nav];
   }
 
-  /** Renders a 3-card (prev/current/next) sliding carousel for picking a player. */
-  private renderCarousel(category: CarouselKey, pool: Player[]): HTMLElement {
-    const wrap = document.createElement("div");
-    wrap.className = "player-carousel";
+  /** Grid of player cards (photo or initials, number, name) - replaces the old 3-up carousel. */
+  private renderPlayerGrid(category: CarouselKey): HTMLElement {
+    const grid = el("div", "player-grid");
+    grid.setAttribute("role", "radiogroup");
+    grid.setAttribute("aria-label", t(CATEGORY_CONFIG[category].labelKey));
+    const selected = this.carouselIndex[category] % this.players.length;
 
-    const prevBtn = document.createElement("button");
-    prevBtn.type = "button";
-    prevBtn.className = "carousel-arrow";
-    prevBtn.textContent = "→";
-    prevBtn.setAttribute("aria-label", t("prediction.carousel.prev"));
-    prevBtn.addEventListener("click", () =>
-      this.moveCarousel(category, pool, -1),
-    );
-    wrap.appendChild(prevBtn);
-
-    const viewport = document.createElement("div");
-    viewport.className = "carousel-viewport";
-
-    const len = pool.length;
-    const cur = this.carouselIndex[category] % len;
-    const prevPlayer = pool[(cur - 1 + len) % len];
-    const curPlayer = pool[cur];
-    const nextPlayer = pool[(cur + 1) % len];
-
-    const track = document.createElement("div");
-    track.className =
-      "carousel-track " +
-      (this.carouselDirection === 1
-        ? "carousel-slide-next"
-        : "carousel-slide-prev");
-    track.appendChild(this.buildCarouselCard(prevPlayer, "side"));
-    track.appendChild(this.buildCarouselCard(curPlayer, "current"));
-    track.appendChild(this.buildCarouselCard(nextPlayer, "side"));
-    viewport.appendChild(track);
-
-    let startX = 0;
-    viewport.addEventListener("pointerdown", (e) => {
-      startX = e.clientX;
-      viewport.setPointerCapture(e.pointerId);
+    this.players.forEach((player, index) => {
+      const isSelected = index === selected;
+      const inSquad = this.squadPlayerIds?.has(player.id) ?? null;
+      const card = el(
+        "button",
+        "player-card" +
+          (isSelected ? " is-selected" : "") +
+          (inSquad === false ? " is-out" : ""),
+      );
+      card.type = "button";
+      card.setAttribute("role", "radio");
+      card.setAttribute("aria-checked", String(isSelected));
+      const name = tDynamic(player.name);
+      card.innerHTML = `
+        <span class="player-card__avatar">${
+          player.photoUrl
+            ? `<img src="${esc(player.photoUrl)}" alt="" loading="lazy" />`
+            : `<span>${esc(initials(name))}</span>`
+        }</span>
+        <span class="player-card__number num">${player.jerseyNumber}</span>
+        <span class="player-card__name" dir="auto">${esc(name)}</span>
+        ${inSquad ? `<span class="player-card__squad">${t("prediction.inSquad")}</span>` : ""}
+        <span class="player-card__check">${icon("check", { size: "sm" })}</span>
+      `;
+      card.addEventListener("click", () => {
+        if (this.carouselIndex[category] === index) return;
+        this.carouselIndex[category] = index;
+        this.prediction[CATEGORY_CONFIG[category].playerKey] = player.id;
+        const y = window.scrollY;
+        this.render();
+        window.scrollTo({ top: y });
+        (this.container.querySelectorAll<HTMLElement>(".player-card")[index])?.focus({ preventScroll: true });
+      });
+      grid.appendChild(card);
     });
-    viewport.addEventListener("pointerup", (e) => {
-      const dx = e.clientX - startX;
-      if (Math.abs(dx) > 40) this.moveCarousel(category, pool, dx < 0 ? 1 : -1);
-    });
-    wrap.appendChild(viewport);
-
-    const nextBtn = document.createElement("button");
-    nextBtn.type = "button";
-    nextBtn.className = "carousel-arrow";
-    nextBtn.textContent = "←";
-    nextBtn.setAttribute("aria-label", t("prediction.carousel.next"));
-    nextBtn.addEventListener("click", () =>
-      this.moveCarousel(category, pool, 1),
-    );
-    wrap.appendChild(nextBtn);
-
-    return wrap;
+    return grid;
   }
 
-  private buildCarouselCard(
-    player: Player,
-    kind: "current" | "side",
-  ): HTMLElement {
-    const card = document.createElement("div");
-    card.className = `carousel-card ${kind}`;
-    card.innerHTML = `
-      <span class="player-avatar">${player.photoUrl ? `<img src="${player.photoUrl}" alt="" />` : AVATAR_SVG}</span>
-      <span class="player-jersey">#${player.jerseyNumber}</span>
-      <span class="player-name" dir="auto">${tDynamic(player.name)}</span>
-      ${kind === "current" ? `<span class="player-position">${tDynamic(player.position)}</span>` : ""}
-    `;
-    return card;
-  }
+  // ---------------------------------------------------------------- step 3: team totals
 
-  private moveCarousel(category: CarouselKey, pool: Player[], delta: number) {
-    if (pool.length === 0) return;
-    const len = pool.length;
-    const cur = this.carouselIndex[category] % len;
-    this.carouselDirection = delta > 0 ? 1 : -1;
-    this.carouselIndex[category] = (cur + delta + len) % len;
-    this.render();
-  }
-
-  // ---- Step: team-level totals (threes made, rebounds, assists) ----
-  private renderTeamStep(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "prediction-section";
-
-    const counter = document.createElement("p");
-    counter.className = "counter-text";
-    counter.textContent = t("prediction.teamStep.question");
-    section.appendChild(counter);
+  private renderTeamStep(): [HTMLElement, HTMLElement] {
+    const section = el("section", "prediction-section");
+    section.appendChild(this.question(t("prediction.teamStep.question")));
 
     const fields: {
       labelKey: string;
@@ -863,41 +760,29 @@ export class PredictionScreen {
       if (nextBtn) nextBtn.disabled = !Object.values(validity).every(Boolean);
     };
 
+    const card = el("div", "card card--lg team-card");
     fields.forEach(({ labelKey, key, max }) => {
-      const field = document.createElement("label");
-      field.className = "stat-field amount-field";
-      field.innerHTML = `<span>${t(labelKey)}</span>`;
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.max = String(max);
-      input.value =
-        this.prediction[key] === null ? "" : String(this.prediction[key]);
-      const errorEl = document.createElement("div");
-      errorEl.className = "field-error-msg";
-      input.addEventListener("input", () => {
-        if (input.value === "") {
-          input.classList.remove("field-invalid");
-          errorEl.textContent = "";
-          this.prediction[key] = null;
-          validity[key] = true;
+      const row = el("div", "team-row");
+      const label = el("span", "team-row__label t-h3");
+      label.textContent = t(labelKey);
+      const { root, error } = numberStepper({
+        value: this.prediction[key],
+        max,
+        emptyStart: 0,
+        label: t(labelKey),
+        size: "md",
+        onValue: (v, valid) => {
+          this.prediction[key] = v;
+          validity[key] = valid;
           updateNextState();
-          return;
-        }
-        const parsed = Number(input.value);
-        const valid = Number.isFinite(parsed) && parsed >= 0 && parsed <= max;
-        input.classList.toggle("field-invalid", !valid);
-        errorEl.textContent = valid
-          ? ""
-          : t("prediction.error.range", { min: 0, max });
-        this.prediction[key] = valid ? parsed : null;
-        validity[key] = valid;
-        updateNextState();
+        },
       });
-      field.appendChild(input);
-      field.appendChild(errorEl);
-      section.appendChild(field);
+      const control = el("div", "team-row__control");
+      control.append(root, error);
+      row.append(label, control);
+      card.appendChild(row);
     });
+    section.appendChild(card);
 
     const bonusQuestion = this.currentGame
       ? BONUS_QUESTIONS.get(this.currentGame.id)
@@ -913,34 +798,32 @@ export class PredictionScreen {
       nextEnabled: true,
       onNext: () => this.goNext(),
     });
-    nextBtn = nav.querySelector(".btn-primary") as HTMLButtonElement | null;
-    section.appendChild(nav);
+    nextBtn = nav.querySelector(".btn--primary") as HTMLButtonElement | null;
 
-    return section;
+    return [section, nav];
   }
 
   /** The one-off yes/no bonus question field, only shown for specific games (see BONUS_QUESTIONS). */
   private buildBonusQuestionField(bonusQuestion: BonusQuestion): HTMLElement {
-    const field = document.createElement("div");
-    field.className = "bonus-question-field";
+    const field = el("div", "card bonus-card");
     field.innerHTML = `
-      <span class="bonus-question-badge">${t("admin.bonusQuestionLabel", { points: bonusQuestion.points })}</span>
-      <p class="bonus-question-text" dir="auto">${tDynamic(bonusQuestion.question)}</p>
+      <span class="tag tag--red">${icon("zap")}${t("admin.bonusQuestionLabel", { points: bonusQuestion.points })}</span>
+      <p class="bonus-card__text t-h3" dir="auto">${esc(tDynamic(bonusQuestion.question))}</p>
     `;
 
-    const buttons = document.createElement("div");
-    buttons.className = "bonus-question-buttons";
+    const buttons = el("div", "segmented bonus-card__choices");
+    buttons.setAttribute("role", "group");
 
     const buildChoice = (label: string, value: boolean) => {
-      const btn = document.createElement("button");
+      const btn = el("button", "segmented__btn");
       btn.type = "button";
-      btn.className =
-        "btn-secondary bonus-question-choice" +
-        (this.prediction.predictedBonusAnswer === value ? " selected" : "");
+      btn.setAttribute("aria-pressed", String(this.prediction.predictedBonusAnswer === value));
       btn.textContent = label;
       btn.addEventListener("click", () => {
         this.prediction.predictedBonusAnswer = value;
+        const y = window.scrollY;
         this.render();
+        window.scrollTo({ top: y });
       });
       return btn;
     };
@@ -952,12 +835,14 @@ export class PredictionScreen {
     return field;
   }
 
+  // ---------------------------------------------------------------- post-game recap
+
   /** Post-game recap: a table of predicted vs. actual, with the points each row earned. */
   private buildResultBreakdownTable(section: HTMLElement) {
     const result = this.actualResult!;
     const rules = this.scoringRules!;
 
-    const heading = document.createElement("h3");
+    const heading = el("h2", "t-h2 recap-title");
     heading.textContent = t("prediction.breakdown.title");
     section.appendChild(heading);
 
@@ -1066,163 +951,112 @@ export class PredictionScreen {
       });
     }
 
-    const table = document.createElement("div");
-    table.className = "result-table";
-
-    const header = document.createElement("div");
-    header.className = "result-table-row result-table-header";
-    header.innerHTML = `
-      <span>${t("prediction.breakdown.header.category")}</span>
-      <span>${t("prediction.breakdown.header.predicted")}</span>
-      <span>${t("prediction.breakdown.header.actual")}</span>
-      <span>${t("prediction.breakdown.header.points")}</span>
-    `;
-    table.appendChild(header);
-
-    rows.forEach((row) => {
-      const rowEl = document.createElement("div");
-      rowEl.className = "result-table-row";
-      rowEl.innerHTML = `
-        <span>${row.label}</span>
-        <span dir="auto">${row.predicted}</span>
-        <span dir="auto">${row.actual}</span>
-        <span class="result-table-points">${row.points}</span>
-      `;
-      table.appendChild(rowEl);
-    });
-    section.appendChild(table);
-
-    if (this.myGameScore !== null) {
-      const totalP = document.createElement("p");
-      totalP.className = "counter-text";
-      totalP.dir = "auto";
-      totalP.textContent = t("prediction.breakdown.totalScore", {
-        score: this.myGameScore,
-      });
-      section.appendChild(totalP);
-    }
+    section.appendChild(resultTable(rows, this.myGameScore));
   }
 
-  /** Builds the hero score + leaders grid + foreign chips, shared by the summary and view-only steps. */
+  // ---------------------------------------------------------------- summary / receipt
+
+  /** "Bet slip" receipt of the current prediction, shared by the summary step and view-only mode. */
   private buildSummaryContent(section: HTMLElement) {
     const home = this.currentGame ? TEAMS[this.currentGame.homeTeamId] : null;
     const away = this.currentGame ? TEAMS[this.currentGame.awayTeamId] : null;
 
-    const hero = document.createElement("div");
-    hero.className = "summary-score-hero";
-    hero.innerHTML = `
-      <div class="summary-score-team">
-        ${home ? `<img src="${home.logo}" alt="${teamName(home)}" />` : ""}
-        <span dir="auto">${home ? teamName(home) : ""}</span>
-      </div>
-      <div class="summary-score-numbers">
-        ${this.prediction.predictedHomeScore ?? "?"} - ${this.prediction.predictedAwayScore ?? "?"}
-      </div>
-      <div class="summary-score-team">
-        ${away ? `<img src="${away.logo}" alt="${teamName(away)}" />` : ""}
-        <span dir="auto">${away ? teamName(away) : ""}</span>
+    const receipt = el("div", "receipt");
+    const team = (tm: Team | null) =>
+      `<div class="receipt__team">${tm ? `<img src="${tm.logo}" alt="" width="48" height="48" />` : ""}<span dir="auto">${tm ? esc(teamName(tm)) : ""}</span></div>`;
+    receipt.innerHTML = `
+      <div class="receipt__head">
+        ${team(home)}
+        <div class="receipt__score num" aria-label="${t("prediction.step.score")}">
+          <span>${this.prediction.predictedHomeScore ?? "?"}</span><span class="receipt__dash">–</span><span>${this.prediction.predictedAwayScore ?? "?"}</span>
+        </div>
+        ${team(away)}
       </div>
     `;
-    section.appendChild(hero);
 
-    const leadersGrid = document.createElement("div");
-    leadersGrid.className = "summary-leaders-grid";
+    const rows = el("dl", "receipt__rows");
+    const addRow = (label: string, value: string, sub = "") => {
+      const r = el("div", "receipt__row");
+      r.innerHTML = `<dt dir="auto"></dt><dd><span class="receipt__value" dir="auto"></span>${sub ? `<span class="receipt__sub num"></span>` : ""}</dd>`;
+      r.querySelector("dt")!.textContent = label;
+      r.querySelector(".receipt__value")!.textContent = value;
+      if (sub) r.querySelector(".receipt__sub")!.textContent = sub;
+      rows.appendChild(r);
+    };
+
     CATEGORY_ORDER.forEach((category) => {
       const config = CATEGORY_CONFIG[category];
       const playerId = this.prediction[config.playerKey];
       const player = playerId ? this.playerById(playerId) : null;
       const amount = this.prediction[config.amountKey];
-
-      const card = document.createElement("div");
-      card.className = "summary-leader-card";
-      card.innerHTML = `
-        <span class="player-avatar small">${player?.photoUrl ? `<img src="${player.photoUrl}" alt="" />` : AVATAR_SVG}</span>
-        <h4>${t(config.labelKey)}</h4>
-        <p dir="auto">${player ? `#${player.jerseyNumber} ${tDynamic(player.name)}` : t("prediction.summary.notSelected")}</p>
-        <p class="summary-leader-amount">${amount !== null ? `${amount} ${t(config.amountLabelKey)}` : ""}</p>
-      `;
-      leadersGrid.appendChild(card);
+      addRow(
+        t(config.labelKey),
+        player ? `#${player.jerseyNumber} ${tDynamic(player.name)}` : t("prediction.summary.notSelected"),
+        amount !== null ? `${amount} ${t(config.amountLabelKey)}` : "",
+      );
     });
-    section.appendChild(leadersGrid);
 
-    const teamStatLines: { textKey: string; value: number | null }[] = [
-      {
-        textKey: "prediction.summary.threes",
-        value: this.prediction.predictedTeamThrees,
-      },
-      {
-        textKey: "prediction.summary.rebounds",
-        value: this.prediction.predictedTeamRebounds,
-      },
-      {
-        textKey: "prediction.summary.assists",
-        value: this.prediction.predictedTeamAssists,
-      },
+    const teamStatLines: { labelKey: string; value: number | null }[] = [
+      { labelKey: "prediction.breakdown.teamThrees", value: this.prediction.predictedTeamThrees },
+      { labelKey: "prediction.breakdown.teamRebounds", value: this.prediction.predictedTeamRebounds },
+      { labelKey: "prediction.breakdown.teamAssists", value: this.prediction.predictedTeamAssists },
     ];
-    teamStatLines.forEach(({ textKey, value }) => {
+    teamStatLines.forEach(({ labelKey, value }) => {
       if (value === null) return;
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = `${t(textKey)} ${value}`;
-      section.appendChild(p);
+      addRow(t(labelKey), String(value));
     });
 
     const bonusQuestion = this.currentGame
       ? BONUS_QUESTIONS.get(this.currentGame.id)
       : undefined;
     if (bonusQuestion && this.prediction.predictedBonusAnswer !== null) {
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = `${tDynamic(bonusQuestion.question)} - ${this.prediction.predictedBonusAnswer ? t("common.yes") : t("common.no")}`;
-      section.appendChild(p);
+      addRow(
+        tDynamic(bonusQuestion.question),
+        this.prediction.predictedBonusAnswer ? t("common.yes") : t("common.no"),
+      );
     }
+
+    receipt.appendChild(rows);
+    section.appendChild(receipt);
   }
 
-  /** Builds the "everyone's average" panel shown right after a successful submit. */
+  /** Builds the "everyone's average" panel shown after submitting and in view-only mode. */
   private buildAggregateContent(section: HTMLElement) {
     if (!this.aggregate || this.aggregate.totalPredictions === 0) return;
     const agg = this.aggregate;
 
-    const heading = document.createElement("h3");
-    heading.textContent = t("prediction.aggregate.heading", {
-      n: agg.totalPredictions,
-    });
-    section.appendChild(heading);
+    const card = el("section", "card card--lg aggregate");
+    card.innerHTML = `
+      <div class="aggregate__head">
+        <h3 class="t-h3">${t("prediction.aggregate.title")}</h3>
+        <span class="tag">${icon("users")}<span class="num">${t("prediction.aggregate.count", { n: agg.totalPredictions })}</span></span>
+      </div>`;
 
     if (agg.avgHomeScore !== null && agg.avgAwayScore !== null) {
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = t("prediction.aggregate.avgScore", {
-        home: agg.avgHomeScore,
-        away: agg.avgAwayScore,
-      });
-      section.appendChild(p);
+      const home = this.currentGame ? TEAMS[this.currentGame.homeTeamId] : null;
+      const away = this.currentGame ? TEAMS[this.currentGame.awayTeamId] : null;
+      card.appendChild(
+        el(
+          "div",
+          "aggregate__score",
+          `<span class="aggregate__label">${t("prediction.aggregate.avgScoreLabel")}</span>
+           <div class="aggregate__score-row">
+             ${home ? `<img src="${home.logo}" alt="${esc(teamName(home))}" width="32" height="32" />` : ""}
+             <span class="t-h1 num">${agg.avgHomeScore}</span><span class="c-3">–</span><span class="t-h1 num">${agg.avgAwayScore}</span>
+             ${away ? `<img src="${away.logo}" alt="${esc(teamName(away))}" width="32" height="32" />` : ""}
+           </div>`,
+        ),
+      );
     }
 
-    if (agg.avgTeamThrees !== null) {
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = t("prediction.aggregate.avgThrees", {
-        v: agg.avgTeamThrees,
-      });
-      section.appendChild(p);
-    }
-    if (agg.avgTeamRebounds !== null) {
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = t("prediction.aggregate.avgRebounds", {
-        v: agg.avgTeamRebounds,
-      });
-      section.appendChild(p);
-    }
-    if (agg.avgTeamAssists !== null) {
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = t("prediction.aggregate.avgAssists", {
-        v: agg.avgTeamAssists,
-      });
-      section.appendChild(p);
-    }
+    const rows = el("dl", "aggregate__rows");
+    const addRow = (label: string, value: string) => {
+      const r = el("div", "aggregate__row");
+      r.innerHTML = `<dt></dt><dd dir="auto"></dd>`;
+      r.querySelector("dt")!.textContent = label;
+      r.querySelector("dd")!.textContent = value;
+      rows.appendChild(r);
+    };
 
     const leaderLines: {
       playerId: string | null;
@@ -1248,48 +1082,52 @@ export class PredictionScreen {
     leaderLines.forEach(({ playerId, avg, labelKey }) => {
       if (!playerId) return;
       const player = this.playerById(playerId);
-      const p = document.createElement("p");
-      p.dir = "auto";
-      p.textContent = t("prediction.aggregate.mostPicked", {
-        player: player
-          ? tDynamic(player.name)
-          : t("prediction.aggregate.unknownPlayer"),
-        label: t(labelKey),
-        avgSuffix:
-          avg !== null ? t("prediction.aggregate.avgSuffix", { avg }) : "",
-      });
-      section.appendChild(p);
+      addRow(
+        t(labelKey),
+        `${player ? tDynamic(player.name) : t("prediction.aggregate.unknownPlayer")}${avg !== null ? ` · ${avg}` : ""}`,
+      );
     });
+    if (agg.avgTeamThrees !== null) addRow(t("prediction.breakdown.teamThrees"), String(agg.avgTeamThrees));
+    if (agg.avgTeamRebounds !== null) addRow(t("prediction.breakdown.teamRebounds"), String(agg.avgTeamRebounds));
+    if (agg.avgTeamAssists !== null) addRow(t("prediction.breakdown.teamAssists"), String(agg.avgTeamAssists));
+
+    if (rows.childElementCount > 0) {
+      card.appendChild(el("p", "overline aggregate__sub", t("prediction.aggregate.popularTitle")));
+      card.appendChild(rows);
+    }
+    section.appendChild(card);
   }
 
-  // ---- Step: review & submit ----
-  private renderSummaryStep(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "prediction-section";
+  // ---------------------------------------------------------------- step 4: review & submit
+
+  private renderSummaryStep(): [HTMLElement, HTMLElement] {
+    const section = el("section", "prediction-section");
+    section.appendChild(this.question(t("prediction.summary.title")));
 
     this.buildSummaryContent(section);
 
-    section.appendChild(
-      this.buildNavButtons({
-        backLabel: t("prediction.summary.backToEdit"),
-        onBack: () => this.goBack(),
-        nextLabel: t("prediction.summary.submit"),
-        nextEnabled: true,
-        onNext: () => this.submit(),
-      }),
-    );
+    const nav = this.buildNavButtons({
+      backLabel: t("prediction.summary.backToEdit"),
+      onBack: () => this.goBack(),
+      nextLabel: t("prediction.summary.submit"),
+      nextEnabled: true,
+      onNext: () => this.submit(),
+    });
 
-    return section;
+    return [section, nav];
   }
 
-  // ---- Read-only view of an already-submitted prediction ----
-  private renderViewOnlyStep(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "prediction-section";
+  // ---------------------------------------------------------------- read-only view
 
-    const heading = document.createElement("p");
-    heading.className = "counter-text";
-    heading.textContent = this.hasOwnPrediction
+  private renderViewOnlyStep(): HTMLElement {
+    const section = el("section", "prediction-section");
+
+    const heading = el(
+      "p",
+      `view-note${this.hasOwnPrediction ? " view-note--own" : ""}`,
+      `${icon(this.hasOwnPrediction ? "check" : "info", { size: "sm" })}<span></span>`,
+    );
+    heading.lastElementChild!.textContent = this.hasOwnPrediction
       ? t("prediction.viewOnly.hasPrediction")
       : t("prediction.viewOnly.noPrediction");
     section.appendChild(heading);
@@ -1301,47 +1139,56 @@ export class PredictionScreen {
     }
     this.buildAggregateContent(section);
 
-    const nav = document.createElement("div");
-    nav.className = "prediction-nav";
+    return section;
+  }
+
+  private renderViewOnlyActions(): HTMLElement {
+    const bar = el("div", "action-bar");
+    const inner = el("div", "action-bar__inner");
 
     if (
       this.hasOwnPrediction &&
       this.currentGame &&
       !isScoreLocked(this.currentGame)
     ) {
-      const editBtn = document.createElement("button");
+      const editBtn = el("button", "btn btn--secondary");
       editBtn.type = "button";
-      editBtn.className = "btn-secondary";
       editBtn.textContent = t("prediction.viewOnly.edit");
       editBtn.addEventListener("click", () => {
         this.viewMode = false;
         this.stepIndex = 0;
         this.statSubStep = 0;
         this.render();
+        window.scrollTo({ top: 0 });
       });
-      nav.appendChild(editBtn);
+      inner.appendChild(editBtn);
     }
 
-    const backBtn = document.createElement("button");
+    const backBtn = el("button", "btn btn--primary");
     backBtn.type = "button";
-    backBtn.className = "btn-primary";
     backBtn.textContent = t("prediction.viewOnly.backToSchedule");
     backBtn.addEventListener("click", () => this.onBack());
-    nav.appendChild(backBtn);
-    section.appendChild(nav);
-
-    return section;
+    inner.appendChild(backBtn);
+    bar.appendChild(inner);
+    return bar;
   }
+
+  // ---------------------------------------------------------------- submit
 
   private async submit() {
     if (!this.currentGame) return;
 
-    const section = this.container.querySelector(".prediction-section");
+    const section = this.container.querySelector<HTMLElement>(".prediction-section");
+    const actionBar = this.container.querySelector<HTMLElement>(".action-bar");
+    const progress = this.container.querySelector<HTMLElement>(".progress");
+    const submitBtn = actionBar?.querySelector<HTMLButtonElement>(".btn--primary");
+    if (submitBtn) submitBtn.disabled = true;
 
     try {
       if (!auth.currentUser) {
         if (section) {
-          section.innerHTML = `<div class="submit-confirmation"><p>${t("prediction.connectingGoogle")}</p></div>`;
+          section.innerHTML = "";
+          section.appendChild(this.sendingState(t("prediction.connectingGoogle")));
         }
         await signInWithGoogle();
       }
@@ -1377,27 +1224,62 @@ export class PredictionScreen {
 
       if (section) {
         section.innerHTML = "";
-        const confirmation = document.createElement("div");
-        confirmation.className = "submit-confirmation";
-        confirmation.innerHTML = `
-          <h2>${t("prediction.submitted.title")}</h2>
-          <p>${t("prediction.submitted.message")}</p>
-        `;
-        this.buildAggregateContent(confirmation);
+        progress?.remove();
+        const confirmation = el(
+          "div",
+          "submit-confirmation sent",
+          `<div class="sent__ball">${logoMarkSVG()}</div>
+           <h2 class="t-h1">${t("prediction.submitted.title")}</h2>
+           <p class="c-2">${t("prediction.submitted.message")}</p>`,
+        );
         section.appendChild(confirmation);
+        this.buildAggregateContent(section);
+        window.scrollTo({ top: 0 });
+      }
+      if (actionBar) {
+        actionBar.replaceWith(this.singleAction(t("prediction.viewOnly.backToSchedule"), () => this.onBack()));
       }
     } catch (err) {
       console.error("Failed to submit prediction:", err);
       if (section) {
-        section.innerHTML = `<div class="submit-confirmation">
-          <h2>${t("prediction.error.title")}</h2>
-          <p>${t("prediction.error.message")}</p>
-          <p class="counter-text" dir="auto" style="font-size:12px;opacity:0.7;">${err instanceof Error ? err.message : String(err)}</p>
-        </div>`;
+        section.innerHTML = "";
+        const box = el(
+          "div",
+          "submit-confirmation submit-error",
+          `<div class="banner banner--danger" role="alert">${icon("alert")}
+             <div><p class="t-h3">${t("prediction.error.title")}</p><p>${t("prediction.error.message")}</p></div>
+           </div>
+           <p class="submit-error__detail" dir="auto"></p>`,
+        );
+        box.querySelector(".submit-error__detail")!.textContent =
+          err instanceof Error ? err.message : String(err);
+        section.appendChild(box);
+      }
+      if (actionBar) {
+        actionBar.replaceWith(this.singleAction(t("prediction.viewOnly.backToSchedule"), () => this.onBack()));
       }
     }
   }
 
+  private sendingState(text: string): HTMLElement {
+    const box = el("div", "submit-confirmation sent", `<div class="sent__ball is-spinning">${logoMarkSVG()}</div><p class="c-2"></p>`);
+    box.querySelector("p")!.textContent = text;
+    return box;
+  }
+
+  private singleAction(label: string, onClick: () => void): HTMLElement {
+    const bar = el("div", "action-bar");
+    const inner = el("div", "action-bar__inner");
+    const btn = el("button", "btn btn--primary");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.addEventListener("click", onClick);
+    inner.appendChild(btn);
+    bar.appendChild(inner);
+    return bar;
+  }
+
+  /** Sticky bottom action bar: "back" as a quiet text button, "next" as the one red CTA. */
   private buildNavButtons(opts: {
     backLabel?: string;
     onBack?: () => void;
@@ -1405,26 +1287,70 @@ export class PredictionScreen {
     nextEnabled: boolean;
     onNext: () => void;
   }): HTMLElement {
-    const nav = document.createElement("div");
-    nav.className = "prediction-nav";
+    const bar = el("div", "action-bar");
+    const nav = el("div", "action-bar__inner prediction-nav");
 
     if (opts.backLabel && opts.onBack) {
-      const backBtn = document.createElement("button");
+      const backBtn = el("button", "btn btn--ghost action-bar__back");
       backBtn.type = "button";
-      backBtn.className = "btn-secondary";
       backBtn.textContent = opts.backLabel;
       backBtn.addEventListener("click", opts.onBack);
       nav.appendChild(backBtn);
     }
 
-    const nextBtn = document.createElement("button");
+    const nextBtn = el("button", "btn btn--primary", `<span></span>${icon("arrowForward", { size: "sm" })}`);
     nextBtn.type = "button";
-    nextBtn.className = "btn-primary";
-    nextBtn.textContent = opts.nextLabel;
+    nextBtn.querySelector("span")!.textContent = opts.nextLabel;
     nextBtn.disabled = !opts.nextEnabled;
     nextBtn.addEventListener("click", opts.onNext);
     nav.appendChild(nextBtn);
 
-    return nav;
+    bar.appendChild(nav);
+    return bar;
   }
+}
+
+/**
+ * "Predicted vs. actual" table, shared with the leaderboard's per-user modal.
+ * Aligned columns, tabular numbers, earned points in green.
+ */
+export function resultTable(
+  rows: { label: string; predicted: string; actual: string; points: number }[],
+  total: number | null,
+): HTMLElement {
+  const wrap = el("div", "result-table");
+  wrap.setAttribute("role", "table");
+  const header = el("div", "result-table__row result-table__head");
+  header.setAttribute("role", "row");
+  header.innerHTML = `
+    <span role="columnheader">${t("prediction.breakdown.header.category")}</span>
+    <span role="columnheader">${t("prediction.breakdown.header.predicted")}</span>
+    <span role="columnheader">${t("prediction.breakdown.header.actual")}</span>
+    <span role="columnheader" class="result-table__pts">${t("prediction.breakdown.header.points")}</span>
+  `;
+  wrap.appendChild(header);
+
+  rows.forEach((row) => {
+    const r = el("div", "result-table__row");
+    r.setAttribute("role", "row");
+    r.innerHTML = `
+      <span role="cell" class="result-table__label" dir="auto"></span>
+      <span role="cell" class="num" dir="auto"></span>
+      <span role="cell" class="num" dir="auto"></span>
+      <span role="cell" class="result-table__pts num${row.points > 0 ? " is-earned" : ""}">${row.points > 0 ? `+${row.points}` : "0"}</span>
+    `;
+    const cells = r.querySelectorAll("span");
+    cells[0].textContent = row.label;
+    cells[1].textContent = row.predicted;
+    cells[2].textContent = row.actual;
+    wrap.appendChild(r);
+  });
+
+  if (total !== null) {
+    const r = el("div", "result-table__row result-table__total");
+    r.setAttribute("role", "row");
+    r.innerHTML = `<span role="cell">${t("prediction.breakdown.totalLabel")}</span><span role="cell"></span><span role="cell"></span><span role="cell" class="result-table__pts num">${total}</span>`;
+    wrap.appendChild(r);
+  }
+  return wrap;
 }

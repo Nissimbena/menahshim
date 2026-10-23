@@ -4,13 +4,16 @@
  * and an artist page.
  */
 import { t } from "../i18n/i18n";
+import { screenHeader } from "../ui/ScreenHeader";
+import { icon, type IconName } from "../ui/icons";
+import { el, esc } from "../ui/dom";
 
 export interface MediaLink {
   title: string;
   subtitle: string;
   url: string;
-  colorClass: string;
-  icon: string;
+  /** Fallback icon when there's no artwork. */
+  icon: IconName;
   logo?: string;
 }
 
@@ -19,24 +22,21 @@ const MEDIA_LINKS: MediaLink[] = [
     title: "כיפה אדומה",
     subtitle: "פודקאסט",
     url: "https://open.spotify.com/show/2tnW3oFPR4dkiPHJCFLHL8",
-    colorClass: "media-card-red",
-    icon: "🎙️",
+    icon: "headphones",
     logo: "https://i.scdn.co/image/ab6765630000ba8a5b43b0c7093bcab72a1d59bf",
   },
   {
     title: "מאחורי הסלים",
     subtitle: "פודקאסט",
     url: "https://open.spotify.com/show/0345nCU3sMSN0lpBVs6osA",
-    colorClass: "media-card-navy",
-    icon: "🏀",
+    icon: "basketball",
     logo: "https://i.scdn.co/image/ab6765630000ba8ac01fa2dee8482351a39b88f1",
   },
   {
     title: "שירי תיקו טוב",
     subtitle: "אמן - ספוטיפיי",
     url: "https://open.spotify.com/artist/5lat3ug3ZmejtVtYDqOjcp",
-    colorClass: "media-card-black",
-    icon: "🎵",
+    icon: "headphones",
     logo: "https://f4.bcbits.com/img/0041931558_10.jpg",
   },
 ];
@@ -59,51 +59,31 @@ export class TimeKillerScreen {
     this.container.classList.add("hidden");
   }
 
-  private renderHeader(): HTMLElement {
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1>${t("timeKiller.title")}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
-    return header;
-  }
-
   private render() {
     this.container.innerHTML = "";
+    const page = el("div", "screen time-killer");
+    page.appendChild(
+      screenHeader({ title: t("timeKiller.title"), subtitle: t("timeKiller.intro"), onBack: () => this.onBack() }),
+    );
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
-    wrapper.appendChild(this.renderHeader());
-
-    const intro = document.createElement("p");
-    intro.className = "counter-text";
-    intro.textContent = t("timeKiller.intro");
-    wrapper.appendChild(intro);
-
-    const grid = document.createElement("div");
-    grid.className = "media-grid";
-
+    const list = el("div", "media-list");
     MEDIA_LINKS.forEach((link) => {
-      const card = document.createElement("a");
+      const card = el("a", "card media-card");
       card.href = link.url;
       card.target = "_blank";
       card.rel = "noopener noreferrer";
-      card.className = `media-card ${link.colorClass}`;
       card.innerHTML = `
-        <span class="media-card-icon">${link.logo ? `<img class="media-card-logo" src="${link.logo}" alt="" />` : link.icon}</span>
-        <span class="media-card-title" dir="auto">${link.title}</span>
-        <span class="media-card-subtitle" dir="auto">${link.subtitle}</span>
-        <span class="media-card-cta">${t("timeKiller.cta")} &larr;</span>
+        <span class="media-card__art">${link.logo ? `<img src="${link.logo}" alt="" width="72" height="72" loading="lazy" />` : icon(link.icon)}</span>
+        <span class="list-row__main">
+          <span class="t-h3" dir="auto">${esc(link.title)}</span>
+          <span class="list-row__meta" dir="auto">${esc(link.subtitle)}</span>
+          <span class="media-card__cta">${icon("headphones", { size: "sm" })}${t("timeKiller.cta")}</span>
+        </span>
+        ${icon("external", { size: "sm", className: "c-3" })}
       `;
-      grid.appendChild(card);
+      list.appendChild(card);
     });
-
-    wrapper.appendChild(grid);
-    this.container.appendChild(wrapper);
+    page.appendChild(list);
+    this.container.appendChild(page);
   }
 }

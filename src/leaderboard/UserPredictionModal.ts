@@ -14,9 +14,11 @@ import {
   topStatPoints,
   finalScorePoints,
   teamStatPoints,
+  resultTable,
 } from "../prediction/PredictionScreen";
 import { BONUS_QUESTIONS } from "../schedule/schedule";
 import { t, tDynamic } from "../i18n/i18n";
+import { esc } from "../ui/dom";
 
 /**
  * Read-only "what did this person bet" modal, opened by clicking a name on
@@ -34,13 +36,14 @@ export class UserPredictionModal {
     overlay.className = "modal-overlay";
     overlay.innerHTML = `
       <div class="modal-box user-prediction-modal-box">
-        <h2 dir="auto">${t("leaderboard.userPrediction.title", { name: displayName })}</h2>
-        <p class="counter-text">${t("common.loading")}</p>
+        <h2 dir="auto">${t("leaderboard.userPrediction.title", { name: esc(displayName) })}</h2>
+        <div class="skeleton-stack" aria-busy="true"><span class="skeleton skeleton--title"></span><span class="skeleton skeleton--line"></span><span class="skeleton skeleton--line"></span></div>
       </div>
     `;
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) this.hide();
     });
+    overlay.querySelector(".modal-box")?.setAttribute("role", "dialog");
     document.body.appendChild(overlay);
     this.overlay = overlay;
 
@@ -62,7 +65,7 @@ export class UserPredictionModal {
     if (!this.overlay) return;
     const box = this.overlay.querySelector(".modal-box")!;
     box.innerHTML = `
-      <h2 dir="auto">${t("leaderboard.userPrediction.title", { name: displayName })}</h2>
+      <h2 dir="auto">${t("leaderboard.userPrediction.title", { name: esc(displayName) })}</h2>
       <p dir="auto">${t("leaderboard.userPrediction.error")}</p>
       <button type="button" class="btn-secondary user-prediction-close-btn">${t("league.create.closeBtn")}</button>
     `;
@@ -202,39 +205,7 @@ export class UserPredictionModal {
         });
       }
 
-      const table = document.createElement("div");
-      table.className = "result-table";
-      const header = document.createElement("div");
-      header.className = "result-table-row result-table-header";
-      header.innerHTML = `
-        <span>${t("prediction.breakdown.header.category")}</span>
-        <span>${t("prediction.breakdown.header.predicted")}</span>
-        <span>${t("prediction.breakdown.header.actual")}</span>
-        <span>${t("prediction.breakdown.header.points")}</span>
-      `;
-      table.appendChild(header);
-      rows.forEach((row) => {
-        const rowEl = document.createElement("div");
-        rowEl.className = "result-table-row";
-        rowEl.innerHTML = `
-          <span>${row.label}</span>
-          <span dir="auto">${row.predicted}</span>
-          <span dir="auto">${row.actual}</span>
-          <span class="result-table-points">${row.points}</span>
-        `;
-        table.appendChild(rowEl);
-      });
-      box.appendChild(table);
-
-      if (prediction.score !== null) {
-        const totalP = document.createElement("p");
-        totalP.className = "counter-text";
-        totalP.dir = "auto";
-        totalP.textContent = t("prediction.breakdown.totalScore", {
-          score: prediction.score,
-        });
-        box.appendChild(totalP);
-      }
+      box.appendChild(resultTable(rows, prediction.score));
     }
 
     const closeBtn = document.createElement("button");

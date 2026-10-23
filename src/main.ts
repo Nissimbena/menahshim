@@ -1,5 +1,7 @@
+import "./styles/tokens.css";
+import "./styles/components.css";
 import "./style.css";
-import { initLang } from "./i18n/i18n";
+import { initLang, t } from "./i18n/i18n";
 import { HomeScreen } from "./home/HomeScreen";
 import { PredictionScreen } from "./prediction/PredictionScreen";
 import { LeaderboardScreen } from "./leaderboard/LeaderboardScreen";
@@ -12,6 +14,7 @@ import { AboutScreen } from "./about/AboutScreen";
 import { NicknamePrompt } from "./nickname/NicknamePrompt";
 import { CreateLeagueModal } from "./leagues/CreateLeagueModal";
 import { JoinLeaguePrompt } from "./leagues/JoinLeaguePrompt";
+import { LeaguesHubScreen } from "./leagues/LeaguesHubScreen";
 import { CreateChallengeModal } from "./challenges/CreateChallengeModal";
 import { JoinChallengePrompt } from "./challenges/JoinChallengePrompt";
 import { MyChallengesScreen } from "./challenges/MyChallengesScreen";
@@ -21,7 +24,7 @@ import { LeaguesScreen } from "./sportsHub/LeaguesScreen";
 import { TeamsScreen } from "./sportsHub/TeamsScreen";
 import { TeamPageScreen } from "./sportsHub/TeamPageScreen";
 import { InstallPrompt } from "./pwa/InstallPrompt";
-import { auth, onAuthChange } from "./firebase/firebase";
+import { auth, onAuthChange, signInWithGoogle } from "./firebase/firebase";
 import {
   getMe,
   getGames,
@@ -33,6 +36,8 @@ import {
 } from "./api/backend";
 import type { ScheduleGame } from "./schedule/schedule";
 import type { Player } from "./prediction/types";
+import { AppNav, type TabId } from "./ui/Nav";
+import { skeleton } from "./ui/ScreenHeader";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -71,33 +76,107 @@ window.addEventListener("unhandledrejection", (e) => {
   );
 });
 
-const homeRootEl = document.getElementById("home-root")!;
-const predictionRootEl = document.getElementById("prediction-root")!;
-const leaderboardRootEl = document.getElementById("leaderboard-root")!;
-const tournamentRootEl = document.getElementById("tournament-root")!;
-const adminRootEl = document.getElementById("admin-root")!;
-const scoringInfoRootEl = document.getElementById("scoring-info-root")!;
-const timeKillerRootEl = document.getElementById("time-killer-root")!;
-const privacyRootEl = document.getElementById("privacy-root")!;
-const aboutRootEl = document.getElementById("about-root")!;
-const myChallengesRootEl = document.getElementById("my-challenges-root")!;
-const sportsHomeRootEl = document.getElementById("sports-home-root")!;
-const sportsLeaguesRootEl = document.getElementById("sports-leagues-root")!;
-const sportsTeamsRootEl = document.getElementById("sports-teams-root")!;
-const sportsTeamPageRootEl = document.getElementById(
-  "sports-team-page-root",
-)!;
+const root = (id: string) => document.getElementById(id)!;
+const homeRootEl = root("home-root");
 
 const nicknamePrompt = new NicknamePrompt();
 const cancellationNotice = new CancellationNotice();
 
 let homeScreenRef: HomeScreen | null = null;
+let leaguesHubRef: LeaguesHubScreen | null = null;
+
+/** Google sign-in from any entry point (top bar, home card, leagues tab). Errors surface on the home screen. */
+function signIn() {
+  signInWithGoogle().catch((e) => {
+    console.error(e);
+    const message = t("home.signInError", {
+      msg: e instanceof Error ? e.message : String(e),
+    });
+    reportClientError(message, "HomeScreen:signIn");
+    homeScreenRef?.setAuthError(message);
+  });
+}
+
+// ---- Navigation shell -------------------------------------------------------
+// Every screen keeps its own show()/hide(); this only makes sure exactly one is
+// visible, the chrome reflects where we are, and the page starts at the top.
+
+interface Screen {
+  hide(): void;
+}
+const screens: Screen[] = [];
+let currentShow: (() => void) | null = null;
+let currentReshowsOnLangChange = false;
+
+const nav = new AppNav({
+  onTab: (tab) => navTo[tab](),
+  onSignIn: signIn,
+  onOpenScoringInfo: () => navTo.scoring(),
+  onOpenTimeKiller: () => navTo.timeKiller(),
+  onOpenSportsHub: () => navTo.sports(),
+  onCreateLeague: () => createLeagueModal?.show(),
+  onOpenMyChallenges: () => navTo.myChallenges(),
+  onOpenAdmin: () => navTo.admin(),
+  onInstall: () => installPrompt.showManual(),
+  onOpenAbout: () => navTo.about(),
+  onOpenPrivacy: () => navTo.privacy(),
+});
+
+function open(
+  show: () => void,
+  opts: { tab: TabId | null; flow?: boolean; reshowOnLang?: boolean },
+) {
+  nav.closeMore();
+  screens.forEach((s) => s.hide());
+  nav.setActive(opts.tab);
+  nav.setFlowMode(!!opts.flow);
+  window.scrollTo({ top: 0 });
+  currentShow = show;
+  currentReshowsOnLangChange = !!opts.reshowOnLang;
+  show();
+}
+
+// Screens that don't re-render themselves on a language switch get re-shown.
+window.addEventListener("langchange", () => {
+  if (currentReshowsOnLangChange) currentShow?.();
+});
+
+// Filled in by bootstrap() once games/players are loaded.
+const navTo: Record<
+  | "home"
+  | "leaderboard"
+  | "leagues"
+  | "tournament"
+  | "scoring"
+  | "timeKiller"
+  | "sports"
+  | "myChallenges"
+  | "admin"
+  | "about"
+  | "privacy",
+  () => void
+> = {
+  home: () => {},
+  leaderboard: () => {},
+  leagues: () => {},
+  tournament: () => {},
+  scoring: () => {},
+  timeKiller: () => {},
+  sports: () => {},
+  myChallenges: () => {},
+  admin: () => {},
+  about: () => {},
+  privacy: () => {},
+};
+
+let createLeagueModal: CreateLeagueModal | null = null;
 
 async function refreshMyPredictions() {
   if (!auth.currentUser) return;
   try {
     const list = await getMyPredictions();
     homeScreenRef?.setMyPredictions(list);
+    nav.setScore(list.reduce((sum, p) => sum + (p.score ?? 0), 0));
   } catch (err) {
     console.warn("Could not load my predictions:", err);
   }
@@ -108,13 +187,19 @@ async function refreshMyLeagues() {
   try {
     const leagues = await getMyLeagues();
     homeScreenRef?.setMyLeagues(leagues);
+    leaguesHubRef?.setLeagues(leagues);
   } catch (err) {
     console.warn("Could not load my leagues:", err);
   }
 }
 
 onAuthChange(async (user) => {
-  if (!user) return;
+  if (!user) {
+    homeScreenRef?.setMyPredictions([]);
+    homeScreenRef?.setMyLeagues([]);
+    leaguesHubRef?.setLeagues([]);
+    return;
+  }
   homeScreenRef?.setAuthError(null);
   try {
     const me = await getMe();
@@ -128,8 +213,11 @@ onAuthChange(async (user) => {
   cancellationNotice.checkAndShow();
 });
 
-homeRootEl.innerHTML =
-  '<p class="counter-text" style="text-align:center;padding:40px;">טוען...</p>';
+homeRootEl.classList.remove("hidden");
+const bootSkeleton = document.createElement("div");
+bootSkeleton.className = "screen screen--wide";
+bootSkeleton.appendChild(skeleton("cards", 3));
+homeRootEl.appendChild(bootSkeleton);
 
 async function bootstrap() {
   let games: ScheduleGame[] = [];
@@ -140,175 +228,117 @@ async function bootstrap() {
     console.error("Could not load games/players:", err);
   }
 
+  const goHome = () => navTo.home();
+
   const predictionScreen = new PredictionScreen(
-    predictionRootEl,
-    () => {
-      predictionScreen.hide();
-      homeScreen.show();
-    },
+    root("prediction-root"),
+    goHome,
     players,
     () => refreshMyPredictions(),
   );
 
-  const leaderboardScreen = new LeaderboardScreen(
-    leaderboardRootEl,
-    () => {
-      leaderboardScreen.hide();
-      homeScreen.show();
-    },
-    games,
-  );
+  const leaderboardScreen = new LeaderboardScreen(root("leaderboard-root"), goHome, games);
 
-  const tournamentScreen = new TournamentScreen(tournamentRootEl, () => {
-    tournamentScreen.hide();
-    homeScreen.show();
-  });
+  const tournamentScreen = new TournamentScreen(root("tournament-root"), goHome);
 
-  const createLeagueModal = new CreateLeagueModal(() => refreshMyLeagues());
+  createLeagueModal = new CreateLeagueModal(() => refreshMyLeagues());
   const joinLeaguePrompt = new JoinLeaguePrompt();
   const createChallengeModal = new CreateChallengeModal();
   const joinChallengePrompt = new JoinChallengePrompt();
 
-  const adminScreen = new AdminScreen(
-    adminRootEl,
-    games,
-    () => {
-      adminScreen.hide();
-      homeScreen.show();
-    },
-    players,
-  );
-
-  const scoringInfoScreen = new ScoringInfoScreen(scoringInfoRootEl, () => {
-    scoringInfoScreen.hide();
-    homeScreen.show();
-  });
-
-  const timeKillerScreen = new TimeKillerScreen(timeKillerRootEl, () => {
-    timeKillerScreen.hide();
-    homeScreen.show();
-  });
-
-  const privacyScreen = new PrivacyPolicyScreen(privacyRootEl, () => {
-    privacyScreen.hide();
-    homeScreen.show();
-  });
-
-  const aboutScreen = new AboutScreen(aboutRootEl, () => {
-    aboutScreen.hide();
-    homeScreen.show();
-  });
-
-  const myChallengesScreen = new MyChallengesScreen(myChallengesRootEl, () => {
-    myChallengesScreen.hide();
-    homeScreen.show();
-  });
+  const adminScreen = new AdminScreen(root("admin-root"), games, goHome, players);
+  const scoringInfoScreen = new ScoringInfoScreen(root("scoring-info-root"), goHome);
+  const timeKillerScreen = new TimeKillerScreen(root("time-killer-root"), goHome);
+  const privacyScreen = new PrivacyPolicyScreen(root("privacy-root"), goHome);
+  const aboutScreen = new AboutScreen(root("about-root"), goHome);
+  const myChallengesScreen = new MyChallengesScreen(root("my-challenges-root"), goHome);
 
   const sportsHomeScreen = new SportsHomeScreen(
-    sportsHomeRootEl,
-    () => {
-      sportsHomeScreen.hide();
-      homeScreen.show();
-    },
-    (sportId) => {
-      sportsHomeScreen.hide();
-      leaguesScreen.show(sportId);
-    },
+    root("sports-home-root"),
+    goHome,
+    (sportId) => open(() => leaguesScreen.show(sportId), { tab: null }),
   );
-
   const leaguesScreen = new LeaguesScreen(
-    sportsLeaguesRootEl,
-    () => {
-      leaguesScreen.hide();
-      sportsHomeScreen.show();
-    },
-    (sportId, leagueId) => {
-      leaguesScreen.hide();
-      teamsScreen.show(sportId, leagueId);
-    },
+    root("sports-leagues-root"),
+    () => open(() => sportsHomeScreen.show(), { tab: null }),
+    (sportId, leagueId) => open(() => teamsScreen.show(sportId, leagueId), { tab: null }),
   );
-
   const teamsScreen = new TeamsScreen(
-    sportsTeamsRootEl,
+    root("sports-teams-root"),
     games,
-    (sportId) => {
-      teamsScreen.hide();
-      leaguesScreen.show(sportId);
-    },
-    (teamId, sportId, leagueId) => {
-      teamsScreen.hide();
-      teamPageScreen.show(teamId, sportId, leagueId);
-    },
+    (sportId) => open(() => leaguesScreen.show(sportId), { tab: null }),
+    (teamId, sportId, leagueId) =>
+      open(() => teamPageScreen.show(teamId, sportId, leagueId), { tab: null }),
   );
-
   const teamPageScreen = new TeamPageScreen(
-    sportsTeamPageRootEl,
+    root("sports-team-page-root"),
     games,
-    (sportId, leagueId) => {
-      teamPageScreen.hide();
-      teamsScreen.show(sportId, leagueId);
-    },
+    (sportId, leagueId) => open(() => teamsScreen.show(sportId, leagueId), { tab: null }),
   );
 
-  const homeScreen = new HomeScreen(
-    homeRootEl,
-    games,
-    (game) => {
-      homeScreen.hide();
-      predictionScreen.show(game);
-    },
-    () => {
-      homeScreen.hide();
-      leaderboardScreen.show();
-    },
-    () => {
-      homeScreen.hide();
-      tournamentScreen.show();
-    },
-    () => {
-      homeScreen.hide();
-      adminScreen.show();
-    },
-    () => {
-      homeScreen.hide();
-      scoringInfoScreen.show();
-    },
-    () => {
-      homeScreen.hide();
-      timeKillerScreen.show();
-    },
-    () => createLeagueModal.show(),
-    (league) => {
-      homeScreen.hide();
-      leaderboardScreen.showLeague(league.id);
-    },
-    () => installPrompt.showManual(),
-    () => {
-      homeScreen.hide();
-      privacyScreen.show();
-    },
-    () => {
-      homeScreen.hide();
-      aboutScreen.show();
-    },
-    (game) =>
+  const leaguesHub = new LeaguesHubScreen(root("leagues-hub-root"), {
+    onBack: goHome,
+    onOpenLeague: (league) =>
+      open(() => leaderboardScreen.showLeague(league.id), { tab: "leagues", reshowOnLang: true }),
+    onCreateLeague: () => createLeagueModal?.show(),
+    onOpenTournament: () => navTo.tournament(),
+    onOpenMyChallenges: () => navTo.myChallenges(),
+    onSignIn: signIn,
+  });
+  leaguesHubRef = leaguesHub;
+
+  const homeScreen = new HomeScreen(homeRootEl, games, {
+    onEnterGame: (game) => open(() => predictionScreen.show(game), { tab: null, flow: true }),
+    onOpenLeaderboard: () => navTo.leaderboard(),
+    onOpenTournament: () => navTo.tournament(),
+    onOpenLeagues: () => navTo.leagues(),
+    onInstallClick: () => installPrompt.showManual(),
+    onOpenPrivacy: () => navTo.privacy(),
+    onOpenAbout: () => navTo.about(),
+    onChallengeGame: (game) =>
       createChallengeModal.show(game.id, () =>
         homeScreenRef?.refreshChallengeEligibility(),
       ),
-    () => {
-      homeScreen.hide();
-      myChallengesScreen.show();
-    },
-    () => {
-      homeScreen.hide();
-      sportsHomeScreen.show();
-    },
+    onSignIn: signIn,
+  });
+  homeScreenRef = homeScreen;
+
+  screens.push(
+    homeScreen,
+    predictionScreen,
+    leaderboardScreen,
+    tournamentScreen,
+    adminScreen,
+    scoringInfoScreen,
+    timeKillerScreen,
+    privacyScreen,
+    aboutScreen,
+    myChallengesScreen,
+    sportsHomeScreen,
+    leaguesScreen,
+    teamsScreen,
+    teamPageScreen,
+    leaguesHub,
   );
 
-  homeScreenRef = homeScreen;
+  Object.assign(navTo, {
+    home: () => open(() => homeScreen.show(), { tab: "home" }),
+    leaderboard: () => open(() => leaderboardScreen.show(), { tab: "leaderboard", reshowOnLang: true }),
+    leagues: () => open(() => leaguesHub.show(), { tab: "leagues" }),
+    tournament: () => open(() => tournamentScreen.show(), { tab: "leagues", reshowOnLang: true }),
+    scoring: () => open(() => scoringInfoScreen.show(), { tab: "more", reshowOnLang: true }),
+    timeKiller: () => open(() => timeKillerScreen.show(), { tab: "more", reshowOnLang: true }),
+    sports: () => open(() => sportsHomeScreen.show(), { tab: "more" }),
+    myChallenges: () => open(() => myChallengesScreen.show(), { tab: "leagues", reshowOnLang: true }),
+    admin: () => open(() => adminScreen.show(), { tab: "more" }),
+    about: () => open(() => aboutScreen.show(), { tab: "more", reshowOnLang: true }),
+    privacy: () => open(() => privacyScreen.show(), { tab: "more", reshowOnLang: true }),
+  });
+
+  homeRootEl.innerHTML = "";
   await refreshMyPredictions();
   await refreshMyLeagues();
-  homeScreen.show();
+  navTo.home();
 
   const joinCode = new URLSearchParams(window.location.search).get("league");
   if (joinCode) {

@@ -1,6 +1,7 @@
 import { getMyChallenges, type Challenge } from "../api/backend";
 import { auth } from "../firebase/firebase";
 import { t } from "../i18n/i18n";
+import { screenHeader } from "../ui/ScreenHeader";
 
 /**
  * Lists every challenge the signed-in user is involved in (as creator or
@@ -34,23 +35,14 @@ export class MyChallengesScreen {
   }
 
   private renderHeader(): HTMLElement {
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1>${t("myChallenges.title")}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
+    const header = screenHeader({ title: t("myChallenges.title"), onBack: () => this.onBack() });
     return header;
   }
 
   private renderLoading() {
     this.container.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "screen";
     wrapper.appendChild(this.renderHeader());
     const p = document.createElement("p");
     p.className = "counter-text";
@@ -62,7 +54,7 @@ export class MyChallengesScreen {
   private renderError() {
     this.container.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "screen";
     wrapper.appendChild(this.renderHeader());
     const p = document.createElement("p");
     p.className = "counter-text";
@@ -75,7 +67,7 @@ export class MyChallengesScreen {
     this.container.innerHTML = "";
 
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "screen";
     wrapper.appendChild(this.renderHeader());
 
     if (challenges.length === 0) {

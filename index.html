@@ -2,19 +2,21 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logos/jerusalem.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0C0B0B" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="preload" href="/fonts/TelAvivModernist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/TelAvivModernist-Bold.woff2" as="font" type="font/woff2" crossorigin />
     <title>מנאחסים</title>
     <style>
+      /* Paint the brand background before the stylesheet arrives (= --bg). */
       html,
       body {
         margin: 0;
         padding: 0;
-        background: #000000;
+        background: #0c0b0b;
       }
     </style>
   </head>
@@ -22,6 +24,7 @@
     <div id="home-root" class="hidden"></div>
     <div id="prediction-root" class="hidden"></div>
     <div id="leaderboard-root" class="hidden"></div>
+    <div id="leagues-hub-root" class="hidden"></div>
     <div id="tournament-root" class="hidden"></div>
     <div id="admin-root" class="hidden"></div>
     <div id="scoring-info-root" class="hidden"></div>

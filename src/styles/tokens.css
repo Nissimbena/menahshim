@@ -1,0 +1,118 @@
+/*
+ * Design tokens - the only place in the codebase where raw color values live.
+ * Everything else (components.css, style.css, inline SVG in TS) references
+ * these variables.
+ */
+
+@font-face {
+  font-family: "Tel Aviv Modernist";
+  src:
+    url("/fonts/TelAvivModernist-Regular.woff2") format("woff2"),
+    url("/fonts/TelAvivModernist-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tel Aviv Modernist";
+  src:
+    url("/fonts/TelAvivModernist-Bold.woff2") format("woff2"),
+    url("/fonts/TelAvivModernist-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Surfaces ---- */
+  --bg: #0c0b0b; /* warm black, never #000 */
+  --bg-blur: rgba(12, 11, 11, 0.82); /* --bg at 82% for blurred sticky bars */
+  --surface-1: #161414; /* cards */
+  --surface-2: #201d1d; /* raised card / hover / fields */
+  --surface-3: #2b2727; /* pressed / active segment */
+  --line: #322d2d; /* borders and dividers */
+  --scrim: rgba(6, 5, 5, 0.72); /* behind sheets and modals */
+
+  /* ---- Brand ---- */
+  --red: #dd1b22; /* Hapoel Jerusalem: primary CTA, next game, highlights */
+  --red-press: #b5141a;
+  --red-deep: #5a0a0d;
+  --red-tint: rgba(221, 27, 34, 0.12);
+  --red-line: rgba(221, 27, 34, 0.45);
+
+  /* ---- Text ---- */
+  --text: #f5f1ea; /* bone white */
+  --text-2: #b4ada6;
+  --text-3: #7a736d; /* 14px+ or non-critical labels only */
+  --on-red: #ffffff;
+
+  /* ---- Functional ---- */
+  --gold: #e9b949; /* prizes, VIP tournament, 1st place - nothing else */
+  --gold-tint: rgba(233, 185, 73, 0.12);
+  --gold-line: rgba(233, 185, 73, 0.4);
+  --on-gold: #1c1508;
+  --success: #34c67a;
+  --success-tint: rgba(52, 198, 122, 0.12);
+  --warning: #f2a33a;
+  --warning-tint: rgba(242, 163, 58, 0.14);
+  --on-warning: #1f1405;
+  --danger: #ff6a5c; /* always paired with an icon + text: it sits close to brand red */
+  --danger-tint: rgba(255, 106, 92, 0.12);
+  --focus: #ffffff;
+  --whatsapp: #25d366; /* third-party brand mark, used on the WhatsApp icon only */
+
+  /* ---- Spacing: 4px grid ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  /* ---- Radii: three values ---- */
+  --r-sm: 8px; /* tags, fields, small buttons */
+  --r-md: 14px; /* cards, buttons */
+  --r-lg: 22px; /* banners, sheets, hero */
+  --r-full: 999px;
+
+  /* ---- Elevation: two levels ---- */
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 24px 64px rgba(0, 0, 0, 0.55);
+
+  /* ---- Layout ---- */
+  --container: 720px;
+  --container-wide: 1120px;
+  --sidebar: 340px;
+  --gutter: 16px;
+  --topbar-h: 56px;
+  --tabbar-h: 64px;
+  --measure: 60ch;
+
+  /* ---- Type ---- */
+  --font: "Tel Aviv Modernist", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --t-display: clamp(44px, 35.7px + 2.21vw, 64px);
+  --t-h1: clamp(30px, 25.9px + 1.1vw, 40px);
+  --t-h2: clamp(22px, 20.3px + 0.44vw, 26px);
+  --t-h3: clamp(18px, 17.2px + 0.22vw, 20px);
+  --t-body: 16px;
+  --t-small: 14px;
+  --t-label: 12px;
+  --lh-tight: 1.15;
+  --lh-body: 1.5;
+
+  /* ---- Motion ---- */
+  --dur: 180ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1); /* ease-out */
+}
+
+@media (min-width: 600px) {
+  :root {
+    --gutter: 20px;
+  }
+}

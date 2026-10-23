@@ -27,7 +27,7 @@ export class CreateChallengeModal {
     overlay.innerHTML = `
       <div class="modal-box">
         <h2>${t("challenge.modal.title")}</h2>
-        <p class="counter-text" style="text-align:center;">${t("common.loading")}</p>
+        <div class="skeleton-stack" aria-busy="true"><span class="skeleton skeleton--line"></span><span class="skeleton skeleton--line"></span></div>
       </div>
     `;
     document.body.appendChild(overlay);

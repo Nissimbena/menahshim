@@ -2,6 +2,7 @@ import type { ScheduleGame } from "../schedule/schedule";
 import { TEAMS, teamName } from "../schedule/teams";
 import { leagueById } from "./sportsData";
 import { t } from "../i18n/i18n";
+import { screenHeader, emptyState } from "../ui/ScreenHeader";
 
 /** Step 3 of the drill-down: every team that appears in the chosen league's games. */
 export class TeamsScreen {
@@ -44,16 +45,7 @@ export class TeamsScreen {
   }
 
   private renderHeader(title: string): HTMLElement {
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1 dir="auto">${title}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack(this.sportId));
+    const header = screenHeader({ title: title, onBack: () => this.onBack(this.sportId) });
     return header;
   }
 
@@ -62,14 +54,11 @@ export class TeamsScreen {
 
     this.container.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
+    wrapper.className = "screen";
     wrapper.appendChild(this.renderHeader(t("sportsHub.teams.title")));
 
     if (!league?.competitionId) {
-      const p = document.createElement("p");
-      p.className = "counter-text";
-      p.textContent = t("sportsHub.leagues.none");
-      wrapper.appendChild(p);
+      wrapper.appendChild(emptyState(t("sportsHub.leagues.none")));
       this.container.appendChild(wrapper);
       return;
     }
@@ -88,10 +77,7 @@ export class TeamsScreen {
       .sort((a, b) => teamName(a).localeCompare(teamName(b)));
 
     if (teams.length === 0) {
-      const p = document.createElement("p");
-      p.className = "counter-text";
-      p.textContent = t("sportsHub.teams.none");
-      wrapper.appendChild(p);
+      wrapper.appendChild(emptyState(t("sportsHub.teams.none")));
       this.container.appendChild(wrapper);
       return;
     }
@@ -103,8 +89,8 @@ export class TeamsScreen {
       card.type = "button";
       card.className = "sport-card";
       card.innerHTML = `
-        <img class="sport-card-logo" src="${team.logo}" alt="${teamName(team)}" />
-        <span class="sport-card-name" dir="auto">${teamName(team)}</span>
+        <img class="sport-card__logo" src="${team.logo}" alt="" width="56" height="56" loading="lazy" />
+        <span class="sport-card__name" dir="auto">${teamName(team)}</span>
       `;
       card.addEventListener("click", () =>
         this.onSelectTeam(team.id, this.sportId, this.leagueId),
