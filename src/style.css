@@ -930,15 +930,6 @@ body {
   .home-tagline-logo {
     height: 30px;
   }
-  /* The one-line fit would shrink this to unreadable sizes on a phone. */
-  .vip-desc.fit-text {
-    white-space: normal;
-  }
-  .vip-desc.fit-text > span {
-    font-size: 19px !important;
-    white-space: normal;
-    display: inline;
-  }
   .schedule-tab {
     font-size: 13px;
     white-space: nowrap;
@@ -2528,5 +2519,276 @@ body {
   .score-input {
     width: 76px;
     font-size: 28px;
+  }
+}
+
+/* ==========================================================================
+   Light pass — same PSD language, calmer scale: smaller display type,
+   thinner strokes, narrower content column, more white space.
+   ========================================================================== */
+
+:root {
+  --nav-h: 68px;
+  --content-narrow: 920px;
+}
+
+.site-nav-bar {
+  padding-top: 0;
+  padding-inline: 22px;
+  border-radius: 0 0 20px 20px;
+}
+
+.nav-link,
+.nav-user-name,
+.nav-pill {
+  font-size: 15px;
+}
+
+.nav-links {
+  gap: 28px;
+}
+
+.nav-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.nav-pill {
+  height: 34px;
+  padding-inline: 16px;
+  border-width: 1px;
+}
+
+.home-top {
+  background: linear-gradient(
+    to bottom,
+    var(--red) 0,
+    var(--red) 44px,
+    var(--white) 44px
+  );
+}
+
+.home-hero {
+  padding-top: clamp(36px, 6vw, 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-wordmark {
+  line-height: 1;
+}
+
+.home-tagline {
+  margin-top: 18px;
+  min-height: 0;
+  padding: 8px 20px 8px 22px;
+  border-width: 1.5px;
+  gap: 10px;
+  font-size: clamp(15px, 1.6vw, 20px);
+  font-variation-settings: "slnt" 0, "wght" 380, "wdth" 100;
+}
+
+.home-tagline-logo {
+  height: 28px;
+}
+
+.home-tagline-sep {
+  opacity: 0.35;
+}
+
+.home-vip-band {
+  padding-top: clamp(48px, 7vw, 88px);
+  background: linear-gradient(
+    to bottom,
+    var(--white) 0,
+    var(--white) calc(clamp(48px, 7vw, 88px) + 70px),
+    var(--red) calc(clamp(48px, 7vw, 88px) + 70px)
+  );
+}
+
+.vip-card {
+  width: min(var(--content-narrow), 100% - 2 * var(--gutter));
+  padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 64px);
+  border-width: 1.5px;
+  border-radius: 24px;
+}
+
+.vip-desc {
+  margin: 10px 0 0 !important;
+  font-size: clamp(15px, 1.7vw, 19px);
+  font-variation-settings: "slnt" 0, "wght" 300, "wdth" 100;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.vip-prize,
+.vip-btn {
+  width: auto;
+  min-height: 42px;
+  padding: 8px 22px;
+  font-size: 15px;
+  font-family: var(--font-body);
+  font-variation-settings: normal;
+  font-weight: 500;
+}
+
+.vip-prize {
+  display: inline-flex;
+  margin: 24px auto 0;
+  text-wrap: balance;
+}
+
+.vip-btn {
+  display: inline-flex;
+  margin: 10px auto 0;
+  border-width: 1px;
+}
+
+.vip-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-schedule,
+.home-footer {
+  width: min(var(--content-narrow), 100% - 2 * var(--gutter));
+}
+
+.home-schedule {
+  padding-top: clamp(56px, 8vw, 96px);
+}
+
+.schedule-tabs {
+  margin: 28px 0 22px;
+  gap: 8px;
+}
+
+.schedule-tab {
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 18px;
+  border-width: 1px;
+  font-size: 14px;
+}
+
+.schedule-list {
+  gap: 14px;
+}
+
+.game-card {
+  padding: 34px 28px 24px;
+  border-radius: 24px;
+}
+
+.game-card.next-game {
+  box-shadow: none;
+}
+
+.next-game-badge,
+.prize-game-badge {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+.game-matchup,
+.game-team {
+  gap: 18px;
+}
+
+.game-matchup {
+  gap: 10px;
+}
+
+.game-team-logo {
+  width: clamp(56px, 8vw, 92px);
+  height: clamp(56px, 8vw, 92px);
+}
+
+.game-team-name {
+  font-size: clamp(15px, 1.8vw, 21px);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.game-result {
+  font-size: clamp(26px, 3.6vw, 40px);
+}
+
+.game-footer {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.game-meta,
+.game-date {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.game-guess-btn {
+  min-width: 200px;
+  min-height: 42px;
+  padding: 6px 22px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.game-guess-btn:disabled {
+  font-size: 13px;
+}
+
+.prize-link-btn,
+.challenge-game-btn {
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.prize-game-caption {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.home-footer {
+  padding: 64px 0 90px;
+}
+
+.home-footer-link {
+  font-size: 14px;
+}
+
+.home-footer-mark {
+  font-size: 22px;
+  color: var(--white);
+  opacity: 0.9;
+}
+
+.whatsapp-float-btn {
+  width: 48px;
+  height: 48px;
+  border-width: 2px;
+}
+
+@media (max-width: 760px) {
+  .home-top {
+    background: var(--white);
+  }
+  .home-tagline {
+    padding: 6px 14px;
+  }
+  .game-card {
+    padding: 28px 18px 18px;
+  }
+  .game-team-logo {
+    width: 64px;
+    height: 64px;
+  }
+  .game-footer {
+    margin-top: 18px;
+  }
+  .game-guess-btn {
+    min-width: 0;
   }
 }

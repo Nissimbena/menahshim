@@ -367,7 +367,7 @@ export class HomeScreen {
 
     const jerusalem = TEAMS[HAPOEL_JERUSALEM_TEAM_ID];
     hero.innerHTML = `
-      <h1 class="home-wordmark fit-text" data-fit-max="420"><span>${GAME_TITLE}</span></h1>
+      <h1 class="home-wordmark fit-text" data-fit-max="150"><span>${GAME_TITLE}</span></h1>
       <div class="home-tagline">
         <img class="home-tagline-logo" src="${jerusalem.logo}" alt="${teamName(jerusalem)}" />
         <span class="home-tagline-sep" aria-hidden="true">|</span>
@@ -387,8 +387,8 @@ export class HomeScreen {
 
     band.innerHTML = `
       <div class="vip-card">
-        <h2 class="vip-title fit-text" data-fit-max="170"><span>${t("home.tournamentTitle")}</span></h2>
-        <p class="vip-desc fit-text" data-fit-max="76"><span>${desc}</span></p>
+        <h2 class="vip-title fit-text" data-fit-max="64"><span>${t("home.tournamentTitle")}</span></h2>
+        <p class="vip-desc">${desc}</p>
         <p class="vip-prize">${t("home.tournamentPrize")}</p>
         <button class="vip-btn" type="button">${t("home.tournamentBtn")}</button>
       </div>
@@ -512,7 +512,7 @@ export class HomeScreen {
 
     const heading = document.createElement("h2");
     heading.className = "home-schedule-title fit-text";
-    heading.dataset.fitMax = "380";
+    heading.dataset.fitMax = "104";
     const headingText = document.createElement("span");
     headingText.textContent = t("home.schedule.title");
     heading.appendChild(headingText);
