@@ -2792,3 +2792,21 @@ body {
     min-width: 0;
   }
 }
+
+.site-nav {
+  width: min(1180px, 100% - 2 * var(--gutter));
+}
+
+@media (max-width: 760px) {
+  .site-nav {
+    width: 100%;
+  }
+  .schedule-tabs {
+    gap: 6px;
+  }
+  .schedule-tab {
+    flex: 1 1 auto;
+    padding-inline: 10px;
+    font-size: 12.5px;
+  }
+}
