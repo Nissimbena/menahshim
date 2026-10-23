@@ -464,7 +464,9 @@ body {
 /* ---- VIP tournament card ---- */
 
 .home-vip-band {
-  padding-top: max(18px, calc(35 * var(--px)));
+  /* Overlap the hero by 1px so no sub-pixel seam shows between them. */
+  margin-top: -1px;
+  padding-top: calc(max(18px, calc(35 * var(--px))) + 1px);
   background: linear-gradient(
     to bottom,
     var(--white) 0,
@@ -919,8 +921,27 @@ body {
     padding-top: 18px;
   }
   .home-tagline {
-    border-radius: 28px;
-    padding: 8px 18px;
+    padding: 6px 14px;
+    gap: 8px;
+    font-size: clamp(13px, 4.1vw, 18px);
+    font-variation-settings: "slnt" 0, "wght" 417, "wdth" 85;
+    white-space: nowrap;
+  }
+  .home-tagline-logo {
+    height: 30px;
+  }
+  /* The one-line fit would shrink this to unreadable sizes on a phone. */
+  .vip-desc.fit-text {
+    white-space: normal;
+  }
+  .vip-desc.fit-text > span {
+    font-size: 19px !important;
+    white-space: normal;
+    display: inline;
+  }
+  .schedule-tab {
+    font-size: 13px;
+    white-space: nowrap;
   }
   .game-team {
     flex-direction: column-reverse;
