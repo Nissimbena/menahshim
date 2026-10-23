@@ -1,66 +1,72 @@
 /*
  * Design tokens - the only place in the codebase where raw color values live.
  *
- * Direction: a basketball matchday program. Black broadcast chrome (top bar,
- * scoreboard ticker, the next-game panel) over a light paper canvas with
- * white panels, hard edges and hairline rules. Condensed poster type for
- * headlines, a scoreboard face for every number, a quiet workhorse for text.
- * Hapoel red is the one action color.
+ * Direction (after EuroLeague / NBA): a neutral grey canvas with borderless
+ * white cards, plain bold sans section titles in sentence case, and one
+ * condensed display face kept for the big moments - team names, scores,
+ * the countdown, player numbers. Hapoel red is the brand block (diagonal
+ * colour fields behind player cut-outs, as on the club's EuroCup pages)
+ * and the single action colour.
  *
- * Fonts are self-hosted (@fontsource, imported in main.ts):
- *   Karantina 700            - headlines (Hebrew + Latin)
- *   Barlow Condensed 600/700 - every number, scores, clocks, Latin labels
- *   IBM Plex Sans Hebrew     - body and UI text (400/500/700)
+ * Fonts:
+ *   CoFo Peshka (Adobe Fonts kit pdv5cou, loaded in index.html) - display,
+ *     always at wght 900 / wdth 50. Hebrew + caps-only Latin + digits.
+ *   IBM Plex Sans Hebrew (self-hosted, @fontsource) - all text and UI.
+ *   Karantina / Barlow Condensed (self-hosted) - fallback while the kit
+ *     loads or wherever Adobe Fonts can't be reached.
  */
 
 :root {
   color-scheme: light;
 
-  /* ---- Canvas (light) ---- */
-  --bg: #f2f1ee; /* paper */
-  --surface-1: #ffffff; /* panels */
-  --surface-2: #f7f6f3; /* hover, fields, table heads */
-  --surface-3: #ebe9e4; /* pressed, active tab fill */
-  --line: #e2dfd9; /* hairlines */
-  --line-strong: #121212; /* section rules, focused borders */
-  --scrim: rgba(10, 10, 10, 0.6);
+  /* ---- Canvas ---- */
+  --bg: #f1f1f1;
+  --surface-1: #ffffff; /* cards */
+  --surface-2: #f6f6f6; /* hover, wells, table heads */
+  --surface-3: #ebebeb; /* pressed, placeholders */
+  --line: #e4e4e4;
+  --line-strong: #111111;
+  --scrim: rgba(17, 17, 17, 0.55);
 
-  /* ---- Broadcast chrome (dark) ---- */
-  --ink: #0e0e0f; /* top bar, ticker, hero */
-  --ink-2: #1b1b1d; /* raised on ink */
-  --ink-3: #2a2a2d; /* pressed on ink */
-  --ink-line: rgba(255, 255, 255, 0.12);
-  --ink-blur: rgba(14, 14, 15, 0.92);
+  /* ---- Dark moments (footer, score slip, tab bar) ---- */
+  --ink: #111111;
+  --ink-2: #1e1e1e;
+  --ink-3: #2c2c2c;
+  --ink-line: rgba(255, 255, 255, 0.14);
+  --ink-blur: rgba(17, 17, 17, 0.94);
   --on-ink: #ffffff;
-  --on-ink-2: rgba(255, 255, 255, 0.68);
-  --on-ink-3: rgba(255, 255, 255, 0.45);
+  --on-ink-2: rgba(255, 255, 255, 0.72);
+  --on-ink-3: rgba(255, 255, 255, 0.5);
 
-  /* ---- Brand ---- */
-  --red: #d7141c; /* Hapoel Jerusalem: CTA, live/next marker, active tab */
-  --red-press: #b00f16;
-  --red-tint: rgba(215, 20, 28, 0.07);
-  --red-line: rgba(215, 20, 28, 0.5);
-
-  /* ---- Text on canvas ---- */
-  --text: #121212;
-  --text-2: #57524c;
-  --text-3: #6f6a64; /* still AA on white at 14px+ */
+  /* ---- Brand: Hapoel red, in three values for the diagonal fields ---- */
+  --red: #d2232a; /* action colour + brand field */
+  --red-press: #ad1a20;
+  --red-deep: #8e1c1f; /* the darker diagonal */
+  --red-bright: #e2383e; /* the lighter diagonal */
+  --red-tint: rgba(210, 35, 42, 0.08);
+  --red-line: rgba(210, 35, 42, 0.45);
   --on-red: #ffffff;
+  --on-red-2: rgba(255, 255, 255, 0.78);
+  --on-red-3: rgba(255, 255, 255, 0.55);
+
+  /* ---- Text ---- */
+  --text: #111111;
+  --text-2: #5c5c5c;
+  --text-3: #737373; /* AA on white */
 
   /* ---- Functional ---- */
-  --gold: #9a6f0a; /* prizes, VIP, 1st place - text on light */
-  --gold-bright: #e8b53e; /* the same gold on ink */
-  --gold-tint: rgba(232, 181, 62, 0.16);
-  --gold-line: rgba(154, 111, 10, 0.45);
-  --on-gold: #1c1508;
-  --success: #12804a;
-  --success-tint: rgba(18, 128, 74, 0.1);
+  --gold: #946a08;
+  --gold-bright: #f0b93b;
+  --gold-tint: rgba(240, 185, 59, 0.18);
+  --gold-line: rgba(148, 106, 8, 0.4);
+  --success: #11804a;
+  --success-tint: rgba(17, 128, 74, 0.1);
   --warning: #b86a00;
   --warning-tint: rgba(232, 150, 30, 0.14);
   --on-warning: #1f1405;
-  --danger: #c4251b; /* always with an icon + text: it sits close to brand red */
+  --danger: #c4251b;
   --danger-tint: rgba(196, 37, 27, 0.08);
-  --focus: #121212;
+  --focus: #111111;
   --focus-on-ink: #ffffff;
   --whatsapp: #1fa855;
 
@@ -75,39 +81,44 @@
   --s-8: 64px;
   --s-9: 96px;
 
-  /* ---- Radii: hard edges, like print ---- */
-  --r-sm: 2px;
-  --r-md: 4px;
-  --r-lg: 6px;
+  /* ---- Radii ---- */
+  --r-sm: 4px; /* tags, inputs */
+  --r-md: 8px; /* cards, buttons */
+  --r-lg: 12px; /* sheets, hero */
   --r-full: 999px;
 
-  /* ---- Elevation: flat; only floating layers get a shadow ---- */
-  --shadow-1: 0 1px 0 rgba(18, 18, 18, 0.04);
-  --shadow-2: 0 18px 48px rgba(10, 10, 10, 0.28);
+  /* ---- Elevation: cards are flat; only floating layers lift ---- */
+  --shadow-1: 0 1px 2px rgba(17, 17, 17, 0.04);
+  --shadow-2: 0 20px 56px rgba(17, 17, 17, 0.22);
 
   /* ---- Layout ---- */
-  --container: 720px;
-  --container-wide: 1120px;
-  --sidebar: 340px;
+  --container: 760px;
+  --container-wide: 1200px;
+  --sidebar: 360px;
   --gutter: 16px;
-  --topbar-h: 56px;
+  --topbar-h: 64px;
   --tabbar-h: 64px;
-  --measure: 60ch;
+  --measure: 62ch;
 
   /* ---- Type ---- */
   --font: "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-display: "Karantina", "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-  --font-num: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-display: "cofo-peshka-variable", "Karantina", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-num: "cofo-peshka-variable", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --display-axes: "slnt" 0, "wght" 900, "wdth" 50;
 
-  /* Display sizes run large: Karantina is a narrow face */
-  --t-display: clamp(52px, 41px + 2.9vw, 78px);
-  --t-h1: clamp(40px, 32px + 2vw, 56px);
-  --t-h2: clamp(30px, 26px + 1.1vw, 40px);
-  --t-h3: clamp(17px, 16.6px + 0.11vw, 18px);
+  /* Display sizes - big contrast against a calm 16px text size */
+  --t-hero: clamp(48px, 34px + 3.7vw, 88px); /* team names in the next-game hero */
+  --t-display: clamp(64px, 48px + 4.3vw, 112px); /* countdown, slip score */
+  --t-h1: clamp(44px, 37px + 1.9vw, 64px); /* screen titles, flow questions */
+  --t-num-lg: 40px; /* stat values */
+  --t-num-md: 28px; /* table numbers */
+  --t-h2: 22px; /* card + section titles: bold sans, sentence case */
+  --t-h3: 18px;
   --t-body: 16px;
   --t-small: 14px;
   --t-label: 12px;
-  --lh-tight: 0.95; /* condensed display */
+  --lh-display: 0.88;
+  --lh-tight: 1.2;
   --lh-body: 1.55;
 
   /* ---- Motion ---- */
@@ -118,5 +129,6 @@
 @media (min-width: 600px) {
   :root {
     --gutter: 24px;
+    --t-h2: 24px;
   }
 }

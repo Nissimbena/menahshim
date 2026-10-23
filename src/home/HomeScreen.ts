@@ -24,6 +24,7 @@ import { CHALLENGE_FEATURE_ENABLED, WHATSAPP_GROUP_URL } from "../config/GameCon
 import { icon } from "../ui/icons";
 import { el, esc, opponentOf, shortDate, ltr } from "../ui/dom";
 import { rankList } from "../ui/RankList";
+import { logoSVG } from "../brand/Logo";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -48,24 +49,6 @@ function countdownParts(msRemaining: number): { d: string; h: string; m: string 
     m: pad(totalMinutes % 60),
   };
 }
-
-/**
- * Half-court line drawing (FIBA proportions, 1 unit = 1cm / 3) used as the
- * texture of the next-game panel: key, free-throw circle, three-point arc,
- * restricted area, rim and backboard.
- */
-const COURT_SVG = `<svg class="hero__court" viewBox="0 0 500 470" aria-hidden="true" focusable="false">
-  <g fill="none" stroke="currentColor" stroke-width="2">
-    <rect x="1" y="1" width="498" height="468"/>
-    <path d="M190 0a60 60 0 0 0 120 0"/>
-    <rect x="170" y="280" width="160" height="189"/>
-    <circle cx="250" cy="280" r="60"/>
-    <path d="M30 469V330a237.5 237.5 0 0 1 440 0v139"/>
-    <path d="M210 417.5a40 40 0 0 1 80 0"/>
-    <path d="M220 430h60"/>
-    <circle cx="250" cy="417.5" r="7.5"/>
-  </g>
-</svg>`;
 
 /** How long a cached leaderboard snapshot stays fresh on the home screen. */
 const LEADERBOARD_TTL_MS = 60 * 1000;
@@ -255,10 +238,9 @@ export class HomeScreen {
 
     layout.append(main, side);
     page.appendChild(layout);
-    page.appendChild(this.renderFooter());
-
     this.container.appendChild(this.renderTicker());
     this.container.appendChild(page);
+    this.container.appendChild(this.renderFooter());
     this.scrollTickerToCurrent();
     // Re-renders happen in place (data arriving, tab switches) - keep the reader where they were.
     if (scrollY) window.scrollTo({ top: scrollY });
@@ -347,13 +329,12 @@ export class HomeScreen {
     const team = (tm: typeof home) =>
       tm
         ? `<div class="hero__team">
-             <img class="hero__logo" src="${tm.logo}" alt="" width="72" height="72" />
+             <span class="logo-disc logo-disc--xl"><img src="${tm.logo}" alt="" /></span>
              <span class="hero__team-name" dir="auto">${esc(teamName(tm))}</span>
            </div>`
         : `<div class="hero__team"></div>`;
 
     hero.innerHTML = `
-      ${COURT_SVG}
       <div class="hero__top">
         <span class="hero__eyebrow" id="hero-overline"><span class="dot"></span>${t("home.hero.next")}</span>
         <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
@@ -455,6 +436,9 @@ export class HomeScreen {
   private renderPersonalStrip(): HTMLElement {
     const strip = el("section", "card personal-strip");
     strip.setAttribute("aria-label", t("home.strip.label"));
+    strip.appendChild(el("header", "card__head", `<h2>${t("home.strip.title")}</h2>`));
+    const cellsWrap = el("div", "personal-strip__cells");
+    strip.appendChild(cellsWrap);
     const rank = this.myRank;
     const cells: [string, string, () => void][] = [
       [String(this.myTotalScore), t("home.strip.score"), () => this.actions.onOpenLeaderboard()],
@@ -465,7 +449,7 @@ export class HomeScreen {
       const b = el("button", "stat personal-strip__cell", `<span class="stat__value">${ltr(value)}</span><span class="stat__label">${label}</span>`);
       b.type = "button";
       b.addEventListener("click", fn);
-      strip.appendChild(b);
+      cellsWrap.appendChild(b);
     });
     return strip;
   }
@@ -508,9 +492,10 @@ export class HomeScreen {
 
   // ---- 4. Season schedule ----
   private renderSchedule(): HTMLElement {
-    const section = el("section", "section home-schedule");
+    const section = el("section", "card card--flush home-schedule");
     section.setAttribute("aria-labelledby", "schedule-title");
-    section.innerHTML = `<div class="section-head"><h2 id="schedule-title">${t("home.schedule.title")}</h2></div>`;
+    const head = el("header", "card__head", `<h2 id="schedule-title">${t("home.schedule.title")}</h2>`);
+    section.appendChild(head);
 
     const upcoming = this.upcomingGames;
     const finished = this.finishedGames;
@@ -532,9 +517,9 @@ export class HomeScreen {
       });
       seg.appendChild(b);
     });
-    section.appendChild(seg);
+    head.appendChild(seg);
 
-    const list = el("div", "list schedule-list");
+    const list = el("div", "schedule-list");
     const rows =
       this.activeTab === "upcoming" ? upcoming : finished.slice().reverse();
     const heroId = this.heroGame?.id;
@@ -598,10 +583,10 @@ export class HomeScreen {
 
   // ---- 5. Leaderboard preview ----
   private renderLeadersPreview(): HTMLElement {
-    const section = el("section", "home-leaders");
+    const section = el("section", "card card--flush home-leaders");
     section.setAttribute("aria-labelledby", "leaders-title");
-    const head = el("div", "section-head", `<h2 id="leaders-title">${t("home.leaders.title")}</h2>`);
-    const all = el("button", "link-arrow section-head__link", `<span>${t("home.leaders.all")}</span>${icon("arrowForward", { size: "sm" })}`);
+    const head = el("header", "card__head", `<h2 id="leaders-title">${t("home.leaders.title")}</h2>`);
+    const all = el("button", "link-arrow", `<span>${t("home.leaders.all")}</span>${icon("arrowForward", { size: "sm" })}`);
     all.type = "button";
     all.addEventListener("click", () => this.actions.onOpenLeaderboard());
     head.appendChild(all);
@@ -629,7 +614,9 @@ export class HomeScreen {
 
   // ---- 6. Footer ----
   private renderFooter(): HTMLElement {
-    const footer = el("footer", "home-footer");
+    const footer = el("footer", "site-footer");
+    const inner = el("div", "site-footer__inner");
+    footer.appendChild(inner);
 
     const wa = el(
       "a",
@@ -645,7 +632,7 @@ export class HomeScreen {
     wa.target = "_blank";
     wa.rel = "noopener noreferrer";
     wa.setAttribute("aria-label", t("home.whatsappGroup.label"));
-    footer.appendChild(wa);
+    inner.appendChild(wa);
 
     const links = el("nav", "home-footer__links");
     links.setAttribute("aria-label", t("home.footer.label"));
@@ -662,7 +649,8 @@ export class HomeScreen {
     if (!isRunningStandalone()) add(t("home.installShort"), () => this.actions.onInstallClick());
     const other = getLang() === "he" ? "en" : "he";
     add(t(`lang.${other}`), () => setLang(other), other);
-    footer.appendChild(links);
+    inner.appendChild(links);
+    inner.appendChild(el("div", "site-footer__brand", logoSVG({ className: "site-footer__logo" })));
     return footer;
   }
 }

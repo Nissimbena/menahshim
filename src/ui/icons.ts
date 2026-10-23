@@ -42,6 +42,23 @@ const PATHS = {
   handball: '<circle cx="12" cy="12" r="10"/><path d="M12 2c-3.2 3-3.2 17 0 20"/><path d="M12 2c3.2 3 3.2 17 0 20"/><path d="M2.6 8.5h18.8"/><path d="M2.6 15.5h18.8"/>',
   volleyball: '<path d="M11.1 7.1a16.55 16.55 0 0 1 10.9 4"/><path d="M12 12a12.6 12.6 0 0 1-8.7 5"/><path d="M16.8 13.6a16.55 16.55 0 0 1-9 7.5"/><path d="M20.7 17a12.8 12.8 0 0 0-8.7-5 13.3 13.3 0 0 1 0-10"/><path d="M6.3 3.8a16.55 16.55 0 0 0 1.9 11.5"/><circle cx="12" cy="12" r="10"/>',
   tennis: '<circle cx="12" cy="12" r="10"/><path d="M6 5.3a9 9 0 0 1 0 13.4"/><path d="M18 5.3a9 9 0 0 0 0 13.4"/>',
+  // Basketball stat icons (drawn on the same 24px grid / 1.5px stroke)
+  /** Points: ball dropping through the rim */
+  statPoints: '<circle cx="12" cy="6" r="4"/><path d="M8.3 4.6 15.7 7.4"/><path d="M4 12.5h16"/><path d="m6 12.5 1.6 8.5h8.8l1.6-8.5"/><path d="m9.5 12.5.8 8.5"/><path d="m14.5 12.5-.8 8.5"/>',
+  /** Rebounds: ball coming off the backboard, caught on the way down */
+  statRebounds: '<path d="M3 3v9"/><path d="M3 7.5h4"/><circle cx="15.5" cy="16.5" r="4"/><path d="M7 7.5c4.5-.5 8 1.5 9.5 5"/><path d="m13.6 10.4 3 2.3.7-3.7"/>',
+  /** Assists: the pass - ball travelling from one hand to the next */
+  statAssists: '<circle cx="5" cy="17" r="3"/><circle cx="19" cy="7" r="3"/><path d="M8 15.5c3.5-1.2 6.2-3.6 8-6.5"/><path d="m12.4 9.1 3.6-.1.3 3.6"/>',
+  /** Three-pointers: the arc with the corner lines */
+  statThrees: '<path d="M3 21V12a9 9 0 0 1 18 0v9"/><path d="M12 21v-3"/><circle cx="12" cy="13" r="2.2"/>',
+  /** Final score: a two-sided scoreboard */
+  statScore: '<rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M12 5v14"/><path d="M6 10h2.5v4H6"/><path d="M15.5 10h2.5v4h-2.5"/><path d="M15.5 12h2.5"/>',
+  /** Team rebounds (whole team) */
+  statTeamRebounds: '<path d="M3 3v9"/><path d="M3 7.5h4"/><circle cx="16" cy="16" r="4"/><path d="M7 7.5c4.5-.5 8 1.5 9.5 4.5"/><path d="M9 21h12"/>',
+  /** Team assists (ball movement) */
+  statTeamAssists: '<circle cx="4.5" cy="18" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="19.5" cy="18" r="2.5"/><path d="M6 15.8 10.5 8.3"/><path d="M13.5 8.3 18 15.8"/><path d="M7 18h10" stroke-dasharray="2 2"/>',
+  /** Bonus question */
+  statBonus: '<path d="M12 2.5 14.6 8l6 .7-4.4 4.1 1.2 5.9L12 15.8l-5.4 2.9 1.2-5.9L3.4 8.7l6-.7z"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS | "whatsapp";

@@ -1,6 +1,6 @@
 /*
- * Base + shared components. Defined once, used by every screen.
- * Spacing only from the --s-* scale, colors only from tokens.
+ * Base + shared components, defined once and used by every screen.
+ * Spacing only from the --s-* scale, colours only from tokens.
  */
 
 /* ------------------------------------------------------------------ */
@@ -49,19 +49,24 @@ textarea {
 }
 
 h1,
-h2 {
+h2,
+h3,
+h4 {
   margin: 0;
-  font-family: var(--font-display);
   font-weight: 700;
   line-height: var(--lh-tight);
   text-wrap: balance;
 }
 
-h3,
-h4 {
-  margin: 0;
-  font-weight: 700;
-  line-height: 1.25;
+/* Screen titles use the display face; card/section titles stay in the text face */
+h1 {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  line-height: var(--lh-display);
+}
+
+h2 {
+  font-size: var(--t-h2);
 }
 
 p {
@@ -101,44 +106,27 @@ a {
   white-space: nowrap;
 }
 
-/* Every number in the product - scores, clocks, ranks, points - is a scoreboard digit */
+/* The display face, wherever it's used: always 900 / width 50 */
+.display,
 .num {
-  font-family: var(--font-num);
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-weight: 700;
   font-variant-numeric: tabular-nums lining-nums;
-  font-feature-settings: "tnum" 1, "lnum" 1;
-  font-weight: 600;
+  line-height: var(--lh-display);
 }
 
-.t-display {
+.num {
   font-family: var(--font-num);
-  font-size: var(--t-display);
-  font-weight: 700;
-  line-height: 0.9;
 }
-.t-h1 {
-  font-family: var(--font-display);
-  font-size: var(--t-h1);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-}
-.t-h2 {
-  font-family: var(--font-display);
-  font-size: var(--t-h2);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-}
+
 .t-h3 {
   font-size: var(--t-h3);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--lh-tight);
 }
 .t-small {
   font-size: var(--t-small);
-}
-.t-label {
-  font-size: var(--t-label);
-  font-weight: 700;
-  line-height: 1.3;
 }
 .c-2 {
   color: var(--text-2);
@@ -147,7 +135,6 @@ a {
   color: var(--text-3);
 }
 
-/* Small labels: tracked uppercase in Latin, plain in Hebrew (no tracking on Hebrew) */
 .overline,
 .t-label {
   font-size: var(--t-label);
@@ -160,12 +147,12 @@ a {
 :root[lang="en"] .t-label,
 :root[lang="en"] .tag,
 :root[lang="en"] .tabs__btn,
-:root[lang="en"] .btn--caps {
+:root[lang="en"] .stat__label {
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
-/* Icons: Lucide-style 1.5px strokes, inherit text color */
+/* Icons: 24px grid, 1.5px strokes, inherit colour */
 .icon {
   width: 20px;
   height: 20px;
@@ -193,7 +180,7 @@ a {
 }
 
 /* ------------------------------------------------------------------ */
-/* Screen containers + section heads                                   */
+/* Screen containers                                                   */
 /* ------------------------------------------------------------------ */
 
 .screen {
@@ -201,7 +188,7 @@ a {
   max-width: var(--container);
   margin-inline: auto;
   padding-inline: var(--gutter);
-  padding-block: var(--s-5) var(--s-8);
+  padding-block: var(--s-6) var(--s-8);
 }
 
 .screen--wide {
@@ -222,35 +209,12 @@ body.has-tabbar .screen {
   margin-block-start: var(--s-7);
 }
 
-@media (min-width: 1024px) {
-  .section {
-    margin-block-start: var(--s-8);
-  }
-}
-
-/* "TRENDING NOW"-style head: condensed title with a hairline running to the edge */
 .section-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--s-4);
   margin-block-end: var(--s-4);
-}
-
-.section-head h2 {
-  font-size: var(--t-h2);
-  flex-shrink: 0;
-}
-
-.section-head::after {
-  content: "";
-  flex: 1;
-  margin-block-end: var(--s-2);
-  border-block-end: 1px solid var(--line-strong);
-}
-
-.section-head__link {
-  order: 3;
-  flex-shrink: 0;
 }
 
 .prose {
@@ -262,26 +226,25 @@ body.has-tabbar .screen {
 }
 
 /* ------------------------------------------------------------------ */
-/* Screen header (every inner screen)                                  */
+/* Screen header (inner screens)                                       */
 /* ------------------------------------------------------------------ */
 
 .screen-header {
   display: flex;
   align-items: flex-start;
   gap: var(--s-3);
-  padding-block: var(--s-2) var(--s-5);
-  margin-block-end: var(--s-5);
-  border-block-end: 1px solid var(--line-strong);
+  margin-block-end: var(--s-6);
 }
 
 .screen-header__back {
   margin-inline-start: calc(var(--s-2) * -1);
+  margin-block-start: var(--s-1);
   flex-shrink: 0;
+  background: var(--surface-1);
 }
 
 .screen-header__titles {
   min-width: 0;
-  padding-block-start: var(--s-1);
 }
 
 .screen-header__title {
@@ -289,9 +252,9 @@ body.has-tabbar .screen {
 }
 
 .screen-header__subtitle {
-  margin-block-start: var(--s-2);
+  margin-block-start: var(--s-3);
   color: var(--text-2);
-  font-size: var(--t-small);
+  font-size: var(--t-body);
 }
 
 /* ------------------------------------------------------------------ */
@@ -309,7 +272,7 @@ body.has-tabbar .screen {
   padding-inline: var(--s-5);
   padding-block: var(--s-2);
   border: 1px solid transparent;
-  border-radius: var(--r-md);
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--text);
   font-size: var(--t-body);
@@ -333,9 +296,7 @@ body.has-tabbar .screen {
 }
 
 .btn--primary:hover:not(:disabled),
-.btn-primary:hover:not(:disabled),
-.btn--primary:active:not(:disabled),
-.btn-primary:active:not(:disabled) {
+.btn-primary:hover:not(:disabled) {
   background: var(--red-press);
 }
 
@@ -348,7 +309,17 @@ body.has-tabbar .screen {
 
 .btn--secondary:hover:not(:disabled),
 .btn-secondary:hover:not(:disabled) {
-  border-color: var(--line-strong);
+  border-color: var(--text);
+}
+
+/* White button on the red brand field */
+.btn--inverse {
+  background: var(--surface-1);
+  color: var(--red);
+}
+
+.btn--inverse:hover:not(:disabled) {
+  background: var(--surface-2);
 }
 
 .btn--ghost {
@@ -380,19 +351,17 @@ body.has-tabbar .screen {
 .btn:disabled,
 .btn-primary:disabled,
 .btn-secondary:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .btn--locked,
 .btn--locked:disabled {
-  background: var(--ink-3);
-  color: var(--on-ink-2);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-red-2);
   opacity: 1;
-  cursor: not-allowed;
 }
 
-/* Text link with an arrow - "See all" */
 .link-arrow {
   display: inline-flex;
   align-items: center;
@@ -415,32 +384,59 @@ body.has-tabbar .screen {
 }
 
 /* ------------------------------------------------------------------ */
-/* Panels, tags, stats                                                 */
+/* Cards                                                               */
 /* ------------------------------------------------------------------ */
 
 .card {
   background: var(--surface-1);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
-  padding: var(--s-4);
+  padding: var(--s-5) var(--s-4);
+  box-shadow: var(--shadow-1);
 }
 
-.card--pad-lg {
-  padding: var(--s-5);
+@media (min-width: 600px) {
+  .card {
+    padding: var(--s-5);
+  }
 }
 
-.card--lg {
-  border-radius: var(--r-md);
+/* Content runs edge to edge; only the head is padded */
+.card--flush {
+  padding: 0;
+  overflow: hidden;
 }
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  padding: var(--s-5) var(--s-4) var(--s-4);
+}
+
+.card:not(.card--flush) > .card__head {
+  padding: 0 0 var(--s-4);
+}
+
+@media (min-width: 600px) {
+  .card__head {
+    padding: var(--s-5) var(--s-5) var(--s-4);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Tags, chips, stats                                                  */
+/* ------------------------------------------------------------------ */
 
 .tag {
   display: inline-flex;
   align-items: center;
   gap: var(--s-1);
-  min-height: 22px;
+  min-height: 24px;
   padding-inline: var(--s-2);
   border-radius: var(--r-sm);
-  background: var(--surface-3);
+  background: var(--surface-2);
   color: var(--text-2);
   font-size: var(--t-label);
   font-weight: 700;
@@ -468,11 +464,6 @@ body.has-tabbar .screen {
   color: var(--success);
 }
 
-.tag--warning {
-  background: var(--warning-tint);
-  color: var(--warning);
-}
-
 .dot {
   width: 8px;
   height: 8px;
@@ -485,33 +476,189 @@ body.has-tabbar .screen {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--s-1);
+  gap: var(--s-2);
   min-width: 0;
 }
 
 .stat__value {
   font-family: var(--font-num);
-  font-size: 34px;
+  font-variation-settings: var(--display-axes);
+  font-size: var(--t-num-lg);
   font-weight: 700;
-  line-height: 1;
+  line-height: var(--lh-display);
   font-variant-numeric: tabular-nums;
 }
 
 .stat__label {
-  font-size: var(--t-label);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-2);
   line-height: 1.3;
 }
 
+/* Points earned (results) */
+.pts-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 28px;
+  padding-inline: var(--s-2);
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.pts-chip .num {
+  font-size: 20px;
+}
+
+.pts-chip.is-earned {
+  background: var(--success);
+  color: var(--surface-1);
+}
+
+/* Team logos sit on white discs, so red logos survive on red fields */
+.logo-disc {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: var(--r-full);
+  background: var(--surface-1);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.logo-disc img {
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+}
+
+.logo-disc--sm {
+  width: 32px;
+  height: 32px;
+}
+.logo-disc--md {
+  width: 48px;
+  height: 48px;
+}
+.logo-disc--lg {
+  width: 72px;
+  height: 72px;
+}
+.logo-disc--xl {
+  width: 84px;
+  height: 84px;
+}
+
+@media (min-width: 768px) {
+  .logo-disc--xl {
+    width: 120px;
+    height: 120px;
+  }
+}
+
 /* ------------------------------------------------------------------ */
-/* Tabs (underline, like a broadcast sub-nav) + boxed toggle            */
+/* Player media (cut-outs) + names                                      */
+/* ------------------------------------------------------------------ */
+
+.pmedia {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.pmedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+}
+
+/* Cut-outs: zoom to head and shoulders, anchored at the top */
+.pmedia.is-cutout img {
+  transform-origin: 50% 0;
+}
+
+.pmedia--sm {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+}
+
+.pmedia--sm.is-cutout img {
+  transform: scale(1.9) translateY(3%);
+}
+
+/* md: square, no background - the player "stands" on the row's bottom edge */
+.pmedia--md {
+  width: 56px;
+  height: 56px;
+  align-self: flex-end;
+}
+
+.pmedia--md.is-cutout img {
+  transform: scale(1.55);
+}
+
+.pmedia--md:not(.is-cutout) {
+  border-radius: var(--r-md);
+  align-self: center;
+}
+
+.pmedia--lg {
+  width: 100%;
+  height: 100%;
+}
+
+.pmedia--lg.is-cutout img {
+  transform: scale(1.12);
+}
+
+.pmedia--empty {
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: var(--t-small);
+}
+
+.pmedia--md.pmedia--empty {
+  border-radius: var(--r-full);
+  align-self: center;
+  width: 44px;
+  height: 44px;
+}
+
+.pname {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.pname__first {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.pname__last {
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabs (underline) + pill toggles                                      */
 /* ------------------------------------------------------------------ */
 
 .tabs {
   display: flex;
   gap: var(--s-5);
-  border-block-end: 1px solid var(--line);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -521,13 +668,13 @@ body.has-tabbar .screen {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
-  min-height: 44px;
+  min-height: 40px;
   padding: 0;
   border: 0;
   background: none;
   color: var(--text-2);
-  font-size: var(--t-small);
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   transition: color var(--dur) var(--ease);
@@ -539,29 +686,31 @@ body.has-tabbar .screen {
 
 .tabs__btn[aria-pressed="true"] {
   color: var(--text);
+  font-weight: 700;
 }
 
 .tabs__btn[aria-pressed="true"]::after {
   content: "";
   position: absolute;
   inset-inline: 0;
-  inset-block-end: -1px;
+  inset-block-end: 0;
   height: 3px;
+  border-radius: 3px 3px 0 0;
   background: var(--red);
 }
 
 .tabs__count {
   font-family: var(--font-num);
-  font-weight: 600;
+  font-variation-settings: var(--display-axes);
+  font-size: 18px;
   color: var(--text-3);
 }
 
+/* Pill toggles (EuroLeague "Points / Rebounds / Assists") */
 .segmented {
   display: flex;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-1);
-  overflow: hidden;
+  flex-wrap: wrap;
+  gap: var(--s-2);
 }
 
 .segmented__btn {
@@ -571,49 +720,41 @@ body.has-tabbar .screen {
   justify-content: center;
   gap: var(--s-2);
   min-height: 44px;
-  padding-inline: var(--s-3);
-  border: 0;
-  background: transparent;
-  color: var(--text-2);
-  font-size: var(--t-small);
-  font-weight: 700;
+  padding-inline: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--surface-1);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
   transition:
     background-color var(--dur) var(--ease),
-    color var(--dur) var(--ease);
-}
-
-.segmented__btn + .segmented__btn {
-  border-inline-start: 1px solid var(--line);
+    border-color var(--dur) var(--ease);
 }
 
 .segmented__btn:hover {
-  color: var(--text);
-  background: var(--surface-2);
+  border-color: var(--text-3);
 }
 
 .segmented__btn[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-
-.segmented__count {
-  font-family: var(--font-num);
-  color: inherit;
-  opacity: 0.6;
+  border-color: var(--red);
+  background: var(--red-tint);
+  color: var(--text);
+  font-weight: 700;
 }
 
 /* ------------------------------------------------------------------ */
-/* Lists / table rows                                                  */
+/* List rows                                                           */
 /* ------------------------------------------------------------------ */
 
 .list {
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
   overflow: hidden;
+  box-shadow: var(--shadow-1);
 }
 
 .list-row {
@@ -621,7 +762,7 @@ body.has-tabbar .screen {
   align-items: center;
   gap: var(--s-3);
   width: 100%;
-  min-height: 56px;
+  min-height: 60px;
   padding: var(--s-3) var(--s-4);
   border: 0;
   background: transparent;
@@ -629,6 +770,12 @@ body.has-tabbar .screen {
   text-align: start;
   text-decoration: none;
   cursor: default;
+}
+
+@media (min-width: 600px) {
+  .list-row {
+    padding-inline: var(--s-5);
+  }
 }
 
 .list > .list-row + .list-row,
@@ -647,17 +794,12 @@ a.list-row:hover {
   background: var(--surface-2);
 }
 
-button.list-row:not(:disabled):active,
-a.list-row:active {
-  background: var(--surface-3);
-}
-
 .list-row__main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--s-1);
+  gap: 2px;
 }
 
 .list-row__title {
@@ -667,8 +809,8 @@ a.list-row:active {
 
 .list-row__meta {
   color: var(--text-2);
-  font-size: var(--t-small);
-  line-height: 1.3;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .list-row__end {
@@ -684,7 +826,6 @@ a.list-row:active {
   height: 40px;
   border-radius: var(--r-md);
   background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   display: grid;
   place-items: center;
@@ -692,12 +833,12 @@ a.list-row:active {
 }
 
 /* ------------------------------------------------------------------ */
-/* Avatar                                                              */
+/* Avatar (people who aren't players)                                  */
 /* ------------------------------------------------------------------ */
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-full);
   background: var(--surface-3);
   color: var(--text-2);
@@ -735,7 +876,7 @@ a.list-row:active {
   min-height: 48px;
   padding: var(--s-3) var(--s-4);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-sm);
   background: var(--surface-1);
   color: var(--text);
   font-size: var(--t-body);
@@ -766,8 +907,8 @@ textarea.nickname-input {
 .league-link-input:focus-visible,
 .stat-field input:focus-visible {
   outline: none;
-  border-color: var(--line-strong);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
 }
 
 select.field,
@@ -843,12 +984,17 @@ select.field,
 }
 
 /* ------------------------------------------------------------------ */
-/* Numeric stepper (− value +), scoreboard digits                       */
+/* Numeric stepper (− value +)                                         */
 /* ------------------------------------------------------------------ */
 
 .stepper {
   display: inline-flex;
   align-items: center;
+  gap: var(--s-3);
+}
+
+.stepper--vertical {
+  flex-direction: column-reverse;
   gap: var(--s-2);
 }
 
@@ -858,7 +1004,7 @@ select.field,
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-full);
   background: var(--surface-1);
   color: var(--text);
   cursor: pointer;
@@ -869,7 +1015,7 @@ select.field,
 }
 
 .stepper__btn:hover {
-  border-color: var(--line-strong);
+  border-color: var(--text);
 }
 
 .stepper__btn:active {
@@ -877,15 +1023,15 @@ select.field,
 }
 
 .stepper__input {
-  width: 2.4ch;
-  min-width: 80px;
+  width: 2.2ch;
+  min-width: 88px;
   padding: 0;
   border: 0;
-  border-block-end: 2px solid var(--line);
   border-radius: 0;
   background: transparent;
   color: var(--text);
   font-family: var(--font-num);
+  font-variation-settings: var(--display-axes);
   font-size: var(--t-display);
   font-weight: 700;
   line-height: 1;
@@ -893,7 +1039,7 @@ select.field,
   font-variant-numeric: tabular-nums;
   -moz-appearance: textfield;
   appearance: textfield;
-  transition: border-color var(--dur) var(--ease);
+  caret-color: var(--red);
 }
 
 .stepper__input::-webkit-outer-spin-button,
@@ -903,20 +1049,20 @@ select.field,
 }
 
 .stepper__input::placeholder {
-  color: var(--line);
+  color: var(--surface-3);
 }
 
 .stepper__input:focus-visible {
   outline: none;
-  border-color: var(--line-strong);
+  box-shadow: 0 3px 0 var(--text);
 }
 
 .stepper__input.field-invalid {
-  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .stepper--md .stepper__input {
-  font-size: 44px;
+  font-size: 56px;
   min-width: 64px;
 }
 
@@ -937,17 +1083,17 @@ select.field,
 }
 
 .skeleton--title {
-  height: 32px;
+  height: 36px;
   width: 60%;
 }
 
 .skeleton--row {
-  height: 56px;
+  height: 60px;
   border-radius: 0;
 }
 
 .skeleton--card {
-  height: 160px;
+  height: 180px;
   border-radius: var(--r-md);
 }
 
@@ -957,7 +1103,9 @@ select.field,
   gap: var(--s-3);
 }
 
-.list > .skeleton--row + .skeleton--row {
+.list > .skeleton--row + .skeleton--row,
+.schedule-list > .skeleton--row + .skeleton--row,
+.home-leaders > .skeleton--row + .skeleton--row {
   border-block-start: 1px solid var(--surface-1);
 }
 
@@ -990,11 +1138,11 @@ select.field,
 .sheet {
   position: relative;
   width: 100%;
-  max-height: 88vh;
+  max-height: 90vh;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--s-6) var(--s-5) calc(var(--s-5) + env(safe-area-inset-bottom));
-  background: var(--surface-1);
+  padding: var(--s-6) var(--s-4) calc(var(--s-5) + env(safe-area-inset-bottom));
+  background: var(--bg);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-2);
   text-align: start;
@@ -1011,13 +1159,16 @@ select.field,
   height: 4px;
   margin-inline: auto;
   border-radius: var(--r-full);
-  background: var(--surface-3);
+  background: var(--line);
 }
 
 .modal-box h2,
 .sheet h2 {
-  font-size: var(--t-h2);
-  margin-block-end: var(--s-2);
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: 40px;
+  line-height: var(--lh-display);
+  margin-block-end: var(--s-3);
 }
 
 .modal-box > p,
@@ -1038,12 +1189,13 @@ select.field,
 }
 
 .modal-box > .btn-secondary {
+  background: transparent;
   border-color: transparent;
   color: var(--text-2);
 }
 
 .modal-box > .btn-secondary:hover:not(:disabled) {
-  background: var(--surface-2);
+  background: var(--surface-3);
   color: var(--text);
 }
 
@@ -1059,6 +1211,7 @@ select.field,
 }
 
 .install-prompt-actions .btn-secondary {
+  background: transparent;
   border-color: transparent;
   color: var(--text-2);
 }
@@ -1090,8 +1243,8 @@ select.field,
 
   .modal-box,
   .sheet {
-    max-width: 460px;
-    max-height: 80vh;
+    max-width: 480px;
+    max-height: 84vh;
     padding: var(--s-6);
     border-radius: var(--r-lg);
     animation: modal-in 200ms var(--ease);
@@ -1103,7 +1256,7 @@ select.field,
   }
 
   .user-prediction-modal-box {
-    max-width: 600px;
+    max-width: 680px;
   }
 }
 
@@ -1128,7 +1281,7 @@ select.field,
 }
 
 /* ------------------------------------------------------------------ */
-/* Top bar - black broadcast chrome                                     */
+/* Top bar - white, like EuroLeague                                     */
 /* ------------------------------------------------------------------ */
 
 .topbar {
@@ -1136,15 +1289,9 @@ select.field,
   inset-block-start: 0;
   z-index: 50;
   height: var(--topbar-h);
-  background: var(--ink);
-  color: var(--on-ink);
-}
-
-.topbar :focus-visible,
-.tabbar :focus-visible,
-.ticker :focus-visible,
-.hero :focus-visible {
-  outline-color: var(--focus-on-ink);
+  background: var(--surface-1);
+  color: var(--text);
+  box-shadow: 0 1px 0 var(--line);
 }
 
 .topbar__inner {
@@ -1164,12 +1311,12 @@ select.field,
   padding: 0;
   border: 0;
   background: none;
-  color: var(--on-ink);
+  color: var(--text);
   cursor: pointer;
 }
 
 .topbar__brand .logo {
-  height: 22px;
+  height: 24px;
   width: auto;
 }
 
@@ -1177,8 +1324,8 @@ select.field,
   display: none;
   align-self: stretch;
   align-items: stretch;
-  gap: var(--s-5);
-  margin-inline-start: var(--s-6);
+  gap: var(--s-6);
+  margin-inline: auto;
 }
 
 .topbar__nav-btn {
@@ -1188,16 +1335,18 @@ select.field,
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--on-ink-2);
-  font-size: var(--t-small);
-  font-weight: 700;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: color var(--dur) var(--ease);
 }
 
-.topbar__nav-btn:hover,
+.topbar__nav-btn:hover {
+  color: var(--red);
+}
+
 .topbar__nav-btn[aria-current="page"] {
-  color: var(--on-ink);
+  font-weight: 700;
 }
 
 .topbar__nav-btn[aria-current="page"]::after {
@@ -1206,6 +1355,7 @@ select.field,
   inset-inline: 0;
   inset-block-end: 0;
   height: 3px;
+  border-radius: 3px 3px 0 0;
   background: var(--red);
 }
 
@@ -1216,14 +1366,14 @@ select.field,
   gap: var(--s-2);
 }
 
-.topbar .btn--secondary {
-  background: transparent;
-  border-color: var(--ink-line);
-  color: var(--on-ink);
-}
+@media (min-width: 768px) {
+  .topbar__nav {
+    display: flex;
+  }
 
-.topbar .btn--secondary:hover {
-  border-color: var(--on-ink-2);
+  .topbar__end {
+    margin-inline-start: 0;
+  }
 }
 
 .user-chip {
@@ -1232,24 +1382,22 @@ select.field,
   gap: var(--s-2);
   min-height: 40px;
   padding-inline: var(--s-1) var(--s-3);
-  border: 1px solid var(--ink-line);
+  border: 1px solid var(--line);
   border-radius: var(--r-full);
-  background: transparent;
-  color: var(--on-ink);
+  background: var(--surface-1);
+  color: var(--text);
   cursor: pointer;
   font-size: var(--t-small);
   font-weight: 700;
 }
 
 .user-chip:hover {
-  border-color: var(--on-ink-2);
+  border-color: var(--text);
 }
 
 .user-chip .avatar {
   width: 30px;
   height: 30px;
-  background: var(--ink-3);
-  color: var(--on-ink);
 }
 
 .user-chip__score {
@@ -1259,20 +1407,12 @@ select.field,
 }
 
 .user-chip__score .num {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: 22px;
 }
 
 .user-chip__unit {
-  color: var(--on-ink-3);
+  color: var(--text-3);
   font-size: var(--t-label);
-}
-
-@media (min-width: 768px) {
-  .topbar__nav {
-    display: flex;
-  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1286,9 +1426,8 @@ select.field,
   z-index: 60;
   display: flex;
   padding-block-end: env(safe-area-inset-bottom);
-  background: var(--ink-blur);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background: var(--surface-1);
+  box-shadow: 0 -1px 0 var(--line);
 }
 
 .tabbar__btn {
@@ -1302,12 +1441,11 @@ select.field,
   gap: var(--s-1);
   border: 0;
   background: none;
-  color: var(--on-ink-3);
-  font-size: var(--t-label);
+  color: var(--text-3);
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: color var(--dur) var(--ease);
 }
 
 .tabbar__btn .icon {
@@ -1316,16 +1454,7 @@ select.field,
 }
 
 .tabbar__btn[aria-current="page"] {
-  color: var(--on-ink);
-}
-
-.tabbar__btn[aria-current="page"]::before {
-  content: "";
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline: 30%;
-  height: 3px;
-  background: var(--red);
+  color: var(--red);
 }
 
 @media (min-width: 768px) {
@@ -1344,7 +1473,7 @@ body.is-flow .topbar {
 /* "More" sheet menu                                                   */
 /* ------------------------------------------------------------------ */
 
-.menu-group + .menu-group {
+.menu-group {
   margin-block-start: var(--s-5);
 }
 
@@ -1357,15 +1486,14 @@ body.is-flow .topbar {
   align-items: center;
   gap: var(--s-3);
   margin-block-end: var(--s-5);
-  padding-block-end: var(--s-4);
-  border-block-end: 1px solid var(--line);
 }
 
 .menu-account__name {
   font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
   font-weight: 700;
-  font-size: 30px;
-  line-height: 1;
+  font-size: 36px;
+  line-height: var(--lh-display);
 }
 
 .menu-footer-links {
@@ -1385,8 +1513,26 @@ body.is-flow .topbar {
   inset-block-end: 0;
   z-index: 40;
   background: var(--surface-1);
-  border-block-start: 1px solid var(--line);
+  box-shadow: 0 -1px 0 var(--line);
   padding-block: var(--s-3) calc(var(--s-3) + env(safe-area-inset-bottom));
+}
+
+.action-bar__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  max-width: var(--container);
+  margin: 0 auto var(--s-2);
+  padding-inline: var(--gutter);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.action-bar__hint[hidden] {
+  display: none;
 }
 
 .action-bar__inner {
@@ -1404,7 +1550,7 @@ body.is-flow .topbar {
 }
 
 .has-action-bar {
-  padding-block-end: calc(var(--s-9) + var(--s-6) + env(safe-area-inset-bottom)) !important;
+  padding-block-end: calc(var(--s-9) + var(--s-7) + env(safe-area-inset-bottom)) !important;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1438,7 +1584,6 @@ body.is-flow .topbar {
 .banner--danger {
   background: var(--danger-tint);
   color: var(--danger);
-  border: 1px solid var(--danger);
 }
 
 /* ------------------------------------------------------------------ */

@@ -8,23 +8,15 @@ import {
   type ScoringRules,
 } from "../api/backend";
 import type { Player } from "../prediction/types";
-import {
-  CATEGORY_ORDER,
-  CATEGORY_CONFIG,
-  topStatPoints,
-  finalScorePoints,
-  teamStatPoints,
-  resultTable,
-} from "../prediction/PredictionScreen";
-import { BONUS_QUESTIONS } from "../schedule/schedule";
-import { t, tDynamic } from "../i18n/i18n";
+import { predictionCompare } from "../prediction/recap";
+import { t } from "../i18n/i18n";
 import { esc } from "../ui/dom";
 
 /**
  * Read-only "what did this person bet" modal, opened by clicking a name on
- * a per-game leaderboard table. Mirrors PredictionScreen's own post-game
- * recap table, reusing the exact same scoring-tier helper functions so the
- * displayed per-row points can never drift from what the server actually paid.
+ * a per-game leaderboard table. Uses the same predicted-vs-actual view as
+ * PredictionScreen's own recap (and so the exact same scoring helpers), so
+ * the per-row points can never drift from what the server actually paid.
  */
 export class UserPredictionModal {
   private overlay: HTMLElement | null = null;
@@ -35,15 +27,14 @@ export class UserPredictionModal {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.innerHTML = `
-      <div class="modal-box user-prediction-modal-box">
+      <div class="modal-box user-prediction-modal-box" role="dialog" aria-modal="true">
         <h2 dir="auto">${t("leaderboard.userPrediction.title", { name: esc(displayName) })}</h2>
-        <div class="skeleton-stack" aria-busy="true"><span class="skeleton skeleton--title"></span><span class="skeleton skeleton--line"></span><span class="skeleton skeleton--line"></span></div>
+        <div class="skeleton-stack" aria-busy="true"><span class="skeleton skeleton--title"></span><span class="skeleton skeleton--card"></span></div>
       </div>
     `;
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) this.hide();
     });
-    overlay.querySelector(".modal-box")?.setAttribute("role", "dialog");
     document.body.appendChild(overlay);
     this.overlay = overlay;
 
@@ -88,9 +79,7 @@ export class UserPredictionModal {
 
     const heading = document.createElement("h2");
     heading.dir = "auto";
-    heading.textContent = t("leaderboard.userPrediction.title", {
-      name: displayName,
-    });
+    heading.textContent = t("leaderboard.userPrediction.title", { name: displayName });
     box.appendChild(heading);
 
     if (!prediction) {
@@ -99,113 +88,17 @@ export class UserPredictionModal {
       p.textContent = t("leaderboard.userPrediction.none");
       box.appendChild(p);
     } else {
-      const playerById = (id: string) => players.find((pl) => pl.id === id);
-
-      type Row = {
-        label: string;
-        predicted: string;
-        actual: string;
-        points: number;
-      };
-      const rows: Row[] = [];
-
-      const pHome = prediction.predictedHomeScore;
-      const pAway = prediction.predictedAwayScore;
-      const aHome = result?.actualHomeScore ?? null;
-      const aAway = result?.actualAwayScore ?? null;
-      rows.push({
-        label: t("prediction.step.score"),
-        predicted:
-          pHome !== null && pAway !== null ? `${pHome} - ${pAway}` : "-",
-        actual: aHome !== null && aAway !== null ? `${aHome} - ${aAway}` : "-",
-        points:
-          pHome !== null && pAway !== null && aHome !== null && aAway !== null
-            ? finalScorePoints(pHome, pAway, aHome, aAway, rules)
-            : 0,
-      });
-
-      CATEGORY_ORDER.forEach((category) => {
-        const config = CATEGORY_CONFIG[category];
-        const predictedPlayerId = prediction[config.playerKey];
-        const predictedAmount = prediction[config.amountKey];
-        const actualPlayerId = result ? result[config.actualPlayerKey] : null;
-        const actualAmount = result ? result[config.actualAmountKey] : null;
-        const predictedPlayer = predictedPlayerId
-          ? playerById(predictedPlayerId)
-          : null;
-        const actualPlayer = actualPlayerId ? playerById(actualPlayerId) : null;
-        rows.push({
-          label: t(config.labelKey),
-          predicted: predictedPlayer
-            ? `#${predictedPlayer.jerseyNumber} ${tDynamic(predictedPlayer.name)}${predictedAmount !== null ? ` (${predictedAmount})` : ""}`
-            : t("prediction.summary.notSelected"),
-          actual: actualPlayer
-            ? `#${actualPlayer.jerseyNumber} ${tDynamic(actualPlayer.name)}${actualAmount !== null ? ` (${actualAmount})` : ""}`
-            : "-",
-          points: topStatPoints(
-            predictedPlayerId,
-            predictedAmount,
-            actualPlayerId,
-            actualAmount,
-            rules,
-          ),
-        });
-      });
-
-      const teamStatRows: {
-        label: string;
-        predicted: number | null;
-        actual: number | null;
-      }[] = [
-        {
-          label: t("prediction.breakdown.teamThrees"),
-          predicted: prediction.predictedTeamThrees,
-          actual: result?.actualTeamThrees ?? null,
-        },
-        {
-          label: t("prediction.breakdown.teamRebounds"),
-          predicted: prediction.predictedTeamRebounds,
-          actual: result?.actualTeamRebounds ?? null,
-        },
-        {
-          label: t("prediction.breakdown.teamAssists"),
-          predicted: prediction.predictedTeamAssists,
-          actual: result?.actualTeamAssists ?? null,
-        },
-      ];
-      teamStatRows.forEach(({ label, predicted, actual }) => {
-        rows.push({
-          label,
-          predicted: predicted !== null ? String(predicted) : "-",
-          actual: actual !== null ? String(actual) : "-",
-          points:
-            predicted !== null && actual !== null
-              ? teamStatPoints(predicted, actual, rules)
-              : 0,
-        });
-      });
-
-      const bonusQuestion = BONUS_QUESTIONS.get(gameId);
-      if (bonusQuestion && result?.actualBonusAnswer != null) {
-        const predicted = prediction.predictedBonusAnswer;
-        const actual = result.actualBonusAnswer;
-        rows.push({
-          label: tDynamic(bonusQuestion.question),
-          predicted:
-            predicted === null
-              ? "-"
-              : predicted
-                ? t("common.yes")
-                : t("common.no"),
-          actual: actual ? t("common.yes") : t("common.no"),
-          points:
-            predicted !== null && predicted === actual
-              ? bonusQuestion.points
-              : 0,
-        });
-      }
-
-      box.appendChild(resultTable(rows, prediction.score));
+      box.appendChild(
+        predictionCompare({
+          prediction,
+          result,
+          rules,
+          gameId,
+          playerById: (id) => players.find((pl) => pl.id === id),
+          total: prediction.score,
+          predictedLabel: t("leaderboard.userPrediction.theirSide"),
+        }),
+      );
     }
 
     const closeBtn = document.createElement("button");
