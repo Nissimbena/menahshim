@@ -48,6 +48,9 @@ import type { ScheduleGame } from "./schedule/schedule";
 import type { Player } from "./prediction/types";
 import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
+import { initHoverEffects } from "./ui/hover";
+
+initHoverEffects();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

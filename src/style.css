@@ -4437,3 +4437,184 @@ button.calendar__day:hover {
     min-width: 110px;
   }
 }
+
+/* ================================================================== */
+/* Alive on hover - a light that follows the cursor, lifts, nudges      */
+/* (positions come from src/ui/hover.ts; touch devices skip all this)   */
+/* ================================================================== */
+
+@media (hover: hover) and (pointer: fine) {
+  .card,
+  .standings,
+  .ctable,
+  .ticket,
+  .hero,
+  .pcard,
+  .ticker__game,
+  .podium__card,
+  .calendar__day.has-game,
+  .sport-card,
+  .media-card {
+    transition:
+      transform 220ms var(--ease),
+      box-shadow 220ms var(--ease),
+      background-color 220ms var(--ease);
+  }
+
+  /* The spotlight: layered over the glass sheen */
+  .is-lit:is(.card, .standings, .ctable, .ticket, .hero, .pcard, .ticker__game, .podium__card, .calendar__day, .sport-card, .media-card) {
+    background-image:
+      radial-gradient(360px circle at var(--mx) var(--my), var(--spot), transparent 60%),
+      var(--glass-sheen);
+  }
+
+  .hero.is-lit {
+    background-image:
+      radial-gradient(700px circle at var(--mx) var(--my), var(--spot), transparent 55%),
+      var(--glass-sheen);
+  }
+
+  /* Small panes lift a little */
+  .ticker__game:not(:disabled):hover,
+  .podium__card:hover,
+  .calendar__day.has-game:is(button):hover,
+  .sport-card:hover,
+  .media-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 0 0 1px var(--glass-edge),
+      var(--lift-shadow);
+  }
+
+  /* Player cards: tilt toward the cursor, photo steps forward */
+  .pcard {
+    transform-style: preserve-3d;
+    transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  }
+
+  .pcard:hover {
+    transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 0 0 1px var(--glass-edge),
+      var(--lift-shadow);
+  }
+
+  .pcard.is-selected.is-lit {
+    background-image:
+      radial-gradient(360px circle at var(--mx) var(--my), var(--spot-red), transparent 60%),
+      var(--glass-sheen);
+  }
+
+  .pcard:hover .pcard__num {
+    color: var(--text);
+  }
+
+  /* Rows: a lit band slides in, the chevron nudges forward */
+  .game-row,
+  button.standings__row,
+  .list-row {
+    transition: background-color 180ms var(--ease);
+  }
+
+  button.game-row:not(:disabled):hover,
+  button.standings__row:hover,
+  a.list-row:hover,
+  button.list-row:hover {
+    background-color: var(--surface-2);
+  }
+
+  button.game-row:not(:disabled):hover .game-row__team.is-us .game-row__logo img,
+  button.game-row:not(:disabled):hover .game-row__logo img {
+    transform: scale(1.12);
+  }
+
+  .game-row__logo img,
+  .ticker__team img,
+  .logo-disc img {
+    transition: transform 220ms var(--ease);
+  }
+
+  .ticker__game:not(:disabled):hover .ticker__team img,
+  .hero__team:hover .logo-disc img {
+    transform: scale(1.1);
+  }
+
+  .standings__chev,
+  .link-arrow .icon,
+  .btn .icon,
+  .schedule-more .icon {
+    transition: transform 200ms var(--ease);
+  }
+
+  /* Forward nudge: directional icons are already mirrored in RTL, so
+     the move is written in the icon's own (flipped) space */
+  button.standings__row:hover .standings__chev,
+  .link-arrow:hover .icon,
+  .btn--primary:hover:not(:disabled) .icon {
+    transform: translateX(4px);
+  }
+
+  :root[dir="rtl"] button.standings__row:hover .standings__chev.icon--dir,
+  :root[dir="rtl"] .link-arrow:hover .icon--dir,
+  :root[dir="rtl"] .btn--primary:hover:not(:disabled) .icon--dir {
+    transform: scaleX(-1) translateX(4px);
+  }
+
+  /* Buttons: a press you can feel */
+  .btn {
+    transition:
+      transform 160ms var(--ease),
+      background-color 160ms var(--ease),
+      box-shadow 160ms var(--ease);
+  }
+
+  .btn--primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px var(--red-line);
+  }
+
+
+  .btn:active:not(:disabled),
+  .stepper__btn:active,
+  .segmented__btn:active {
+    transform: scale(0.97);
+  }
+
+  .stepper__btn {
+    transition: transform 140ms var(--ease), background-color 140ms var(--ease);
+  }
+
+  .stepper__btn:hover {
+    transform: scale(1.06);
+  }
+
+  /* Nav: the tab underline grows in */
+  .topbar__nav-btn,
+  .tabs__btn {
+    transition: color 160ms var(--ease);
+  }
+
+  .topbar__nav-btn:hover,
+  .tabs__btn:hover {
+    color: var(--text);
+  }
+
+  /* Countdown tiles catch the light too */
+  .countdown__unit {
+    transition: transform 200ms var(--ease), background-color 200ms var(--ease);
+  }
+
+  .countdown__unit:hover {
+    transform: translateY(-2px);
+    background: var(--glass-pill-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard,
+  .pcard:hover {
+    transform: none;
+  }
+}
