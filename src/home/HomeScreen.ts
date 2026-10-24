@@ -238,6 +238,8 @@ export class HomeScreen {
     this.container.innerHTML = "";
 
     const page = el("div", "screen screen--wide home");
+    // The page's one h1, for screen readers and search; visually the hero leads.
+    page.appendChild(el("h1", "sr-only", esc(t("home.title"))));
 
     if (this.authError) {
       const banner = el("div", "banner banner--danger home-banner", `${icon("alert")}<p dir="auto"></p>`);

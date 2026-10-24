@@ -22,16 +22,16 @@ export function rankList(
   } = {},
 ): HTMLElement {
   const table = el("div", `standings${opts.compact ? " standings--compact" : ""}`);
-  table.setAttribute("role", "table");
 
   const head = el(
     "div",
     "standings__head",
-    `<span role="columnheader">${t("leaderboard.col.rank")}</span>
-     <span role="columnheader">${t("leaderboard.col.player")}</span>
-     <span role="columnheader" class="standings__pts-head">${t("leaderboard.col.points")}</span>`,
+    `<span>${t("leaderboard.col.rank")}</span>
+     <span>${t("leaderboard.col.player")}</span>
+     <span class="standings__pts-head">${t("leaderboard.col.points")}</span>`,
   );
-  head.setAttribute("role", "row");
+  // Visual column header only; each row carries its own spoken label.
+  head.setAttribute("aria-hidden", "true");
   table.appendChild(head);
 
   const limit = opts.limit ?? rows.length;
@@ -41,6 +41,7 @@ export function rankList(
   const podium = !opts.compact && rows.length >= 3 && limit >= 3;
 
   const list = el("ol", "standings__body");
+  list.setAttribute("aria-label", t("leaderboard.col.player"));
   if (podium) list.setAttribute("start", "4");
   rows.slice(podium ? 3 : 0, limit).forEach((row, j) => list.appendChild(rankRow(row, j + (podium ? 3 : 0), opts)));
   if (opts.appendMe && meIndex >= limit) {
@@ -75,18 +76,21 @@ function podiumBlock(
     const isMe = !!opts.meUid && row.uid === opts.meUid;
     const li = el("li", `podium__place podium__place--${MEDALS[i]}${isMe ? " is-me" : ""}`);
     const card = opts.onRowClick ? el("button", "podium__card") : el("div", "podium__card");
+    const spoken = t("leaderboard.rowLabel", { rank: i + 1, name: row.name, points: row.total });
+    if (opts.onRowClick) card.setAttribute("aria-label", spoken);
     if (card instanceof HTMLButtonElement) {
       card.type = "button";
       card.addEventListener("click", () => opts.onRowClick?.(row));
     }
     card.innerHTML = `
       ${i === 0 ? `<span class="podium__crown">${icon("trophy")}</span>` : ""}
-      <span class="medal medal--${MEDALS[i]} medal--lg">${i + 1}</span>
+      <span class="medal medal--${MEDALS[i]} medal--lg" aria-hidden="true">${i + 1}</span>
       ${avatarHTML(row.name)}
-      <span class="podium__name" dir="auto">${esc(row.name)}</span>
+      <span class="podium__name" dir="auto" aria-hidden="true">${esc(row.name)}</span>
       ${isMe ? `<span class="tag tag--red">${t("leaderboard.you")}</span>` : ""}
-      <span class="podium__pts"><span class="num">${row.total}</span><span>${t("leaderboard.col.points")}</span></span>
-      <span class="podium__step" aria-hidden="true"></span>`;
+      <span class="podium__pts" aria-hidden="true"><span class="num">${row.total}</span><span>${t("leaderboard.col.points")}</span></span>
+      <span class="podium__step" aria-hidden="true"></span>
+      ${opts.onRowClick ? "" : `<span class="sr-only">${esc(spoken)}</span>`}`;
     li.appendChild(card);
     wrap.appendChild(li);
   });
@@ -104,20 +108,23 @@ function rankRow(
     `standings__item${isMe ? " is-me" : ""}${index < 3 ? ` is-top is-${MEDALS[index]}` : ""}`,
   );
   const inner = opts.onRowClick ? el("button", "standings__row") : el("div", "standings__row");
-  inner.setAttribute("role", "row");
+  const spoken =
+    t("leaderboard.rowLabel", { rank: index + 1, name: row.name, points: row.total }) + (isMe ? ` (${t("leaderboard.you")})` : "");
+  // Buttons can carry a label; plain rows read it from hidden text.
+  if (opts.onRowClick) inner.setAttribute("aria-label", spoken);
   if (inner instanceof HTMLButtonElement) {
     inner.type = "button";
     inner.addEventListener("click", () => opts.onRowClick?.(row));
   }
   inner.innerHTML = `
-    <span class="standings__pos num" role="cell">${posHTML(index)}</span>
-    <span class="standings__player" role="cell">
+    <span class="standings__pos num" aria-hidden="true">${posHTML(index)}</span>
+    <span class="standings__player" aria-hidden="true">
       ${avatarHTML(row.name)}
       <span class="standings__name" dir="auto">${esc(row.name)}</span>
       ${isMe ? `<span class="tag tag--red">${t("leaderboard.you")}</span>` : ""}
     </span>
-    <span class="standings__pts num" role="cell">${row.total}</span>
-    ${opts.onRowClick ? icon("chevronForward", { size: "sm", className: "standings__chev" }) : ""}
+    <span class="standings__pts num" aria-hidden="true">${row.total}</span>
+    ${opts.onRowClick ? icon("chevronForward", { size: "sm", className: "standings__chev" }) : `<span class="sr-only">${esc(spoken)}</span>`}
   `;
   li.appendChild(inner);
   return li;

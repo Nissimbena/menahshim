@@ -46,6 +46,16 @@ export class AppNav {
     this.actions = actions;
     this.tabbar.setAttribute("aria-label", t("nav.label"));
     document.body.prepend(this.topbar);
+    // First thing a keyboard / screen-reader user reaches: jump past the nav.
+    const skip = document.createElement("a");
+    skip.className = "skip-link";
+    skip.href = "#main";
+    skip.textContent = t("a11y.skipToContent");
+    skip.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.getElementById("main")?.focus();
+    });
+    document.body.prepend(skip);
     document.body.appendChild(this.tabbar);
     document.body.classList.add("has-tabbar");
 

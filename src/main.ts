@@ -140,6 +140,7 @@ function open(
   opts: { tab: TabId | null; flow?: boolean; reshowOnLang?: boolean },
 ) {
   nav.closeMore();
+  const isFirst = currentShow === null;
   screens.forEach((s) => s.hide());
   nav.setActive(opts.tab);
   nav.setFlowMode(!!opts.flow);
@@ -147,6 +148,34 @@ function open(
   currentShow = show;
   currentReshowsOnLangChange = !!opts.reshowOnLang;
   show();
+  if (!isFirst) enterScreen();
+}
+
+/**
+ * Page change: the new screen eases in (fade + short rise), and focus moves
+ * to its heading so keyboard and screen-reader users land on the new page
+ * instead of staying on a button that no longer exists.
+ */
+function enterScreen() {
+  const main = document.getElementById("main");
+  const root = main?.querySelector<HTMLElement>(":scope > div:not(.hidden)");
+  if (!root) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce && root.animate) {
+    root.animate(
+      [
+        { opacity: 0, transform: "translateY(10px)" },
+        { opacity: 1, transform: "none" },
+      ],
+      { duration: 280, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+    );
+  }
+  requestAnimationFrame(() => {
+    const heading = root.querySelector<HTMLElement>("h1");
+    const target = heading ?? main!;
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  });
 }
 
 // Screens that don't re-render themselves on a language switch get re-shown.

@@ -492,6 +492,9 @@ const translations: Record<Lang, Dict> = {
     "home.schedule.showAll": "כל הלו״ז ({n} משחקים)",
     "home.schedule.showLess": "הצג פחות",
     "prediction.quickPick": "בחירה מהירה",
+    "a11y.skipToContent": "דלג לתוכן",
+    "leaderboard.rowLabel": "מקום {rank}: {name}, {points} נקודות",
+    "home.title": "מנאחסים - ניחושים למשחקי הפועל ירושלים",
     "inAppBrowser.warning":
       'זיהינו שאתם גולשים מתוך אפליקציה אחרת (כמו WhatsApp) ולא מ-Safari/Chrome ישירות - ההתחברות עם Google עלולה להיכשל. פתחו את הקישור ישירות בדפדפן (לחיצה ארוכה על הקישור ← "פתח ב-Safari").',
   },
@@ -997,6 +1000,9 @@ const translations: Record<Lang, Dict> = {
     "home.schedule.showAll": "Full schedule ({n} games)",
     "home.schedule.showLess": "Show less",
     "prediction.quickPick": "Quick pick",
+    "a11y.skipToContent": "Skip to content",
+    "leaderboard.rowLabel": "Place {rank}: {name}, {points} points",
+    "home.title": "Menahsim - predictions for Hapoel Jerusalem games",
     "inAppBrowser.warning":
       'Looks like you opened this inside another app (like WhatsApp) instead of Safari/Chrome - Google sign-in may fail. Open the link directly in your browser (long-press the link → "Open in Safari").',
   },

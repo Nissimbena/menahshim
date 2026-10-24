@@ -182,7 +182,7 @@
 }
 
 .ticker__game.is-next .ticker__status {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .ticker__mark {
@@ -1694,7 +1694,7 @@ button.standings__row:hover {
 }
 
 .pcard.is-selected .pcard__num {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .pcard.is-selected .pcard__check {
@@ -1789,7 +1789,7 @@ button.standings__row:hover {
   height: 44px;
   border-radius: var(--r-full);
   background: var(--red-tint);
-  color: var(--red);
+  color: var(--red-text);
   flex-shrink: 0;
 }
 
@@ -1925,7 +1925,7 @@ button.standings__row:hover {
 }
 
 .leader-row__stat .icon {
-  color: var(--red);
+  color: var(--red-text);
   flex-shrink: 0;
 }
 
@@ -2002,7 +2002,7 @@ button.standings__row:hover {
 }
 
 .team-stat .icon {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .team-stat__value {
@@ -2125,7 +2125,7 @@ button.standings__row:hover {
 }
 
 .compare__stat .icon {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .compare__q {
@@ -4187,7 +4187,7 @@ button.calendar__day:hover {
 }
 
 .pcard.is-selected .pcard__num {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .pcard__check {
@@ -4616,5 +4616,123 @@ button.calendar__day:hover {
   .pcard,
   .pcard:hover {
     transform: none;
+  }
+}
+
+/* ================================================================== */
+/* Accessibility                                                        */
+/* ================================================================== */
+
+.skip-link {
+  position: fixed;
+  inset-block-start: var(--s-2);
+  inset-inline-start: var(--s-2);
+  z-index: 100;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--chip);
+  color: var(--on-chip);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform var(--dur) var(--ease);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Programmatic focus targets (page heading after navigation) */
+#main:focus,
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Keyboard focus: a clear ring on the glass, never removed */
+:is(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.pcard:focus-visible,
+.podium__card:focus-visible,
+.calendar__day:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ================================================================== */
+/* My season - symmetric: title on top, three equal centred cells      */
+/* ================================================================== */
+
+.personal-strip {
+  display: block;
+  padding: 0;
+}
+
+.card.personal-strip > .card__head {
+  justify-content: center;
+  padding: var(--s-5) var(--s-4) var(--s-1);
+  border: 0;
+  text-align: center;
+}
+
+.personal-strip .card__head h2 {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+:root[lang="en"] .personal-strip .card__head h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.personal-strip__cells {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 0;
+  padding: var(--s-2) var(--s-2) var(--s-3);
+}
+
+.personal-strip__cell,
+.personal-strip__cell + .personal-strip__cell {
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-3) var(--s-2);
+  border: 0;
+  border-radius: var(--r-md);
+  text-align: center;
+}
+
+.personal-strip__cell {
+  position: relative;
+}
+
+/* Straight dividers, inset from top and bottom, centred between cells */
+.personal-strip__cell + .personal-strip__cell::before {
+  content: "";
+  position: absolute;
+  inset-block: 22%;
+  inset-inline-start: 0;
+  width: 1px;
+  background: var(--line);
+}
+
+.personal-strip__cell:hover {
+  background: var(--glass-pill);
+}
+
+@media (min-width: 768px) {
+  .personal-strip {
+    display: block;
+  }
+
+  .personal-strip__cells {
+    padding: var(--s-2) var(--s-4) var(--s-4);
+  }
+
+  .personal-strip__cell {
+    padding: var(--s-4);
   }
 }

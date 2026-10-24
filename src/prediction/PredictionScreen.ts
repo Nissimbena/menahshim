@@ -333,6 +333,7 @@ export class PredictionScreen {
     const current = this.stepIndex + 1;
     const nav = el("div", "progress");
     nav.setAttribute("role", "progressbar");
+    nav.setAttribute("aria-label", t("prediction.progress", { n: current, total }));
     nav.setAttribute("aria-valuemin", "1");
     nav.setAttribute("aria-valuemax", String(total));
     nav.setAttribute("aria-valuenow", String(current));
