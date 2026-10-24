@@ -17,48 +17,64 @@
  */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+
+  /*
+   * Night mode with glass: a near-black canvas lit by soft red and grey
+   * glows, and every surface a frosted, translucent layer over it (iOS
+   * materials). Surfaces are white at low alpha so the glow shows through;
+   * text is white at decreasing alpha for hierarchy.
+   */
 
   /* ---- Canvas ---- */
-  --bg: #f1f1f1;
-  --surface-1: #ffffff; /* cards */
-  --surface-2: #f6f6f6; /* hover, wells, table heads */
-  --surface-3: #ebebeb; /* pressed, placeholders */
-  --line: #e4e4e4;
-  --line-strong: #111111;
-  --scrim: rgba(17, 17, 17, 0.55);
+  --bg: #0a0a0c;
+  --bg-glow-red: rgba(210, 35, 42, 0.42);
+  --bg-glow-grey: rgba(130, 136, 156, 0.3);
+  --surface-1: rgba(255, 255, 255, 0.06); /* glass card */
+  --surface-2: rgba(255, 255, 255, 0.09); /* hover, wells */
+  --surface-3: rgba(255, 255, 255, 0.13); /* pressed, placeholders */
+  --surface-solid: #1c1c1f; /* where blur isn't possible (selects, sheets fallback) */
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.85);
+  --glass-edge: rgba(255, 255, 255, 0.14); /* the 1px light catching the top edge */
+  --glass-blur: blur(28px) saturate(170%);
+  --scrim: rgba(0, 0, 0, 0.6);
 
-  /* ---- Dark moments (footer, score slip, tab bar) ---- */
-  --ink: #111111;
-  --ink-2: #1e1e1e;
-  --ink-3: #2c2c2c;
-  --ink-line: rgba(255, 255, 255, 0.14);
-  --ink-blur: rgba(17, 17, 17, 0.94);
+  /* ---- Dark moments (footer, totals): deeper than the glass ---- */
+  --ink: rgba(0, 0, 0, 0.55);
+  --ink-2: rgba(255, 255, 255, 0.05);
+  --ink-3: rgba(255, 255, 255, 0.1);
+  --ink-line: rgba(255, 255, 255, 0.12);
+  --ink-blur: rgba(12, 12, 14, 0.72);
   --on-ink: #ffffff;
-  --on-ink-2: rgba(255, 255, 255, 0.72);
-  --on-ink-3: rgba(255, 255, 255, 0.5);
+  --on-ink-2: rgba(255, 255, 255, 0.7);
+  --on-ink-3: rgba(255, 255, 255, 0.45);
+
+  /* ---- Light chip on dark (inverse buttons, labels) ---- */
+  --chip: #ffffff;
+  --on-chip: #0a0a0c;
 
   /* ---- Brand: Hapoel red, in three values for the diagonal fields ---- */
   --red: #d2232a; /* action colour + brand field */
   --red-press: #ad1a20;
   --red-deep: #8e1c1f; /* the darker diagonal */
   --red-bright: #e2383e; /* the lighter diagonal */
-  --red-tint: rgba(210, 35, 42, 0.08);
-  --red-line: rgba(210, 35, 42, 0.45);
+  --red-tint: rgba(255, 69, 58, 0.16);
+  --red-line: rgba(255, 69, 58, 0.55);
   --on-red: #ffffff;
   --on-red-2: rgba(255, 255, 255, 0.78);
   --on-red-3: rgba(255, 255, 255, 0.55);
 
   /* ---- Text ---- */
-  --text: #111111;
-  --text-2: #5c5c5c;
-  --text-3: #737373; /* AA on white */
+  --text: #f5f5f7;
+  --text-2: rgba(235, 235, 245, 0.68);
+  --text-3: rgba(235, 235, 245, 0.46);
 
   /* ---- Functional ---- */
-  --gold: #946a08;
+  --gold: #ffcc4d;
   --gold-bright: #f0b93b;
   --gold-tint: rgba(240, 185, 59, 0.18);
-  --gold-line: rgba(148, 106, 8, 0.4);
+  --gold-line: rgba(255, 204, 77, 0.45);
 
   /* ---- Medals: metallic gradients for the podium ---- */
   --medal-gold-1: #f7d774;
@@ -73,14 +89,14 @@
   --medal-bronze-2: #a8642e;
   --medal-bronze-ink: #3d1f08;
   --medal-bronze-tint: rgba(193, 120, 62, 0.14);
-  --success: #11804a;
-  --success-tint: rgba(17, 128, 74, 0.1);
+  --success: #30d158;
+  --success-tint: rgba(48, 209, 88, 0.14);
   --warning: #b86a00;
   --warning-tint: rgba(232, 150, 30, 0.14);
   --on-warning: #1f1405;
-  --danger: #c4251b;
-  --danger-tint: rgba(196, 37, 27, 0.08);
-  --focus: #111111;
+  --danger: #ff453a;
+  --danger-tint: rgba(255, 69, 58, 0.14);
+  --focus: #ffffff;
   --focus-on-ink: #ffffff;
   --whatsapp: #1fa855;
 
@@ -96,14 +112,14 @@
   --s-9: 96px;
 
   /* ---- Radii ---- */
-  --r-sm: 4px; /* tags, inputs */
-  --r-md: 8px; /* cards, buttons */
-  --r-lg: 12px; /* sheets, hero */
+  --r-sm: 8px; /* tags, inputs */
+  --r-md: 18px; /* cards */
+  --r-lg: 28px; /* sheets, hero */
   --r-full: 999px;
 
   /* ---- Elevation: cards are flat; only floating layers lift ---- */
-  --shadow-1: 0 1px 2px rgba(17, 17, 17, 0.04);
-  --shadow-2: 0 20px 56px rgba(17, 17, 17, 0.22);
+  --shadow-1: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 30px 80px rgba(0, 0, 0, 0.6);
 
   /* ---- Layout ---- */
   --container: 760px;

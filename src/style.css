@@ -41,6 +41,8 @@
   padding: var(--s-7) var(--s-5);
   border-radius: var(--r-md);
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   color: var(--text-2);
   text-align: center;
 }
@@ -105,6 +107,8 @@
 
 .ticker {
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border-block-end: 1px solid var(--line);
 }
 
@@ -225,12 +229,25 @@
 /* Hero - the next game as a face-off: home on the start side           */
 /* ================================================================== */
 
+/* A large frosted panel, inset from the edges like an iOS widget */
 .hero {
   position: relative;
   isolation: isolate;
-  background: var(--ink);
+  max-width: var(--container-wide);
+  margin: var(--s-4) var(--gutter) 0;
+  border-radius: var(--r-lg);
+  background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-2), inset 0 0 0 1px var(--glass-edge);
   color: var(--on-ink);
   overflow: hidden;
+}
+
+@media (min-width: 1520px) {
+  .hero {
+    margin-inline: auto;
+  }
 }
 
 /*
@@ -243,11 +260,10 @@
   height: 300px;
 }
 
-.hero__photo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, transparent 45%, var(--ink) 100%);
+.hero__photo {
+  background: transparent;
+  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 45%, transparent 100%);
 }
 
 .hero__inner {
@@ -269,8 +285,14 @@
     height: auto;
   }
 
-  .hero__photo::after {
-    background: linear-gradient(calc(90deg * var(--dir)), var(--ink) 0, transparent 45%);
+  .hero__photo {
+    -webkit-mask-image: linear-gradient(to left, black 55%, transparent 100%);
+    mask-image: linear-gradient(to left, black 55%, transparent 100%);
+  }
+
+  :root[dir="rtl"] .hero__photo {
+    -webkit-mask-image: linear-gradient(to right, black 55%, transparent 100%);
+    mask-image: linear-gradient(to right, black 55%, transparent 100%);
   }
 
   .hero__inner {
@@ -699,9 +721,9 @@
 }
 
 .ticket__btn {
-  background: var(--surface-1);
-  border-color: var(--surface-1);
-  color: var(--text);
+  background: var(--chip);
+  border-color: var(--chip);
+  color: var(--on-chip);
 }
 
 @media (min-width: 768px) {
@@ -1094,6 +1116,8 @@ button.game-row.is-next:not(:disabled):hover {
 
 .standings {
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-1);
 }
@@ -1221,6 +1245,8 @@ button.standings__row:hover {
   inset-block-end: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   z-index: 2;
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 
 .standings__item.is-me .standings__row {
@@ -1560,6 +1586,8 @@ button.standings__row:hover {
   border: 0;
   border-radius: var(--r-md);
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-1);
   color: var(--text);
   text-align: start;
@@ -1615,7 +1643,7 @@ button.standings__row:hover {
   z-index: -1;
   inset-block-start: var(--s-2);
   inset-inline-start: var(--s-3);
-  color: var(--surface-1);
+  color: var(--surface-3);
   font-size: clamp(48px, 36px + 3vw, 72px);
   line-height: 0.9;
 }
@@ -2590,6 +2618,8 @@ button.standings__row:hover {
   border: 0;
   border-radius: var(--r-md);
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-1);
   color: var(--text);
   text-align: start;
@@ -2686,6 +2716,8 @@ button.standings__row:hover {
   padding: var(--s-4);
   border-radius: var(--r-md);
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-1);
 }
 
@@ -2749,6 +2781,8 @@ button.standings__row:hover {
   padding: var(--s-5);
   border-radius: var(--r-md);
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-1);
 }
 
@@ -2888,6 +2922,8 @@ button.standings__row:hover {
   padding: 2px var(--s-2);
   border-radius: var(--r-sm);
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   color: var(--text);
   font-size: 12px;
   font-weight: 700;
@@ -3729,6 +3765,8 @@ button.podium__card:hover {
 /* Game days: white tile; home games carry the red bar along the top */
 .calendar__day.has-game {
   background: var(--surface-1);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
@@ -3895,4 +3933,34 @@ button.calendar__day:hover {
   border-radius: 2px;
   background: var(--red-tint);
   box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.schedule-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-block-start: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.schedule-more:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.schedule-more .icon.is-down {
+  transform: rotate(90deg);
+}
+
+.schedule-more .icon.is-up {
+  transform: rotate(-90deg);
 }

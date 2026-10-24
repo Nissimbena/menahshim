@@ -91,6 +91,7 @@ export class HomeScreen {
   private scheduleView: "list" | "calendar" = readScheduleView();
   /** First day of the month the calendar shows; null = the next game's month. */
   private calendarMonth: Date | null = null;
+  private showAllGames = false;
   private challengeEligibility: ChallengeEligibility | null = null;
   private challengeEligibilityGameId: string | null = null;
   private leaderboard: LeaderboardRow[] | null = null;
@@ -576,9 +577,25 @@ export class HomeScreen {
       this.activeTab === "upcoming" ? upcoming : finished.slice().reverse();
     const heroId = this.heroGame?.id;
     const activeId = getActiveGameId(this.games);
-    rows.forEach((game) => list.appendChild(this.buildGameRow(game, game.id === heroId, game.id === activeId)));
+    // The next few games; the rest of the season is one tap (or the calendar) away.
+    const LIMIT = 6;
+    const shown = this.showAllGames ? rows : rows.slice(0, LIMIT);
+    shown.forEach((game) => list.appendChild(this.buildGameRow(game, game.id === heroId, game.id === activeId)));
     if (rows.length === 0) {
       list.appendChild(el("p", "list-row c-2", t("home.schedule.empty")));
+    }
+    if (rows.length > LIMIT) {
+      const more = el(
+        "button",
+        "schedule-more",
+        `<span>${this.showAllGames ? t("home.schedule.showLess") : t("home.schedule.showAll", { n: rows.length })}</span>${icon("chevronForward", { size: "sm", className: this.showAllGames ? "is-up" : "is-down" })}`,
+      );
+      more.type = "button";
+      more.addEventListener("click", () => {
+        this.showAllGames = !this.showAllGames;
+        this.render();
+      });
+      list.appendChild(more);
     }
     section.appendChild(list);
     return section;

@@ -489,6 +489,8 @@ const translations: Record<Lang, Dict> = {
     "calendar.next": "החודש הבא",
     "calendar.gamesInMonth": "{n} משחקים",
     "leaderboard.podium": "שלושת הראשונים",
+    "home.schedule.showAll": "כל הלו״ז ({n} משחקים)",
+    "home.schedule.showLess": "הצג פחות",
     "inAppBrowser.warning":
       'זיהינו שאתם גולשים מתוך אפליקציה אחרת (כמו WhatsApp) ולא מ-Safari/Chrome ישירות - ההתחברות עם Google עלולה להיכשל. פתחו את הקישור ישירות בדפדפן (לחיצה ארוכה על הקישור ← "פתח ב-Safari").',
   },
@@ -991,6 +993,8 @@ const translations: Record<Lang, Dict> = {
     "calendar.next": "Next month",
     "calendar.gamesInMonth": "{n} games",
     "leaderboard.podium": "Top three",
+    "home.schedule.showAll": "Full schedule ({n} games)",
+    "home.schedule.showLess": "Show less",
     "inAppBrowser.warning":
       'Looks like you opened this inside another app (like WhatsApp) instead of Safari/Chrome - Google sign-in may fail. Open the link directly in your browser (long-press the link → "Open in Safari").',
   },
