@@ -244,11 +244,7 @@
   overflow: hidden;
 }
 
-@media (min-width: 1520px) {
-  .hero {
-    margin-inline: auto;
-  }
-}
+
 
 /*
  * The photo never sits behind the type. Phones: a band across the top that

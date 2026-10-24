@@ -136,8 +136,8 @@
   --shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 30px 80px rgba(0, 0, 0, 0.6);
 
   /* ---- Layout ---- */
-  --container: 1440px; /* every screen spans the full width */
-  --container-wide: 1440px;
+  --container: 100%; /* every screen spans the full width, at any size */
+  --container-wide: 100%;
   --sidebar: 360px;
   --gutter: 16px;
   --topbar-h: 64px;
