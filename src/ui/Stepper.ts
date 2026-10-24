@@ -17,8 +17,10 @@ export function numberStepper(opts: {
   emptyStart: number;
   label: string;
   size?: "lg" | "md";
+  /** Typical values offered as one-tap chips under the stepper. */
+  presets?: number[];
   onValue: (value: number | null, valid: boolean) => void;
-}): { root: HTMLElement; error: HTMLElement } {
+}): { root: HTMLElement; error: HTMLElement; presets: HTMLElement | null } {
   const root = el("div", `stepper${opts.size === "md" ? " stepper--md" : ""}`);
   const minus = el("button", "stepper__btn", icon("minus"));
   const plus = el("button", "stepper__btn", icon("plus"));
@@ -39,7 +41,15 @@ export function numberStepper(opts: {
   const error = el("div", "field-error-msg");
   error.setAttribute("aria-live", "polite");
 
+  let presetRow: HTMLElement | null = null;
+  const syncPresets = () => {
+    presetRow?.querySelectorAll<HTMLButtonElement>(".stepper-presets__chip").forEach((chip) => {
+      chip.setAttribute("aria-pressed", String(chip.dataset.value === input.value));
+    });
+  };
+
   input.addEventListener("input", () => {
+    syncPresets();
     if (input.value === "") {
       input.classList.remove("field-invalid");
       input.removeAttribute("aria-invalid");
@@ -56,6 +66,8 @@ export function numberStepper(opts: {
     opts.onValue(valid ? parsed : null, valid);
   });
 
+  // Empty field: either button lands on a realistic starting value, so
+  // nobody has to tap "+" twenty times to reach a scorer's points.
   const step = (delta: number) => {
     const current = Number(input.value);
     let next: number;
@@ -70,5 +82,22 @@ export function numberStepper(opts: {
   // Inline order: − value + (mirrors naturally in RTL to + value −, which is
   // what Hebrew sports apps do; the icons themselves are direction-neutral).
   root.append(minus, input, plus);
-  return { root, error };
+
+  if (opts.presets?.length) {
+    presetRow = el("div", "stepper-presets");
+    presetRow.setAttribute("role", "group");
+    presetRow.setAttribute("aria-label", t("prediction.quickPick"));
+    opts.presets.forEach((v) => {
+      const chip = el("button", "stepper-presets__chip", String(v));
+      chip.type = "button";
+      chip.dataset.value = String(v);
+      chip.addEventListener("click", () => {
+        input.value = String(v);
+        input.dispatchEvent(new Event("input"));
+      });
+      presetRow!.appendChild(chip);
+    });
+    syncPresets();
+  }
+  return { root, error, presets: presetRow };
 }

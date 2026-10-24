@@ -4193,3 +4193,247 @@ button.calendar__day:hover {
 .pcard__check {
   z-index: 3;
 }
+
+/* ================================================================== */
+/* Glass, used with intent: pills and controls are lighter glass        */
+/* sitting on the panes                                                */
+/* ================================================================== */
+
+.btn--secondary,
+.btn-secondary,
+.stepper__btn,
+.segmented__btn,
+.tag,
+.stepper-presets__chip {
+  background: var(--glass-pill);
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--glass-edge);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.btn--secondary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.stepper__btn:hover:not(:disabled),
+.segmented__btn:hover,
+.stepper-presets__chip:hover {
+  background: var(--glass-pill-hover);
+  border-color: transparent;
+}
+
+.segmented__btn[aria-pressed="true"],
+.stepper-presets__chip[aria-pressed="true"] {
+  background: var(--red);
+  color: var(--on-red);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 20px var(--red-tint);
+}
+
+/* Red primary: a lit edge so it reads as glass too */
+.btn--primary {
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 24px var(--red-tint);
+}
+
+/* Countdown: each unit its own small glass tile */
+.countdown__unit {
+  min-width: 84px;
+  padding: var(--s-3) var(--s-3) var(--s-2);
+  border-radius: var(--r-md);
+  background: var(--glass-pill);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--glass-edge);
+}
+
+.countdown {
+  gap: var(--s-3);
+}
+
+@media (max-width: 420px) {
+  .countdown__unit {
+    min-width: 72px;
+  }
+}
+
+/* ================================================================== */
+/* Amount panel - the number is the hero of the question               */
+/* ================================================================== */
+
+.amount-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: var(--s-4);
+  padding: var(--s-5) var(--s-4);
+  text-align: center;
+}
+
+.amount-card__who {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.amount-card__who .pmedia--md {
+  width: 88px;
+  height: 88px;
+  margin: 0;
+  border-radius: var(--r-full);
+  background: var(--glass-pill);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+  overflow: hidden;
+}
+
+.amount-card__who .pmedia--md.is-cutout img {
+  transform: scale(2.2) translateY(2%);
+}
+
+.amount-card__text {
+  align-items: center;
+}
+
+.amount-card__q {
+  order: 2;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.amount-card__text .pname {
+  align-items: center;
+}
+
+.amount-card__text .pname__last {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: 32px;
+  line-height: 0.95;
+}
+
+.amount-card__control {
+  margin: 0;
+  gap: var(--s-3);
+}
+
+.amount-card .stepper__input {
+  font-size: clamp(64px, 52px + 3vw, 96px);
+  min-width: 140px;
+}
+
+.amount-card .stepper__btn,
+.score-col .stepper__btn {
+  width: 56px;
+  height: 56px;
+}
+
+@media (min-width: 768px) {
+  .amount-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: stretch;
+    align-items: center;
+    gap: var(--s-6);
+    padding: var(--s-6);
+    text-align: start;
+  }
+
+  .amount-card__who {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s-4);
+  }
+
+  .amount-card__text,
+  .amount-card__text .pname {
+    align-items: flex-start;
+  }
+
+  .amount-card__control {
+    align-items: center;
+  }
+}
+
+/* Quick-pick chips */
+.stepper-presets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-2);
+}
+
+.stepper-presets__chip {
+  min-width: 48px;
+  min-height: 36px;
+  padding-inline: var(--s-3);
+  border: 0;
+  border-radius: var(--r-full);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.stepper-presets__chip:active {
+  transform: scale(0.96);
+}
+
+/* Team totals: label left, control right, chips under the control */
+.team-row__control {
+  gap: var(--s-2);
+}
+
+.team-row .stepper-presets__chip {
+  min-width: 42px;
+  min-height: 32px;
+  font-size: 14px;
+}
+
+.team-row__icon {
+  background: var(--glass-pill);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+/* Section rhythm: question, then content, generous air */
+.q-wrap {
+  margin-block-end: var(--s-6);
+}
+
+.step-question {
+  max-width: 20ch;
+}
+
+/* Team totals on wide screens: three columns side by side, each a stat */
+@media (min-width: 900px) {
+  .team-card {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0;
+  }
+
+  .team-row {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--s-4);
+    padding: var(--s-6) var(--s-4);
+    text-align: center;
+  }
+
+  .team-row + .team-row {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--line);
+  }
+
+  .team-row__label {
+    flex-direction: column;
+    gap: var(--s-2);
+    font-size: 20px;
+  }
+
+  .team-row__icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .team-row .stepper__input {
+    font-size: 72px;
+    min-width: 110px;
+  }
+}

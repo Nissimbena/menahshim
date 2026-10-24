@@ -82,6 +82,19 @@ const MAX_TEAM_STAT = {
 
 /** Team-score stepper starts here on the first +/− tap - a realistic basketball score. */
 const SCORE_STEPPER_START = 80;
+/** Where an empty amount starts, and the quick-pick chips - typical game lines. */
+const STAT_START: Record<StatCategory, number> = { scorer: 18, rebounder: 8, assist: 6 };
+const STAT_PRESETS: Record<StatCategory, number[]> = {
+  scorer: [12, 15, 18, 21, 25, 30],
+  rebounder: [5, 7, 9, 11, 13],
+  assist: [4, 5, 6, 8, 10],
+};
+const TEAM_START = { predictedTeamThrees: 10, predictedTeamRebounds: 36, predictedTeamAssists: 20 } as const;
+const TEAM_PRESETS = {
+  predictedTeamThrees: [6, 8, 10, 12, 14],
+  predictedTeamRebounds: [30, 33, 36, 39, 42],
+  predictedTeamAssists: [15, 18, 20, 23, 26],
+} as const;
 
 /**
  * Prediction flow:
@@ -576,10 +589,11 @@ export class PredictionScreen {
             ${playerNameHTML(player)}
           </div>
         </div>`;
-      const { root, error } = numberStepper({
+      const { root, error, presets } = numberStepper({
         value: this.prediction[config.amountKey],
         max: MAX_PLAYER_STAT[category],
-        emptyStart: 0,
+        emptyStart: STAT_START[category],
+        presets: STAT_PRESETS[category],
         label: t(config.amountLabelKey),
         size: "md",
         onValue: (v, valid) => {
@@ -590,6 +604,7 @@ export class PredictionScreen {
       });
       const control = el("div", "amount-card__control");
       control.append(root, error);
+      if (presets) control.appendChild(presets);
       amount.appendChild(control);
       section.appendChild(amount);
     }
@@ -728,10 +743,11 @@ export class PredictionScreen {
         `<span class="team-row__label"><span class="team-row__icon">${icon(TEAM_STAT_ICON[key])}</span><span></span></span>`,
       );
       row.querySelector(".team-row__label > span:last-child")!.textContent = t(labelKey);
-      const { root, error } = numberStepper({
+      const { root, error, presets } = numberStepper({
         value: this.prediction[key],
         max,
-        emptyStart: 0,
+        emptyStart: TEAM_START[key],
+        presets: [...TEAM_PRESETS[key]],
         label: t(labelKey),
         size: "md",
         onValue: (v, valid) => {
@@ -742,6 +758,7 @@ export class PredictionScreen {
       });
       const control = el("div", "team-row__control");
       control.append(root, error);
+      if (presets) control.appendChild(presets);
       row.appendChild(control);
       card.appendChild(row);
     });

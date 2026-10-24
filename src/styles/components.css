@@ -1651,13 +1651,17 @@ body::before {
    * crisp-edged orbs (the blur softens them only where a pane sits over
    * them) on top of wide soft glows.
    */
+  /*
+   * Lighter than before: one soft red light up in the corner, one cool grey
+   * light on the other side and a faint white ring low down - enough shape
+   * for the frost to read, without weighing the page down.
+   */
   background:
-    radial-gradient(circle at 82% 8%, var(--bg-orb-red) 0 15vmax, transparent 15.2vmax),
-    radial-gradient(circle at 8% 46%, var(--bg-orb-grey) 0 13vmax, transparent 13.2vmax),
-    radial-gradient(circle at 70% 88%, var(--bg-orb-wine) 0 17vmax, transparent 17.2vmax),
-    radial-gradient(70vmax 60vmax at 85% -10%, var(--bg-glow-red), transparent 60%),
-    radial-gradient(60vmax 55vmax at -10% 45%, var(--bg-glow-grey), transparent 65%),
-    radial-gradient(55vmax 50vmax at 100% 100%, var(--bg-glow-red), transparent 65%),
+    radial-gradient(circle at 84% 6%, var(--bg-orb-red) 0, var(--bg-orb-red) 9vmax, transparent 22vmax),
+    radial-gradient(circle at 6% 52%, var(--bg-orb-grey) 0, var(--bg-orb-grey) 10vmax, transparent 24vmax),
+    radial-gradient(circle at 72% 96%, var(--bg-orb-wine) 0, var(--bg-orb-wine) 14vmax, transparent 14.3vmax),
+    radial-gradient(80vmax 60vmax at 90% -20%, var(--bg-glow-red), transparent 60%),
+    radial-gradient(70vmax 60vmax at -10% 60%, var(--bg-glow-grey), transparent 65%),
     var(--bg);
   filter: blur(2px);
   animation: orbs-drift 40s ease-in-out infinite alternate;

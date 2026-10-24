@@ -27,13 +27,13 @@
    */
 
   /* ---- Canvas ---- */
-  --bg: #0a0a0c;
-  --bg-glow-red: rgba(210, 35, 42, 0.3);
-  --bg-orb-red: rgba(226, 56, 62, 0.2);
-  --bg-orb-wine: rgba(142, 28, 31, 0.38);
-  --bg-orb-grey: rgba(150, 156, 176, 0.2);
-  --bg-glow-grey: rgba(130, 136, 156, 0.4);
-  --surface-1: rgba(255, 255, 255, 0.075); /* glass card */
+  --bg: #121216;
+  --bg-glow-red: rgba(210, 35, 42, 0.16);
+  --bg-orb-red: rgba(226, 56, 62, 0.22);
+  --bg-orb-wine: rgba(255, 255, 255, 0.05);
+  --bg-orb-grey: rgba(170, 176, 196, 0.16);
+  --bg-glow-grey: rgba(150, 156, 176, 0.16);
+  --surface-1: rgba(255, 255, 255, 0.07); /* glass card */
   --surface-2: rgba(255, 255, 255, 0.11); /* hover, wells */
   --surface-3: rgba(255, 255, 255, 0.13); /* pressed, placeholders */
   --surface-solid: #1c1c1f; /* where blur isn't possible (selects, sheets fallback) */
@@ -50,7 +50,9 @@
   );
   --glass-drop: 0 12px 40px rgba(0, 0, 0, 0.4);
   --card-floor: rgba(255, 255, 255, 0.10); /* the light on the floor behind a player */
-  --card-fade: rgba(8, 8, 10, 0.92); /* name plate fade over the photo */
+  --card-fade: rgba(14, 14, 18, 0.9); /* name plate fade over the photo */
+  --glass-pill: rgba(255, 255, 255, 0.1); /* buttons and chips sitting on glass */
+  --glass-pill-hover: rgba(255, 255, 255, 0.16);
   --glass-blur: blur(36px) saturate(190%) brightness(1.08);
   --scrim: rgba(0, 0, 0, 0.6);
 
