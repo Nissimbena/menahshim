@@ -28,16 +28,30 @@
 
   /* ---- Canvas ---- */
   --bg: #0a0a0c;
-  --bg-glow-red: rgba(210, 35, 42, 0.42);
-  --bg-glow-grey: rgba(130, 136, 156, 0.3);
-  --surface-1: rgba(255, 255, 255, 0.06); /* glass card */
-  --surface-2: rgba(255, 255, 255, 0.09); /* hover, wells */
+  --bg-glow-red: rgba(210, 35, 42, 0.55);
+  --bg-orb-red: rgba(226, 56, 62, 0.42);
+  --bg-orb-wine: rgba(142, 28, 31, 0.6);
+  --bg-orb-grey: rgba(150, 156, 176, 0.26);
+  --bg-glow-grey: rgba(130, 136, 156, 0.4);
+  --surface-1: rgba(255, 255, 255, 0.075); /* glass card */
+  --surface-2: rgba(255, 255, 255, 0.11); /* hover, wells */
   --surface-3: rgba(255, 255, 255, 0.13); /* pressed, placeholders */
   --surface-solid: #1c1c1f; /* where blur isn't possible (selects, sheets fallback) */
   --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.85);
-  --glass-edge: rgba(255, 255, 255, 0.14); /* the 1px light catching the top edge */
-  --glass-blur: blur(28px) saturate(170%);
+  --glass-edge: rgba(255, 255, 255, 0.16); /* hairline around every pane */
+  --glass-highlight: rgba(255, 255, 255, 0.38); /* the light catching the top edge */
+  --glass-sheen: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 32%,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  --glass-drop: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --card-floor: rgba(255, 255, 255, 0.10); /* the light on the floor behind a player */
+  --card-fade: rgba(8, 8, 10, 0.92); /* name plate fade over the photo */
+  --glass-blur: blur(36px) saturate(190%) brightness(1.08);
   --scrim: rgba(0, 0, 0, 0.6);
 
   /* ---- Dark moments (footer, totals): deeper than the glass ---- */
@@ -122,7 +136,7 @@
   --shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 30px 80px rgba(0, 0, 0, 0.6);
 
   /* ---- Layout ---- */
-  --container: 760px;
+  --container: 1440px; /* every screen spans the full width */
   --container-wide: 1440px;
   --sidebar: 360px;
   --gutter: 16px;

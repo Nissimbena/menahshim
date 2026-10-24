@@ -1646,11 +1646,33 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  /*
+   * Glass only reads as glass when there is something behind it: three
+   * crisp-edged orbs (the blur softens them only where a pane sits over
+   * them) on top of wide soft glows.
+   */
   background:
-    radial-gradient(60vmax 50vmax at 85% -10%, var(--bg-glow-red), transparent 60%),
-    radial-gradient(50vmax 45vmax at -10% 40%, var(--bg-glow-grey), transparent 65%),
-    radial-gradient(45vmax 40vmax at 100% 100%, var(--bg-glow-red), transparent 65%),
+    radial-gradient(circle at 82% 8%, var(--bg-orb-red) 0 15vmax, transparent 15.2vmax),
+    radial-gradient(circle at 8% 46%, var(--bg-orb-grey) 0 13vmax, transparent 13.2vmax),
+    radial-gradient(circle at 70% 88%, var(--bg-orb-wine) 0 17vmax, transparent 17.2vmax),
+    radial-gradient(70vmax 60vmax at 85% -10%, var(--bg-glow-red), transparent 60%),
+    radial-gradient(60vmax 55vmax at -10% 45%, var(--bg-glow-grey), transparent 65%),
+    radial-gradient(55vmax 50vmax at 100% 100%, var(--bg-glow-red), transparent 65%),
     var(--bg);
+  filter: blur(2px);
+  animation: orbs-drift 40s ease-in-out infinite alternate;
+}
+
+@keyframes orbs-drift {
+  to {
+    transform: translate3d(-3vw, 2vh, 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
 }
 
 /* Every glass surface catches a hairline of light on its top edge */
@@ -1671,4 +1693,9 @@ select,
 option {
   background-color: var(--surface-solid);
   color: var(--text);
+}
+
+/* Let the ambient layer (body::before) show: only the root paints the canvas */
+body {
+  background: transparent;
 }

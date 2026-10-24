@@ -3964,3 +3964,236 @@ button.calendar__day:hover {
 .schedule-more .icon.is-up {
   transform: rotate(-90deg);
 }
+
+/* ================================================================== */
+/* Glass panes - sheen, hairline, lit top edge (after everything else  */
+/* so the shorthand backgrounds above don't wipe the sheen)             */
+/* ================================================================== */
+
+.card,
+.standings,
+.ticket,
+.pcard,
+.podium__card,
+.ticker__game,
+.sport-card,
+.media-card,
+.calendar__day.has-game,
+.hero,
+.ctable,
+.topbar,
+.tabbar,
+.action-bar,
+.modal-box,
+.sheet {
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-edge),
+    var(--glass-drop);
+}
+
+.topbar,
+.tabbar,
+.action-bar {
+  box-shadow: inset 0 -1px 0 var(--glass-edge);
+}
+
+.tabbar,
+.action-bar {
+  box-shadow: inset 0 1px 0 var(--glass-edge);
+}
+
+/* States that drew their own outline keep it on top of the glass */
+.pcard.is-selected {
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 0 2px var(--red), var(--glass-drop);
+}
+
+.calendar__day.is-next {
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.ticker__game.is-next {
+  box-shadow: inset 0 3px 0 var(--red), inset 0 0 0 1px var(--glass-edge);
+}
+
+.podium__place.is-me .podium__card {
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 0 0 2px var(--red);
+}
+
+/* The ticker becomes a row of separate glass chips */
+.ticker {
+  background: transparent;
+  border: 0;
+  padding-block: var(--s-3);
+}
+
+.ticker__track {
+  gap: var(--s-2);
+}
+
+.ticker__game,
+.ticker__game:first-child {
+  border: 0;
+  border-radius: var(--r-md);
+}
+
+/* ================================================================== */
+/* Roster cards v2 - a player card, not a tile: tall photo standing on  */
+/* a lit floor, the name set over the bottom of the photo, #number in   */
+/* the corner. Selected = red floor light + red base line.              */
+/* ================================================================== */
+
+.roster-grid {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--s-2);
+}
+
+@media (min-width: 600px) {
+  .roster-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--s-3);
+  }
+}
+
+.pcard {
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.pcard__media {
+  aspect-ratio: 3 / 4;
+  height: auto;
+  background:
+    radial-gradient(70% 38% at 50% 100%, var(--card-floor), transparent 70%),
+    linear-gradient(to bottom, transparent, var(--surface-1));
+}
+
+@media (min-width: 600px) {
+  .pcard__media {
+    height: auto;
+  }
+}
+
+.pcard__media .pmedia {
+  inset: 0;
+}
+
+.pcard__media .pmedia.is-cutout img,
+.pcard__media .pmedia:not(.is-cutout) img {
+  object-position: 50% 0;
+  transform: translateY(6%) scale(1.04);
+  mix-blend-mode: normal;
+}
+
+.pcard__media .pmedia:not(.is-cutout) {
+  inset-block-start: 0;
+}
+
+/* #number: small, sharp, top corner - same place on every card */
+.pcard__num {
+  z-index: 2;
+  inset-block-start: var(--s-2);
+  inset-inline-start: var(--s-3);
+  inset-inline-end: auto;
+  color: var(--text-2);
+  font-size: 22px;
+  line-height: 1;
+  text-align: start;
+}
+
+.pcard__num::before {
+  content: "#";
+  margin-inline-end: 1px;
+  font-size: 0.7em;
+  opacity: 0.7;
+}
+
+/* The name plate sits on the bottom of the photo */
+.pcard__body {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 2;
+  gap: 2px;
+  padding: var(--s-6) var(--s-3) var(--s-3);
+  background: linear-gradient(to top, var(--card-fade) 0, var(--card-fade) 30%, transparent 100%);
+}
+
+.pcard {
+  display: block;
+}
+
+.pcard .pname {
+  gap: 0;
+}
+
+.pcard .pname__first {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pcard .pname__last {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+.pcard__meta {
+  margin-block-start: 2px;
+  font-size: 11px;
+}
+
+.pcard__squad {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pcard__squad::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--success);
+}
+
+.pcard:hover .pcard__media .pmedia img {
+  transform: translateY(4%) scale(1.07);
+}
+
+.pcard__media .pmedia img {
+  transition: transform 260ms var(--ease);
+}
+
+/* Selected */
+.pcard.is-selected .pcard__media {
+  background:
+    radial-gradient(75% 45% at 50% 100%, var(--red-line), transparent 72%),
+    linear-gradient(to bottom, transparent, var(--red-tint));
+}
+
+.pcard.is-selected .pcard__body {
+  background: linear-gradient(to top, var(--card-fade) 0, var(--card-fade) 30%, transparent 100%);
+  color: var(--text);
+  box-shadow: inset 0 -3px 0 var(--red);
+}
+
+.pcard.is-selected .pname__first,
+.pcard.is-selected .pcard__meta,
+.pcard.is-selected .pcard__squad {
+  color: var(--text-2);
+}
+
+.pcard.is-selected .pcard__num {
+  color: var(--red);
+}
+
+.pcard__check {
+  z-index: 3;
+}

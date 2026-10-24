@@ -348,7 +348,7 @@ export function aggregateCard(
         `${home ? `<span class="logo-disc logo-disc--sm"><img src="${home.logo}" alt="${esc(teamName(home))}" /></span>` : ""}
          <div class="aggregate__score-mid">
            <span class="aggregate__label">${t("prediction.aggregate.avgScoreLabel")}</span>
-           ${scoreDigits(agg.avgHomeScore, agg.avgAwayScore)}
+           ${scoreDigits(Math.round(agg.avgHomeScore), Math.round(agg.avgAwayScore))}
          </div>
          ${away ? `<span class="logo-disc logo-disc--sm"><img src="${away.logo}" alt="${esc(teamName(away))}" /></span>` : ""}`,
       ),
@@ -371,7 +371,7 @@ export function aggregateCard(
         "leader-row",
         `<span class="leader-row__stat">${icon(CATEGORY_ICON[cat])}<span>${t(config.labelKey)}</span></span>
          <span class="leader-row__player">${playerMedia(player, "sm")}${player ? playerNameHTML(player) : `<span class="pname">${t("prediction.aggregate.unknownPlayer")}</span>`}</span>
-         <span class="leader-row__value">${avg !== null ? `<span class="num">${avg}</span><span class="leader-row__unit">${t("prediction.aggregate.avgShort")}</span>` : ""}</span>`,
+         <span class="leader-row__value">${avg !== null ? `<span class="num">${Math.round(avg)}</span><span class="leader-row__unit">${t("prediction.aggregate.avgShort")}</span>` : ""}</span>`,
       ),
     );
   });
@@ -389,7 +389,7 @@ export function aggregateCard(
   teamAvgs.forEach(([ic, key, v]) => {
     if (v === null) return;
     team.appendChild(
-      el("div", "team-stat", `${icon(ic)}<span class="num team-stat__value">${v}</span><span class="team-stat__label">${t(key)}</span>`),
+      el("div", "team-stat", `${icon(ic)}<span class="num team-stat__value">${Math.round(v)}</span><span class="team-stat__label">${t(key)}</span>`),
     );
   });
   if (team.childElementCount) card.appendChild(team);
@@ -433,7 +433,7 @@ export function crowdCompare(
   playerById: (id: string) => Player | undefined,
 ): HTMLElement {
   const wrap = el("section", "ctable ctable--crowd card");
-  const fmt = (v: number | null) => (v === null ? "–" : String(Math.round(v * 10) / 10));
+  const fmt = (v: number | null) => (v === null ? "–" : String(Math.round(v)));
   const home = game ? TEAMS[game.homeTeamId] : undefined;
   const away = game ? TEAMS[game.awayTeamId] : undefined;
 
