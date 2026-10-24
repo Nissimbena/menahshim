@@ -28,10 +28,10 @@
 
   /* ---- Canvas ---- */
   --bg: #0a0a0c;
-  --bg-glow-red: rgba(210, 35, 42, 0.55);
-  --bg-orb-red: rgba(226, 56, 62, 0.42);
-  --bg-orb-wine: rgba(142, 28, 31, 0.6);
-  --bg-orb-grey: rgba(150, 156, 176, 0.26);
+  --bg-glow-red: rgba(210, 35, 42, 0.3);
+  --bg-orb-red: rgba(226, 56, 62, 0.2);
+  --bg-orb-wine: rgba(142, 28, 31, 0.38);
+  --bg-orb-grey: rgba(150, 156, 176, 0.2);
   --bg-glow-grey: rgba(130, 136, 156, 0.4);
   --surface-1: rgba(255, 255, 255, 0.075); /* glass card */
   --surface-2: rgba(255, 255, 255, 0.11); /* hover, wells */
