@@ -27,13 +27,13 @@
    */
 
   /* ---- Canvas ---- */
-  --bg: #121216;
-  --bg-glow-red: rgba(210, 35, 42, 0.16);
-  --bg-orb-red: rgba(226, 56, 62, 0.22);
-  --bg-orb-wine: rgba(255, 255, 255, 0.05);
-  --bg-orb-grey: rgba(170, 176, 196, 0.16);
-  --bg-glow-grey: rgba(150, 156, 176, 0.16);
-  --surface-1: rgba(255, 255, 255, 0.07); /* glass card */
+  --bg: #050506;
+  --bg-glow-red: rgba(210, 35, 42, 0.1);
+  --bg-orb-red: rgba(226, 56, 62, 0.14);
+  --bg-orb-wine: rgba(255, 255, 255, 0.03);
+  --bg-orb-grey: rgba(170, 176, 196, 0.08);
+  --bg-glow-grey: rgba(150, 156, 176, 0.07);
+  --surface-1: rgba(255, 255, 255, 0.065); /* glass card */
   --surface-2: rgba(255, 255, 255, 0.11); /* hover, wells */
   --surface-3: rgba(255, 255, 255, 0.13); /* pressed, placeholders */
   --surface-solid: #1c1c1f; /* where blur isn't possible (selects, sheets fallback) */
