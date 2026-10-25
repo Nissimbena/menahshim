@@ -4736,3 +4736,124 @@ h1[tabindex="-1"]:focus {
     padding: var(--s-4);
   }
 }
+
+/* ================================================================== */
+/* About - design & photography credits                                 */
+/* ================================================================== */
+
+.credits {
+  max-width: 960px;
+  margin-block-start: var(--s-7);
+}
+
+.credits__title {
+  margin-block-end: var(--s-4);
+  font-size: var(--t-h2);
+}
+
+.credits__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .credits__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-4);
+  }
+}
+
+.credit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "photo text"
+    "actions actions";
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.credit__photo {
+  grid-area: photo;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--r-full);
+  object-fit: cover;
+  box-shadow: 0 0 0 2px var(--glass-edge), 0 0 0 5px var(--glass-pill);
+  transition: transform 260ms var(--ease);
+}
+
+.credit:hover .credit__photo {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+.credit__text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.credit__role {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.credit__name {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: var(--lh-display);
+}
+
+.credit__actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.credit__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding-inline: var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--glass-pill);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--glass-edge);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+.credit__link:hover {
+  background: var(--glass-pill-hover);
+  transform: translateY(-1px);
+}
+
+.credit__link:active {
+  transform: scale(0.97);
+}
+
+.credit__link .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Instagram pill gets the brand-red treatment on hover */
+.credit__link[href*="instagram"]:hover {
+  background: var(--red);
+  color: var(--on-red);
+}
