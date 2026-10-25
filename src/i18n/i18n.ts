@@ -496,7 +496,7 @@ const translations: Record<Lang, Dict> = {
     "leaderboard.rowLabel": "מקום {rank}: {name}, {points} נקודות",
     "home.title": "מנאחסים - ניחושים למשחקי הפועל ירושלים",
     "about.credits.title": "עיצוב וצילום",
-    "about.credits.omer.name": "עומר מישן",
+    "about.credits.omer.name": "עומר משען",
     "about.credits.omer.role": "מעצב גרפי",
     "about.credits.nadav.name": "נדב מזומן",
     "about.credits.nadav.role": "צילום",
