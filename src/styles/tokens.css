@@ -1,0 +1,194 @@
+/*
+ * Design tokens - the only place in the codebase where raw color values live.
+ *
+ * Direction (after EuroLeague / NBA): a neutral grey canvas with borderless
+ * white cards, plain bold sans section titles in sentence case, and one
+ * condensed display face kept for the big moments - team names, scores,
+ * the countdown, player numbers. Hapoel red is the brand block (diagonal
+ * colour fields behind player cut-outs, as on the club's EuroCup pages)
+ * and the single action colour.
+ *
+ * Fonts:
+ *   CoFo Peshka (Adobe Fonts kit pdv5cou, loaded in index.html) - display,
+ *     always at wght 900 / wdth 50. Hebrew + caps-only Latin + digits.
+ *   IBM Plex Sans Hebrew (self-hosted, @fontsource) - all text and UI.
+ *   Karantina / Barlow Condensed (self-hosted) - fallback while the kit
+ *     loads or wherever Adobe Fonts can't be reached.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /*
+   * Night mode with glass: a near-black canvas lit by soft red and grey
+   * glows, and every surface a frosted, translucent layer over it (iOS
+   * materials). Surfaces are white at low alpha so the glow shows through;
+   * text is white at decreasing alpha for hierarchy.
+   */
+
+  /* ---- Canvas ---- */
+  --bg: #050506;
+  --bg-glow-red: rgba(210, 35, 42, 0.1);
+  --bg-orb-red: rgba(226, 56, 62, 0.14);
+  --bg-orb-wine: rgba(255, 255, 255, 0.03);
+  --bg-orb-grey: rgba(170, 176, 196, 0.08);
+  --bg-glow-grey: rgba(150, 156, 176, 0.07);
+  --surface-1: rgba(255, 255, 255, 0.065); /* glass card */
+  --surface-2: rgba(255, 255, 255, 0.11); /* hover, wells */
+  --surface-3: rgba(255, 255, 255, 0.13); /* pressed, placeholders */
+  --surface-solid: #1c1c1f; /* where blur isn't possible (selects, sheets fallback) */
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.85);
+  --glass-edge: rgba(255, 255, 255, 0.16); /* hairline around every pane */
+  --glass-highlight: rgba(255, 255, 255, 0.38); /* the light catching the top edge */
+  --glass-sheen: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 32%,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  --glass-drop: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --card-floor: rgba(255, 255, 255, 0.10); /* the light on the floor behind a player */
+  --card-fade: rgba(14, 14, 18, 0.9); /* name plate fade over the photo */
+  --glass-pill: rgba(255, 255, 255, 0.1); /* buttons and chips sitting on glass */
+  --glass-pill-hover: rgba(255, 255, 255, 0.16);
+  --spot: rgba(255, 255, 255, 0.12); /* the light following the cursor */
+  --spot-red: rgba(255, 69, 58, 0.22);
+  --lift-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  --glass-blur: blur(36px) saturate(190%) brightness(1.08);
+  --scrim: rgba(0, 0, 0, 0.6);
+
+  /* ---- Dark moments (footer, totals): deeper than the glass ---- */
+  --ink: rgba(0, 0, 0, 0.55);
+  --ink-2: rgba(255, 255, 255, 0.05);
+  --ink-3: rgba(255, 255, 255, 0.1);
+  --ink-line: rgba(255, 255, 255, 0.12);
+  --ink-blur: rgba(12, 12, 14, 0.72);
+  --on-ink: #ffffff;
+  --on-ink-2: rgba(255, 255, 255, 0.7);
+  --on-ink-3: rgba(255, 255, 255, 0.45);
+
+  /* ---- Light chip on dark (inverse buttons, labels) ---- */
+  --chip: #ffffff;
+  --on-chip: #0a0a0c;
+
+  /* ---- Brand: Hapoel red, in three values for the diagonal fields ---- */
+  --red: #d2232a; /* action colour + brand field */
+  --red-text: #ff6961; /* red for text and icons on the dark canvas (AA) */
+  --red-press: #ad1a20;
+  --red-deep: #8e1c1f; /* the darker diagonal */
+  --red-bright: #e2383e; /* the lighter diagonal */
+  --red-tint: rgba(255, 69, 58, 0.16);
+  --red-line: rgba(255, 69, 58, 0.55);
+  --on-red: #ffffff;
+  --on-red-2: rgba(255, 255, 255, 0.78);
+  --on-red-3: rgba(255, 255, 255, 0.55);
+
+  /* ---- Text ---- */
+  --text: #f5f5f7;
+  --text-2: rgba(235, 235, 245, 0.74);
+  --text-3: rgba(235, 235, 245, 0.58); /* >= 4.5:1 on the darkest canvas */
+
+  /* ---- Functional ---- */
+  --gold: #ffcc4d;
+  --gold-bright: #f0b93b;
+  --gold-tint: rgba(240, 185, 59, 0.18);
+  --gold-line: rgba(255, 204, 77, 0.45);
+
+  /* ---- Medals: metallic gradients for the podium ---- */
+  --medal-gold-1: #f7d774;
+  --medal-gold-2: #c9961a;
+  --medal-gold-ink: #4a3500;
+  --medal-gold-tint: rgba(240, 185, 59, 0.14);
+  --medal-silver-1: #eef0f3;
+  --medal-silver-2: #a5abb4;
+  --medal-silver-ink: #2f343b;
+  --medal-silver-tint: rgba(165, 171, 180, 0.16);
+  --medal-bronze-1: #f0b88a;
+  --medal-bronze-2: #a8642e;
+  --medal-bronze-ink: #3d1f08;
+  --medal-bronze-tint: rgba(193, 120, 62, 0.14);
+  --success: #30d158;
+  --success-tint: rgba(48, 209, 88, 0.14);
+  --warning: #b86a00;
+  --warning-tint: rgba(232, 150, 30, 0.14);
+  --on-warning: #1f1405;
+  --danger: #ff453a;
+  --danger-tint: rgba(255, 69, 58, 0.14);
+  --focus: #ffffff;
+  --focus-on-ink: #ffffff;
+  --whatsapp: #1fa855;
+  --flag-white: #ffffff;
+  --flag-il-blue: #0038b8;
+  --flag-us-red: #b22234;
+  --flag-us-blue: #3c3b6e;
+
+  /* ---- Spacing: 4px grid ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  /* ---- Radii ---- */
+  --r-sm: 8px; /* tags, inputs */
+  --r-md: 18px; /* cards */
+  --r-lg: 28px; /* sheets, hero */
+  --r-full: 999px;
+
+  /* ---- Elevation: cards are flat; only floating layers lift ---- */
+  --shadow-1: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 30px 80px rgba(0, 0, 0, 0.6);
+
+  /* ---- Layout ---- */
+  --container: 100%; /* every screen spans the full width, at any size */
+  --container-wide: 100%;
+  --sidebar: 360px;
+  --gutter: 16px;
+  --topbar-h: 64px;
+  --tabbar-h: 64px;
+  --measure: 62ch;
+
+  /* ---- Type ---- */
+  --font: "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-display: "cofo-peshka-variable", "Karantina", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-num: "cofo-peshka-variable", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --display-axes: "slnt" 0, "wght" 900, "wdth" 50;
+
+  /* Display sizes - big contrast against a calm 16px text size */
+  --t-hero: clamp(48px, 34px + 3.7vw, 88px); /* team names in the next-game hero */
+  --t-display: clamp(64px, 48px + 4.3vw, 112px); /* countdown, slip score */
+  --t-h1: clamp(36px, 30px + 1.6vw, 52px); /* screen titles, flow questions */
+  --t-num-lg: 40px; /* stat values */
+  --t-num-md: 28px; /* table numbers */
+  --t-h2: 20px; /* card + section titles: bold sans, sentence case */
+  --t-h3: 18px;
+  --t-body: 16px;
+  --t-small: 14px;
+  --t-label: 12px;
+  --lh-display: 0.88;
+  --lh-tight: 1.2;
+  --lh-body: 1.55;
+
+  /* ---- Motion ---- */
+  --dur: 160ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (min-width: 600px) {
+  :root {
+    --gutter: 24px;
+    --t-h2: 22px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 40px;
+  }
+}

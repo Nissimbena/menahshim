@@ -14,6 +14,7 @@ import type { ScheduleGame } from "../schedule/schedule";
 import { getBonusQuestion, setBonusQuestion } from "../schedule/schedule";
 import { TEAMS, HAPOEL_JERUSALEM_TEAM_ID, teamName } from "../schedule/teams";
 import { t } from "../i18n/i18n";
+import { screenHeader } from "../ui/ScreenHeader";
 
 /**
  * Admin-only screen: enter the *actual* outcome for a game (which foreign
@@ -104,18 +105,9 @@ export class AdminScreen {
     this.container.innerHTML = "";
 
     const wrapper = document.createElement("div");
-    wrapper.className = "prediction-wrapper";
+    wrapper.className = "screen admin";
 
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1>${t("admin.title")}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
+    const header = screenHeader({ title: t("admin.title"), onBack: () => this.onBack() });
     wrapper.appendChild(header);
 
     wrapper.appendChild(this.renderLinkStats());
@@ -293,14 +285,14 @@ export class AdminScreen {
       };
 
       const validationColor: Record<string, string> = {
-        APPROVED: "#2ecc71",
-        NEEDS_CLARIFICATION: "#f5a623",
-        INSUFFICIENT_DATA: "#f5a623",
-        REJECTED: "#e74c3c",
+        APPROVED: "var(--success)",
+        NEEDS_CLARIFICATION: "var(--warning)",
+        INSUFFICIENT_DATA: "var(--warning)",
+        REJECTED: "var(--danger)",
       };
       const dotColor = c.validationStatus
-        ? (validationColor[c.validationStatus] ?? "#6b7280")
-        : "#6b7280";
+        ? (validationColor[c.validationStatus] ?? "var(--text-3)")
+        : "var(--text-3)";
       const dotTitle = c.validationStatus
         ? `${c.validationStatus}${c.validationReasonCode ? ` (${c.validationReasonCode})` : ""}${c.validationExplanation ? `\n${c.validationExplanation}` : ""}`
         : t("admin.challenges.notValidated");

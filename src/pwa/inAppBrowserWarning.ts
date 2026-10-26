@@ -1,3 +1,5 @@
+import { t } from "../i18n/i18n";
+
 /**
  * Google explicitly disallows OAuth sign-in inside certain in-app WebView
  * browsers (WhatsApp, Google app/GSA, Instagram, Facebook, Line, generic
@@ -17,8 +19,8 @@ export function isInAppBrowser(): boolean {
 export function showInAppBrowserWarning() {
   const banner = document.createElement("div");
   banner.className = "in-app-browser-banner";
+  banner.setAttribute("role", "alert");
   banner.dir = "auto";
-  banner.textContent =
-    'זיהינו שאתם גולשים מתוך אפליקציה אחרת (כמו WhatsApp) ולא מ-Safari/Chrome ישירות - ההתחברות עם Google עלולה להיכשל. פתחו את הקישור ישירות בדפדפן (לחיצה ארוכה על הקישור ← "פתח ב-Safari").';
+  banner.textContent = t("inAppBrowser.warning");
   document.body.prepend(banner);
 }
