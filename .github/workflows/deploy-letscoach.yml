@@ -1,0 +1,37 @@
+name: Deploy to letscoach.net/hapoel-jerusalem (manual, owner-approved)
+
+# Manual only. The job uses the "letscoach-production" environment, which must be
+# configured in GitHub with: required reviewer = the repo owner, deployment branch
+# = main only, and the secret LETSCOACH_DEPLOY_SA_KEY stored as an ENVIRONMENT
+# secret. Nobody else can run it to completion or read the key.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: letscoach-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx tsc
+      - run: npx vite build --base=/hapoel-jerusalem/ --outDir dist-subpath
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.LETSCOACH_DEPLOY_SA_KEY }}"
+          token_format: access_token
+      - name: Deploy only /hapoel-jerusalem/ (rest of letscoach.net untouched)
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          SITE: letscoachfront
+          SUBPATH: hapoel-jerusalem
+          DIST_DIR: dist-subpath
+        run: node scripts/deploy-subpath.mjs
