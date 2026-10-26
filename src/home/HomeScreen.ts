@@ -27,7 +27,6 @@ import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
 import { clipsForGame } from "../config/videos";
-import { videoClips } from "../ui/VideoClips";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -470,14 +469,19 @@ export class HomeScreen {
             : `<p class="last-game__mine is-none">${t("home.lastGame.noPrediction")}</p>`
         }
       </div>
-      <div class="last-game__media">
-        <h3 class="last-game__media-title">${icon("play", { size: "sm" })}<span>${t("videos.title")}</span></h3>
-      </div>`;
-    const cta = el("button", "btn btn--secondary last-game__cta", `<span>${t("home.lastGame.open")}</span>${icon("arrowForward", { size: "sm" })}`);
+`;
+    const nClips = clipsForGame(game.id).length;
+    const cta = el(
+      "button",
+      "btn btn--primary last-game__cta",
+      `<span>${t("home.lastGame.open")}</span>${icon("arrowForward", { size: "sm" })}`,
+    );
     cta.type = "button";
     cta.addEventListener("click", () => this.actions.onEnterGame(game));
-    section.querySelector(".last-game__result")!.appendChild(cta);
-    section.querySelector(".last-game__media")!.appendChild(videoClips(clipsForGame(game.id)));
+    const actions = el("div", "last-game__actions");
+    actions.appendChild(cta);
+    if (nClips) actions.appendChild(el("span", "last-game__clips", `${icon("play", { size: "sm" })}<span>${esc(t("home.lastGame.clips", { n: nClips }))}</span>`));
+    section.querySelector(".last-game__result")!.appendChild(actions);
     return section;
   }
 

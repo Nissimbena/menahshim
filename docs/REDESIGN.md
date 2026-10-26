@@ -24,10 +24,18 @@ UI-only redesign. No changes to `src/api/`, `src/firebase/`, `firestore.rules`,
 
 ## Adding game videos
 Edit `src/config/videos.ts` - add the game's id and its clips (a YouTube link,
-or an mp4 in `public/videos/`). The latest finished game shows its clips on
-the home page ("Last game"); every finished game shows them on its own page.
+or an mp4 in `public/videos/`). Clips appear only on that finished game's
+page (the home "Last game" panel just shows how many there are).
 YouTube clips load only when tapped (privacy-enhanced embed). Commit + push
 and the site updates on the next deploy.
+
+## Game page (finished games)
+Clicking a finished game (its row in the schedule, its tile in the scores
+strip, or "Game summary" on the home "Last game" panel) opens its page:
+final score, then a jump bar to four sections in a fixed order -
+my prediction vs. result, team stats, videos, everyone vs. result.
+Team stats = totals and the three leaders from the results API; a full
+player box score appears when `src/config/boxscores.ts` has the game.
 
 ## Before going live
 1. **Adobe Fonts:** add the production domain to kit `pdv5cou`, or Peshka

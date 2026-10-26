@@ -7,8 +7,8 @@
  *   - a video file:     { title: "...", src: "videos/my-clip.mp4", poster: "videos/my-clip.jpg" }
  *     (put the file in /public/videos/ - keep it short and under ~10MB)
  *
- * The home page always shows the clips of the most recent finished game in
- * the "last game" panel, and every finished game shows its own clips.
+ * Clips show only on that game's page (opened from its box score / row once
+ * the game is over); the home "Last game" panel shows how many there are.
  *
  * Example:
  *   "26647": [

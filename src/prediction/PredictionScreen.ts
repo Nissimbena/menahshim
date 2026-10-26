@@ -1,4 +1,6 @@
 import type { Player, GamePrediction } from "./types";
+import { boxScoreForGame } from "../config/boxscores";
+import { teamStatsSection } from "./gameStats";
 import { clipsForGame } from "../config/videos";
 import { videoClips } from "../ui/VideoClips";
 import { EMPTY_PREDICTION } from "./types";
@@ -878,31 +880,90 @@ export class PredictionScreen {
       : t("prediction.viewOnly.noPrediction");
     section.appendChild(heading);
 
-    // Finished game: the final score up top, then my prediction against it,
-    // then everyone's (averages / most-picked) against it.
-    if (this.currentGame?.result || this.actualResult) {
-      section.prepend(resultHeader(this.currentGame!, this.actualResult));
+    const game = this.currentGame;
+    if (game?.result || this.actualResult) {
+      // Finished game = a game page. One masthead, then sections in a fixed
+      // order, each with the same h2 level and listed in a jump bar:
+      //   my prediction -> team stats -> videos -> everyone
+      heading.remove();
+      section.classList.add("game-page");
+      section.appendChild(resultHeader(game!, this.actualResult));
+
+      const parts: { id: string; label: string; build: () => HTMLElement | null }[] = [
+        {
+          id: "gp-mine",
+          label: t("gamePage.mine"),
+          build: () => {
+            const box = el("div", "game-page__body");
+            if (this.hasOwnPrediction && this.actualResult && this.scoringRules) this.buildResultBreakdownTable(box);
+            else if (this.hasOwnPrediction) this.buildSummaryContent(box);
+            else box.appendChild(el("p", "game-page__none", esc(t("prediction.viewOnly.noPrediction"))));
+            return box;
+          },
+        },
+        {
+          id: "gp-stats",
+          label: t("gamePage.stats"),
+          build: () =>
+            this.actualResult
+              ? teamStatsSection({
+                  result: this.actualResult,
+                  teamScore:
+                    game!.homeTeamId === "jerusalem"
+                      ? (this.actualResult.actualHomeScore ?? game!.result?.home ?? null)
+                      : (this.actualResult.actualAwayScore ?? game!.result?.away ?? null),
+                  box: boxScoreForGame(game!.id),
+                  playerById: (id) => this.playerById(id),
+                })
+              : null,
+        },
+        {
+          id: "gp-videos",
+          label: t("videos.title"),
+          build: () => videoClips(clipsForGame(game!.id)),
+        },
+        {
+          id: "gp-crowd",
+          label: t("gamePage.crowd"),
+          build: () => {
+            const box = el("div", "game-page__body");
+            if (this.actualResult && this.aggregate && this.aggregate.totalPredictions > 0) {
+              box.appendChild(crowdCompare(this.aggregate, this.actualResult, game, (id) => this.playerById(id)));
+            } else this.buildAggregateContent(box);
+            return box.childElementCount ? box : null;
+          },
+        },
+      ];
+
+      const built = parts.map((p) => ({ ...p, node: p.build() })).filter((p) => p.node);
+      const jump = el("nav", "game-page__jump");
+      jump.setAttribute("aria-label", t("gamePage.sections"));
+      built.forEach((p) => {
+        const a = el("a", "game-page__jump-link", esc(p.label));
+        a.href = `#${p.id}`;
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          const target = document.getElementById(p.id);
+          target?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+          target?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+        });
+        jump.appendChild(a);
+      });
+      section.appendChild(jump);
+
+      built.forEach((p) => {
+        const sec = el("section", "game-page__section");
+        sec.id = p.id;
+        sec.setAttribute("aria-labelledby", `${p.id}-h`);
+        sec.innerHTML = `<h2 class="game-page__h" id="${p.id}-h" tabindex="-1">${esc(p.label)}</h2>`;
+        sec.appendChild(p.node!);
+        section.appendChild(sec);
+      });
+      return section;
     }
-    if (this.hasOwnPrediction && this.actualResult && this.scoringRules) {
-      this.buildResultBreakdownTable(section);
-    } else if (this.hasOwnPrediction) {
-      this.buildSummaryContent(section);
-    }
-    // Video clips from this game, right after the result and my prediction
-    if (this.currentGame?.result) {
-      const clips = clipsForGame(this.currentGame.id);
-      if (clips.length) {
-        const box = el("section", "card game-videos");
-        box.innerHTML = `<h2 class="game-videos__title">${t("videos.title")}</h2>`;
-        box.appendChild(videoClips(clips));
-        section.appendChild(box);
-      }
-    }
-    if (this.actualResult && this.aggregate && this.aggregate.totalPredictions > 0) {
-      section.appendChild(crowdCompare(this.aggregate, this.actualResult, this.currentGame, (id) => this.playerById(id)));
-    } else {
-      this.buildAggregateContent(section);
-    }
+
+    if (this.hasOwnPrediction) this.buildSummaryContent(section);
+    this.buildAggregateContent(section);
 
     return section;
   }
