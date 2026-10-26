@@ -384,14 +384,25 @@ async function bootstrap() {
   await refreshMyLeagues();
   navTo.home();
 
-  const joinCode = new URLSearchParams(window.location.search).get("league");
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinCode = urlParams.get("league");
+  const challengeId = urlParams.get("challenge");
+  // Invite params are one-shot: drop them so a reload or re-login doesn't re-open the prompt.
+  if (joinCode || challengeId) {
+    urlParams.delete("league");
+    urlParams.delete("challenge");
+    const rest = urlParams.toString();
+    history.replaceState(
+      null,
+      "",
+      window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash,
+    );
+  }
+
   if (joinCode) {
     joinLeaguePrompt.show(joinCode, () => refreshMyLeagues());
   }
 
-  const challengeId = new URLSearchParams(window.location.search).get(
-    "challenge",
-  );
   if (challengeId) {
     joinChallengePrompt.show(challengeId, () =>
       homeScreenRef?.refreshChallengeEligibility(),

@@ -1,4 +1,4 @@
-import { getLeagueByCode, joinLeague } from "../api/backend";
+import { getLeagueByCode, getMyLeagues, joinLeague } from "../api/backend";
 import { auth, signInWithGoogle } from "../firebase/firebase";
 import { t } from "../i18n/i18n";
 
@@ -15,6 +15,17 @@ export class JoinLeaguePrompt {
     } catch (err) {
       console.warn("Could not load league by code:", err);
       return;
+    }
+
+    // Already in (or the creator of) this league - nothing to ask.
+    await auth.authStateReady();
+    if (auth.currentUser) {
+      try {
+        const mine = await getMyLeagues();
+        if (mine.some((l) => l.id === league.id)) return;
+      } catch (err) {
+        console.warn("Could not check league membership:", err);
+      }
     }
 
     const overlay = document.createElement("div");

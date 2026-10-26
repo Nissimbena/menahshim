@@ -1,5 +1,8 @@
 name: Deploy preview on pull request
-on: pull_request
+on:
+  pull_request:
+    branches:
+      - test
 jobs:
   build_and_preview:
     # Never runs for PRs from forks - that would expose the deploy secret to
