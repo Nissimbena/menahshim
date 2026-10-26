@@ -1,15 +1,14 @@
-import { GAME_TITLE } from "../config/GameConfig";
 import {
   type ScheduleGame,
   PRIZE_GAME_IDS,
   PRIZE_LINK_URLS,
 } from "../schedule/schedule";
-import { TEAMS, HAPOEL_JERUSALEM_TEAM_ID, teamName } from "../schedule/teams";
-import type { MyPrediction, LeagueInfo } from "../api/backend";
+import { TEAMS, teamName } from "../schedule/teams";
+import type { MyPrediction, LeagueInfo, LeaderboardRow } from "../api/backend";
 import {
-  reportClientError,
   trackLinkEvent,
   getChallengeEligibility,
+  getLeaderboard,
   type ChallengeEligibility,
 } from "../api/backend";
 import {
@@ -18,130 +17,128 @@ import {
   gameDateTime,
   SCORE_LOCK_MS,
 } from "../prediction/lock";
-import {
-  auth,
-  isAdmin,
-  onAuthChange,
-  signInWithGoogle,
-  signOutUser,
-  type User,
-} from "../firebase/firebase";
+import { auth, onAuthChange, type User } from "../firebase/firebase";
 import { isRunningStandalone } from "../pwa/InstallPrompt";
-import { t, tDynamic, getLang, setLang, type Lang } from "../i18n/i18n";
+import { t, tDynamic, getLang, setLang } from "../i18n/i18n";
+import { CHALLENGE_FEATURE_ENABLED, WHATSAPP_GROUP_URL } from "../config/GameConfig";
+import { icon } from "../ui/icons";
+import { el, esc, shortDate, ltr, opponentOf } from "../ui/dom";
+import { rankList } from "../ui/RankList";
+import { logoSVG } from "../brand/Logo";
+import { photoLayer } from "../ui/photos";
+import { clipsForGame } from "../config/videos";
 
-// Temporarily disabled per explicit request (2026-10-14) - hides the feature
-// from regular users (no create-challenge button, no "My Challenges" menu
-// item) without touching any backend data or the admin panel, which keeps
-// managing existing challenges as before. Flip back to true to re-enable.
-const CHALLENGE_FEATURE_ENABLED = false;
-
-// The multi-sport hub is local-only for now (explicit request) - keep this
-// false in anything that gets deployed; flip to true only for local dev.
-const SPORTS_HUB_ENABLED = false;
-
-/** "1 יום 03:24:10" style countdown, or a locked message once time runs out. */
-function formatCountdown(msRemaining: number): string {
-  if (msRemaining <= 0) return t("common.countdown.locked");
-  const totalSeconds = Math.floor(msRemaining / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // Isolate the LTR clock digits so they don't get reordered against the Hebrew day-count text.
-  const clock = `\u2066${pad(hours)}:${pad(minutes)}:${pad(seconds)}\u2069`;
-  const dayWord =
-    days === 1 ? t("common.countdown.day") : t("common.countdown.days");
-  return days > 0 ? `${days} ${dayWord} ${clock}` : clock;
+export interface HomeActions {
+  onEnterGame: (game: ScheduleGame) => void;
+  onOpenLeaderboard: () => void;
+  onOpenTournament: () => void;
+  onOpenLeagues: () => void;
+  onInstallClick: () => void;
+  onOpenPrivacy: () => void;
+  onOpenAbout: () => void;
+  onChallengeGame: (game: ScheduleGame) => void;
+  onSignIn: () => void;
 }
 
+/** Splits the time left until a game locks into day/hour/minute parts. */
+function countdownParts(msRemaining: number): { d: string; h: string; m: string } | null {
+  if (msRemaining <= 0) return null;
+  const totalMinutes = Math.floor(msRemaining / 60000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    d: pad(Math.floor(totalMinutes / 1440)),
+    h: pad(Math.floor((totalMinutes % 1440) / 60)),
+    m: pad(totalMinutes % 60),
+  };
+}
+
+function readScheduleView(): "list" | "calendar" {
+  try {
+    return localStorage.getItem("scheduleView") === "calendar" ? "calendar" : "list";
+  } catch {
+    return "list";
+  }
+}
+
+/** "DD/MM/YYYY" -> local Date at midnight. */
+function parseGameDate(ddmmyyyy: string): Date {
+  const [d, m, y] = ddmmyyyy.split("/").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+/** How long a cached leaderboard snapshot stays fresh on the home screen. */
+const LEADERBOARD_TTL_MS = 60 * 1000;
+
 /**
- * Landing page: big Hapoel Jerusalem logo + the season schedule.
- * Every upcoming game (no result yet) can be entered to make a squad prediction.
+ * Home: the next game as a hero with one clear action, a personal strip,
+ * the VIP tournament ticket, the season schedule as compact rows, a
+ * leaderboard preview and a quiet footer.
+ *
+ * Mobile is a single column in that order; from 1024px the personal strip,
+ * VIP ticket and leaderboard preview move into a 340px sidebar.
  */
 export class HomeScreen {
   private container: HTMLElement;
   private games: ScheduleGame[];
-  private onEnterGame: (game: ScheduleGame) => void;
-  private onOpenLeaderboard: () => void;
-  private onOpenTournament: () => void;
-  private onOpenAdmin: () => void;
-  private onOpenScoringInfo: () => void;
-  private onOpenTimeKiller: () => void;
-  private onCreateLeague: () => void;
-  private onOpenLeagueLeaderboard: (league: LeagueInfo) => void;
-  private onInstallClick: () => void;
-  private onOpenPrivacy: () => void;
-  private onOpenAbout: () => void;
-  private onChallengeGame: (game: ScheduleGame) => void;
-  private onOpenMyChallenges: () => void;
-  private onOpenSportsHub: () => void;
+  private actions: HomeActions;
   private currentUser: User | null = auth.currentUser;
   private authError: string | null = null;
   private myPredictions = new Map<string, MyPrediction>();
   private myTotalScore = 0;
   private myLeagues: LeagueInfo[] = [];
   private activeTab: "upcoming" | "finished" = "upcoming";
-  private menuOpen = false;
+  private scheduleView: "list" | "calendar" = readScheduleView();
+  /** First day of the month the calendar shows; null = the next game's month. */
+  private calendarMonth: Date | null = null;
+  private showAllGames = false;
   private challengeEligibility: ChallengeEligibility | null = null;
   private challengeEligibilityGameId: string | null = null;
+  private leaderboard: LeaderboardRow[] | null = null;
+  private leaderboardError = false;
+  private leaderboardFetchedAt = 0;
 
-  constructor(
-    container: HTMLElement,
-    games: ScheduleGame[],
-    onEnterGame: (game: ScheduleGame) => void,
-    onOpenLeaderboard: () => void,
-    onOpenTournament: () => void,
-    onOpenAdmin: () => void,
-    onOpenScoringInfo: () => void,
-    onOpenTimeKiller: () => void,
-    onCreateLeague: () => void,
-    onOpenLeagueLeaderboard: (league: LeagueInfo) => void,
-    onInstallClick: () => void,
-    onOpenPrivacy: () => void,
-    onOpenAbout: () => void,
-    onChallengeGame: (game: ScheduleGame) => void,
-    onOpenMyChallenges: () => void,
-    onOpenSportsHub: () => void,
-  ) {
+  constructor(container: HTMLElement, games: ScheduleGame[], actions: HomeActions) {
     this.container = container;
     this.games = games;
-    this.onEnterGame = onEnterGame;
-    this.onOpenLeaderboard = onOpenLeaderboard;
-    this.onOpenTournament = onOpenTournament;
-    this.onOpenAdmin = onOpenAdmin;
-    this.onOpenScoringInfo = onOpenScoringInfo;
-    this.onOpenTimeKiller = onOpenTimeKiller;
-    this.onCreateLeague = onCreateLeague;
-    this.onOpenLeagueLeaderboard = onOpenLeagueLeaderboard;
-    this.onInstallClick = onInstallClick;
-    this.onOpenPrivacy = onOpenPrivacy;
-    this.onOpenAbout = onOpenAbout;
-    this.onChallengeGame = onChallengeGame;
-    this.onOpenMyChallenges = onOpenMyChallenges;
-    this.onOpenSportsHub = onOpenSportsHub;
+    this.actions = actions;
 
     onAuthChange((user) => {
       this.currentUser = user;
       this.refreshChallengeEligibility();
-      if (!this.container.classList.contains("hidden")) this.render();
+      if (this.isVisible()) this.render();
     });
 
     window.addEventListener("langchange", () => {
-      if (!this.container.classList.contains("hidden")) this.render();
+      if (this.isVisible()) this.render();
     });
 
     setInterval(() => this.updateCountdowns(), 1000);
   }
 
-  /** Ticks every open game-card's countdown span without a full re-render. */
+  private isVisible() {
+    return !this.container.classList.contains("hidden");
+  }
+
+  /** Ticks the hero countdown without a full re-render. */
   private updateCountdowns() {
-    if (this.container.classList.contains("hidden")) return;
+    if (!this.isVisible()) return;
     this.container
-      .querySelectorAll<HTMLElement>(".game-countdown[data-lock-at]")
-      .forEach((el) => {
-        const lockAt = Number(el.dataset.lockAt);
-        el.textContent = formatCountdown(lockAt - Date.now());
+      .querySelectorAll<HTMLElement>(".countdown[data-lock-at]")
+      .forEach((box) => {
+        const parts = countdownParts(Number(box.dataset.lockAt) - Date.now());
+        if (!parts) {
+          if (!box.classList.contains("is-locked")) {
+            box.classList.add("is-locked");
+            box.innerHTML = `${icon("lock")}<span>${t("common.countdown.locked")}</span>`;
+          }
+          return;
+        }
+        (["d", "h", "m"] as const).forEach((k) => {
+          const cell = box.querySelector<HTMLElement>(`[data-part="${k}"]`);
+          if (cell && cell.textContent !== parts[k]) cell.textContent = parts[k];
+        });
       });
   }
 
@@ -158,7 +155,7 @@ export class HomeScreen {
       .then((eligibility) => {
         if (this.challengeEligibilityGameId !== activeGameId) return;
         this.challengeEligibility = eligibility;
-        if (!this.container.classList.contains("hidden")) this.render();
+        if (this.isVisible()) this.render();
       })
       .catch((err) =>
         console.warn("Could not load challenge eligibility:", err),
@@ -168,24 +165,28 @@ export class HomeScreen {
   setMyPredictions(predictions: MyPrediction[]) {
     this.myPredictions = new Map(predictions.map((p) => [p.gameId, p]));
     this.myTotalScore = predictions.reduce((sum, p) => sum + (p.score ?? 0), 0);
-    if (!this.container.classList.contains("hidden")) this.render();
+    if (this.isVisible()) this.render();
+  }
+
+  get totalScore() {
+    return this.myTotalScore;
   }
 
   setMyLeagues(leagues: LeagueInfo[]) {
     this.myLeagues = leagues;
-    if (!this.container.classList.contains("hidden")) this.render();
+    if (this.isVisible()) this.render();
   }
 
-  /** Shows a visible error under the sign-in button - used so remote bug reports include the real reason, not just "nothing happened". */
+  /** Shows a visible error banner - used so remote bug reports include the real reason, not just "nothing happened". */
   setAuthError(message: string | null) {
     this.authError = message;
-    if (!this.container.classList.contains("hidden")) this.render();
+    if (this.isVisible()) this.render();
   }
 
   show() {
     this.container.classList.remove("hidden");
-    this.menuOpen = false;
     this.refreshChallengeEligibility();
+    this.loadLeaderboard();
     this.render();
   }
 
@@ -193,502 +194,737 @@ export class HomeScreen {
     this.container.classList.add("hidden");
   }
 
-  private render() {
-    this.container.innerHTML = "";
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "home-wrapper";
-
-    wrapper.appendChild(this.renderMenu());
-    wrapper.appendChild(this.renderLangSwitcher());
-    wrapper.appendChild(this.renderWhatsappGroupButton());
-    wrapper.appendChild(this.renderTopBar());
-    wrapper.appendChild(this.renderHero());
-    wrapper.appendChild(this.renderTournamentBanner());
-    wrapper.appendChild(this.renderSchedule());
-
-    this.container.appendChild(wrapper);
+  private loadLeaderboard() {
+    if (this.leaderboard && Date.now() - this.leaderboardFetchedAt < LEADERBOARD_TTL_MS) return;
+    getLeaderboard()
+      .then(({ overall }) => {
+        this.leaderboard = overall;
+        this.leaderboardError = false;
+        this.leaderboardFetchedAt = Date.now();
+        if (this.isVisible()) this.render();
+      })
+      .catch((err) => {
+        console.warn("Could not load leaderboard preview:", err);
+        this.leaderboardError = true;
+        if (this.isVisible()) this.render();
+      });
   }
 
-  private renderTopBar(): HTMLElement {
-    const bar = document.createElement("div");
-    bar.className = "auth-bar";
+  // ------------------------------------------------------------------ data
 
-    const row = document.createElement("div");
-    row.className = "auth-bar-row";
+  private get upcomingGames() {
+    return this.games.filter((g) => !g.result);
+  }
 
-    if (this.currentUser) {
-      const userInfo = document.createElement("div");
-      userInfo.className = "auth-user";
-      userInfo.innerHTML = `
-        ${this.currentUser.photoURL ? `<img src="${this.currentUser.photoURL}" alt="" />` : ""}
-        <div class="auth-user-info">
-          <span dir="auto">${this.currentUser.displayName ?? this.currentUser.email ?? "משתמש"}</span>
-          <span class="auth-user-score">${t("home.myScore")}: ${this.myTotalScore}</span>
-        </div>
-      `;
-      row.appendChild(userInfo);
+  private get finishedGames() {
+    return this.games.filter((g) => g.result);
+  }
 
-      const signOutBtn = document.createElement("button");
-      signOutBtn.type = "button";
-      signOutBtn.className = "btn-secondary auth-btn";
-      signOutBtn.textContent = t("home.signOut");
-      signOutBtn.addEventListener("click", () => signOutUser());
-      row.appendChild(signOutBtn);
-    } else {
-      const signInBtn = document.createElement("button");
-      signInBtn.type = "button";
-      signInBtn.className = "btn-primary auth-btn";
-      signInBtn.textContent = t("home.signIn");
-      signInBtn.addEventListener("click", () => {
-        signInWithGoogle().catch((e) => {
-          console.error(e);
-          const message = t("home.signInError", {
-            msg: e instanceof Error ? e.message : String(e),
-          });
-          reportClientError(message, "HomeScreen:signIn");
-          this.setAuthError(message);
-        });
-      });
-      row.appendChild(signInBtn);
-    }
+  /** The game the hero is about: the one open for predictions, else the next upcoming one. */
+  private get heroGame(): ScheduleGame | undefined {
+    const activeId = getActiveGameId(this.games);
+    return this.games.find((g) => g.id === activeId) ?? this.upcomingGames[0];
+  }
 
-    if (!isRunningStandalone()) {
-      const installBtn = document.createElement("button");
-      installBtn.type = "button";
-      installBtn.className = "btn-secondary install-btn";
-      installBtn.textContent = t("home.install");
-      installBtn.addEventListener("click", () => this.onInstallClick());
-      row.appendChild(installBtn);
-    }
+  private get myRank(): number | null {
+    if (!this.currentUser || !this.leaderboard) return null;
+    const i = this.leaderboard.findIndex((r) => r.uid === this.currentUser!.uid);
+    return i >= 0 ? i + 1 : null;
+  }
 
-    bar.appendChild(row);
+  // ---------------------------------------------------------------- render
+
+  private render() {
+    const scrollY = window.scrollY;
+    this.container.innerHTML = "";
+
+    const page = el("div", "screen screen--wide home");
+    // The page's one h1, for screen readers and search; visually the hero leads.
+    page.appendChild(el("h1", "sr-only", esc(t("home.title"))));
 
     if (this.authError) {
-      const errorEl = document.createElement("p");
-      errorEl.className = "auth-error";
-      errorEl.dir = "auto";
-      errorEl.textContent = this.authError;
-      bar.appendChild(errorEl);
+      const banner = el("div", "banner banner--danger home-banner", `${icon("alert")}<p dir="auto"></p>`);
+      banner.setAttribute("role", "alert");
+      banner.querySelector("p")!.textContent = this.authError;
+      page.appendChild(banner);
     }
 
-    const linksRow = document.createElement("div");
-    linksRow.className = "footer-links-row";
+    // One 12-column grid: my season across the top, schedule (8) beside the
+    // leaders (4), then the VIP tournament as a full-width photo banner.
+    const grid = el("div", "home-grid");
+    const last = this.renderLastGame();
+    if (last) grid.appendChild(last);
+    grid.appendChild(this.currentUser ? this.renderPersonalStrip() : this.renderSignInCard());
+    grid.appendChild(this.renderSchedule());
+    grid.appendChild(this.renderLeadersPreview());
+    grid.appendChild(this.renderTournamentTicket());
+    page.appendChild(grid);
 
-    const aboutLink = document.createElement("button");
-    aboutLink.type = "button";
-    aboutLink.className = "privacy-link";
-    aboutLink.textContent = t("home.about");
-    aboutLink.addEventListener("click", () => this.onOpenAbout());
-    linksRow.appendChild(aboutLink);
+    this.container.appendChild(this.renderTicker());
+    this.container.appendChild(this.renderHero());
+    this.container.appendChild(page);
+    this.container.appendChild(this.renderFooter());
+    this.scrollTickerToCurrent();
+    // Re-renders happen in place (data arriving, tab switches) - keep the reader where they were.
+    if (scrollY) window.scrollTo({ top: scrollY });
+  }
 
-    const privacyLink = document.createElement("button");
-    privacyLink.type = "button";
-    privacyLink.className = "privacy-link";
-    privacyLink.textContent = t("home.privacy");
-    privacyLink.addEventListener("click", () => this.onOpenPrivacy());
-    linksRow.appendChild(privacyLink);
+  // ---- 0. Scoreboard ticker (every game of the season, like a broadcast bug) ----
+  private renderTicker(): HTMLElement {
+    const bar = el("nav", "ticker");
+    bar.setAttribute("aria-label", t("home.ticker.label"));
+    const track = el("div", "ticker__track");
+    const heroId = this.heroGame?.id;
+    const activeId = getActiveGameId(this.games);
 
-    bar.appendChild(linksRow);
+    this.games.forEach((game) => {
+      const predicted = this.myPredictions.has(game.id);
+      const isActive = game.id === activeId;
+      const enterable = !!game.result || predicted || isActive;
+      const tile = el("button", `ticker__game${game.id === heroId ? " is-next" : ""}`);
+      tile.type = "button";
+      tile.dataset.gameId = game.id;
+      if (enterable) tile.addEventListener("click", () => this.actions.onEnterGame(game));
+      else tile.disabled = true;
 
+      const home = TEAMS[game.homeTeamId];
+      const away = TEAMS[game.awayTeamId];
+      const status = game.result
+        ? t("home.ticker.final")
+        : `${shortDate(game.date)} · ${game.time ?? t("home.row.tbd")}`;
+      const homeWon = !!game.result && game.result.home > game.result.away;
+      const awayWon = !!game.result && game.result.away > game.result.home;
+      const line = (tm: typeof home, score: number | undefined, won: boolean) => `
+        <span class="ticker__team${game.result && !won ? " is-loser" : ""}">
+          ${tm ? `<img src="${tm.logo}" alt="" width="20" height="20" loading="lazy" />` : ""}
+          <span class="ticker__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+          ${score !== undefined ? `<span class="ticker__score num">${score}</span>` : ""}
+        </span>`;
+      tile.innerHTML = `
+        <span class="ticker__status">
+          <span class="num">${status}</span>
+          ${predicted && !game.result ? `<span class="ticker__mark">${icon("check", { size: "sm" })}</span>` : ""}
+          ${PRIZE_GAME_IDS.has(game.id) ? `<span class="ticker__prize">${icon("gift", { size: "sm" })}</span>` : ""}
+        </span>
+        ${line(home, game.result?.home, homeWon)}
+        ${line(away, game.result?.away, awayWon)}`;
+      track.appendChild(tile);
+    });
+    bar.appendChild(track);
     return bar;
   }
 
-  private renderHero(): HTMLElement {
-    const hero = document.createElement("div");
-    hero.className = "home-hero";
+  /** Brings the next game into view at the start of the ticker (not the season opener). */
+  private scrollTickerToCurrent() {
+    const track = this.container.querySelector<HTMLElement>(".ticker__track");
+    const next = track?.querySelector<HTMLElement>(".ticker__game.is-next");
+    if (!track || !next) return;
+    const prev = next.previousElementSibling as HTMLElement | null;
+    const target = prev ?? next;
+    const rtl = getComputedStyle(track).direction === "rtl";
+    const tile = target.getBoundingClientRect();
+    const box = track.getBoundingClientRect();
+    // Align the tile to the track's start edge, whatever the scroll direction convention.
+    track.scrollLeft += rtl ? tile.right - box.right : tile.left - box.left;
+  }
 
-    const jerusalem = TEAMS[HAPOEL_JERUSALEM_TEAM_ID];
+  // ---- 1. Hero: the next game, full-bleed over a match photo ----
+  private renderHero(): HTMLElement {
+    const game = this.heroGame;
+    const hero = el("section", "hero home-hero");
+    hero.setAttribute("aria-labelledby", "hero-overline");
+
+    if (!game) {
+      hero.classList.add("hero--empty");
+      hero.innerHTML = `
+        ${photoLayer("empty", "hero__photo")}
+        <div class="hero__inner"><div class="hero__content">
+          <h2 class="hero__empty-title">${t("home.hero.empty")}</h2>
+          <p class="hero__empty-text">${t("home.hero.emptyText")}</p>
+        </div></div>`;
+      return hero;
+    }
+
+    const home = TEAMS[game.homeTeamId];
+    const away = TEAMS[game.awayTeamId];
+    const prize = PRIZE_GAME_IDS.get(game.id);
+    const lockAt = gameDateTime(game).getTime() - SCORE_LOCK_MS;
+    const parts = countdownParts(lockAt - Date.now());
+
+    // Home team on the start side, away on the end side - the broadcast convention.
+    const team = (tm: typeof home, side: "home" | "away") =>
+      `<div class="hero__team hero__team--${side}">
+         ${tm ? `<span class="logo-disc logo-disc--xl"><img src="${tm.logo}" alt="" /></span>` : ""}
+         <span class="hero__team-name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+         <span class="hero__team-role">${side === "home" ? t("home.row.home") : t("home.hero.guest")}</span>
+       </div>`;
+
     hero.innerHTML = `
-      <div class="home-hero-brand">
-        <img class="home-logo" src="${jerusalem.logo}" alt="${teamName(jerusalem)}" />
-        <span class="home-hero-connector">×</span>
-        <span class="home-hero-wordmark">${GAME_TITLE}</span>
+      ${photoLayer(game.id, "hero__photo")}
+      <div class="hero__inner">
+        <p class="hero__top">
+          <span class="hero__eyebrow" id="hero-overline">${t("home.hero.next")}</span>
+          <span class="hero__comp" dir="auto">${esc(tDynamic(game.competition))}</span>
+          ${prize ? `<span class="tag tag--gold hero__prize-tag">${icon("gift")}${t("home.game.prizeBadge")}</span>` : ""}
+        </p>
+        <div class="hero__matchup">
+          ${team(home, "home")}
+          <div class="hero__when">
+            <span class="hero__date num--display">${shortDate(game.date)}</span>
+            <span class="hero__time">${game.time ?? t("home.game.timeTBD")}</span>
+          </div>
+          ${team(away, "away")}
+        </div>
+        <div class="hero__countdown">
+          ${
+            parts
+              ? `<p class="countdown__caption">${t("home.hero.lockIn")}</p>
+                 <div class="countdown" data-lock-at="${lockAt}" role="timer" aria-label="${t("home.hero.lockIn")}">
+                   ${this.countdownUnit("d", parts.d, t("home.countdown.days"))}
+                   ${this.countdownUnit("h", parts.h, t("home.countdown.hours"))}
+                   ${this.countdownUnit("m", parts.m, t("home.countdown.minutes"))}
+                 </div>`
+              : `<div class="countdown is-locked">${icon("lock")}<span>${t("common.countdown.locked")}</span></div>`
+          }
+        </div>
+        <div class="hero__actions"></div>
       </div>
     `;
+
+    const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
+    actions.appendChild(this.buildHeroCta(game));
+
+    if (prize) {
+      const prizeLine = el("p", "hero__prize", `${icon("gift", { size: "sm" })}<span dir="auto"></span>`);
+      prizeLine.querySelector("span")!.textContent = t("home.game.prizeLabel", { prize: tDynamic(prize) });
+      actions.appendChild(prizeLine);
+
+      const linkUrl = PRIZE_LINK_URLS.get(game.id);
+      if (linkUrl) {
+        const link = el("a", "btn btn--ghost btn--sm hero__prize-link", `<span>${t("home.game.festivalDetails")}</span>${icon("external", { size: "sm" })}`);
+        link.href = linkUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.addEventListener("click", () => trackLinkEvent(`prize_link_${game.id}`));
+        actions.appendChild(link);
+      }
+    }
+
+    if (CHALLENGE_FEATURE_ENABLED && this.currentUser && game.id === getActiveGameId(this.games)) {
+      const alreadyInChallenge =
+        this.challengeEligibilityGameId === game.id &&
+        this.challengeEligibility?.alreadyInChallenge;
+      if (!alreadyInChallenge) {
+        const challengeBtn = el("button", "btn btn--secondary hero__challenge", `${icon("zap")}<span>${t("challenge.gameBtn")}</span>`);
+        challengeBtn.type = "button";
+        challengeBtn.addEventListener("click", () => this.actions.onChallengeGame(game));
+        actions.appendChild(challengeBtn);
+      }
+    }
+
     return hero;
   }
 
-  private renderTournamentBanner(): HTMLElement {
-    const banner = document.createElement("div");
-    banner.className = "tournament-ticket";
+  /**
+   * The most recent finished game stays on the home page: final score with
+   * both crests, my points for it, a way into the full breakdown, and its
+   * video clips (src/config/videos.ts).
+   */
+  private renderLastGame(): HTMLElement | null {
+    const finished = this.finishedGames;
+    const game = finished[finished.length - 1];
+    if (!game?.result) return null;
+    const home = TEAMS[game.homeTeamId];
+    const away = TEAMS[game.awayTeamId];
+    const r = game.result;
+    const usHome = game.homeTeamId === "jerusalem";
+    const us = usHome ? r.home : r.away;
+    const them = usHome ? r.away : r.home;
+    const won = us > them;
+    const mine = this.myPredictions.get(game.id);
+    const pts = mine?.score;
 
-    const desc = this.currentUser
-      ? t("home.tournamentDescRules")
-      : t("home.tournamentDesc");
-
-    banner.innerHTML = `
-      <span class="tournament-ticket-badge">${t("home.tournamentBadge")}</span>
-      <h2 class="tournament-ticket-title">${t("home.tournamentTitle")}</h2>
-      <p class="tournament-ticket-desc">${desc}</p>
-      <p class="tournament-ticket-prize">${t("home.tournamentPrize")}</p>
-      <button class="tournament-ticket-btn" type="button">${t("home.tournamentBtn")} &larr;</button>
-    `;
-    banner
-      .querySelector(".tournament-ticket-btn")
-      ?.addEventListener("click", () => this.onOpenTournament());
-    return banner;
-  }
-
-  private renderMenu(): HTMLElement {
-    const wrap = document.createElement("div");
-    wrap.className = "home-menu-wrap";
-
-    const toggleBtn = document.createElement("button");
-    toggleBtn.type = "button";
-    toggleBtn.className = "home-menu-toggle";
-    toggleBtn.innerHTML = "&#9776;";
-    toggleBtn.addEventListener("click", () => {
-      this.menuOpen = !this.menuOpen;
-      this.render();
-    });
-    wrap.appendChild(toggleBtn);
-
-    if (this.menuOpen) wrap.appendChild(this.renderMenuPanel());
-
-    return wrap;
-  }
-
-  /** Flag toggle (HE/EN) - fixed top-left corner, mirroring the hamburger at top-right. */
-  private renderLangSwitcher(): HTMLElement {
-    const wrap = document.createElement("div");
-    wrap.className = "lang-switcher";
-
-    const makeFlagBtn = (lang: Lang, flag: string) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className =
-        "lang-switcher-btn" + (getLang() === lang ? " active" : "");
-      btn.textContent = flag;
-      btn.addEventListener("click", () => {
-        if (getLang() === lang) return;
-        setLang(lang);
-      });
-      return btn;
-    };
-
-    wrap.appendChild(makeFlagBtn("he", "🇮🇱"));
-    wrap.appendChild(makeFlagBtn("en", "🇺🇸"));
-
-    return wrap;
-  }
-
-  /** Fixed bottom-right floating invite to the game-discussion WhatsApp group. */
-  private renderWhatsappGroupButton(): HTMLElement {
-    const link = document.createElement("a");
-    link.className = "whatsapp-float-btn";
-    link.href = "https://chat.whatsapp.com/FEvheh8S3HZ89MYEFLj1qm";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.setAttribute("aria-label", t("home.whatsappGroup.label"));
-    link.title = t("home.whatsappGroup.label");
-    link.innerHTML = `
-      <svg viewBox="0 0 448 512" width="26" height="26" fill="#ffffff" aria-hidden="true">
-        <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.9c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.8-186.6 184.8zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
-      </svg>
-    `;
-    return link;
-  }
-
-  /** Runs before navigating away from any menu item, so the panel isn't left open when the user comes back to the home screen. */
-  private closeMenuAnd(action: () => void) {
-    this.menuOpen = false;
-    action();
-  }
-
-  private renderMenuPanel(): HTMLElement {
-    const nav = document.createElement("div");
-    nav.className = "home-menu-panel";
-
-    const leaderboardBtn = document.createElement("button");
-    leaderboardBtn.type = "button";
-    leaderboardBtn.className = "btn-secondary";
-    leaderboardBtn.textContent = t("home.menu.leaderboard");
-    leaderboardBtn.addEventListener("click", () =>
-      this.closeMenuAnd(() => this.onOpenLeaderboard()),
+    const section = el("section", "card last-game");
+    section.setAttribute("aria-labelledby", "last-game-title");
+    const side = (tm: typeof home, score: number, winner: boolean) => `
+      <div class="last-game__team${winner ? " is-winner" : ""}">
+        ${tm ? `<span class="logo-disc logo-disc--lg"><img src="${tm.logo}" alt="" /></span>` : ""}
+        <span class="last-game__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+        <span class="last-game__score num--display">${score}</span>
+      </div>`;
+    section.innerHTML = `
+      <div class="last-game__result">
+        <header class="last-game__head">
+          <h2 id="last-game-title">${t("home.lastGame.title")}</h2>
+          <span class="last-game__badge ${won ? "is-win" : "is-loss"}">${won ? t("home.lastGame.win") : t("home.lastGame.loss")}</span>
+        </header>
+        <p class="last-game__meta" dir="auto">${esc(tDynamic(game.competition))} · <span class="num">${shortDate(game.date)}</span></p>
+        <div class="last-game__teams">
+          ${side(home, r.home, r.home > r.away)}
+          ${side(away, r.away, r.away > r.home)}
+        </div>
+        ${
+          mine
+            ? `<p class="last-game__mine${pts ? " is-earned" : ""}"><span class="num--display">${pts != null ? `+${pts}` : "–"}</span><span>${t("home.lastGame.myPoints")}</span></p>`
+            : `<p class="last-game__mine is-none">${t("home.lastGame.noPrediction")}</p>`
+        }
+      </div>
+`;
+    const nClips = clipsForGame(game.id).length;
+    const cta = el(
+      "button",
+      "btn btn--primary last-game__cta",
+      `<span>${t("home.lastGame.open")}</span>${icon("arrowForward", { size: "sm" })}`,
     );
-    nav.appendChild(leaderboardBtn);
-
-    const scoringInfoBtn = document.createElement("button");
-    scoringInfoBtn.type = "button";
-    scoringInfoBtn.className = "btn-secondary";
-    scoringInfoBtn.textContent = t("home.menu.scoringInfo");
-    scoringInfoBtn.addEventListener("click", () =>
-      this.closeMenuAnd(() => this.onOpenScoringInfo()),
-    );
-    nav.appendChild(scoringInfoBtn);
-
-    const timeKillerBtn = document.createElement("button");
-    timeKillerBtn.type = "button";
-    timeKillerBtn.className = "btn-secondary";
-    timeKillerBtn.textContent = t("home.menu.timeKiller");
-    timeKillerBtn.addEventListener("click", () =>
-      this.closeMenuAnd(() => this.onOpenTimeKiller()),
-    );
-    nav.appendChild(timeKillerBtn);
-
-    const sportsWorldBtn = document.createElement("button");
-    sportsWorldBtn.type = "button";
-    sportsWorldBtn.className = "btn-secondary";
-    sportsWorldBtn.textContent = t("home.menu.sportsWorld");
-    sportsWorldBtn.addEventListener("click", () =>
-      this.closeMenuAnd(() => this.onOpenSportsHub()),
-    );
-    if (SPORTS_HUB_ENABLED) nav.appendChild(sportsWorldBtn);
-
-    if (this.currentUser) {
-      const createLeagueBtn = document.createElement("button");
-      createLeagueBtn.type = "button";
-      createLeagueBtn.className = "btn-secondary";
-      createLeagueBtn.textContent = t("home.menu.createLeague");
-      createLeagueBtn.addEventListener("click", () =>
-        this.closeMenuAnd(() => this.onCreateLeague()),
-      );
-      nav.appendChild(createLeagueBtn);
-
-      const myChallengesBtn = document.createElement("button");
-      myChallengesBtn.type = "button";
-      myChallengesBtn.className = "btn-secondary";
-      myChallengesBtn.textContent = t("home.menu.myChallenges");
-      myChallengesBtn.addEventListener("click", () =>
-        this.closeMenuAnd(() => this.onOpenMyChallenges()),
-      );
-      if (CHALLENGE_FEATURE_ENABLED) nav.appendChild(myChallengesBtn);
-
-      this.myLeagues.forEach((league) => {
-        const leagueBtn = document.createElement("button");
-        leagueBtn.type = "button";
-        leagueBtn.className = "btn-secondary";
-        leagueBtn.dir = "auto";
-        leagueBtn.textContent = t("home.menu.leagueTable", {
-          name: league.name,
-        });
-        leagueBtn.addEventListener("click", () =>
-          this.closeMenuAnd(() => this.onOpenLeagueLeaderboard(league)),
-        );
-        nav.appendChild(leagueBtn);
-      });
-    }
-
-    if (isAdmin(this.currentUser)) {
-      const adminBtn = document.createElement("button");
-      adminBtn.type = "button";
-      adminBtn.className = "btn-secondary";
-      adminBtn.textContent = t("home.menu.admin");
-      adminBtn.addEventListener("click", () =>
-        this.closeMenuAnd(() => this.onOpenAdmin()),
-      );
-      nav.appendChild(adminBtn);
-    }
-
-    return nav;
+    cta.type = "button";
+    cta.addEventListener("click", () => this.actions.onEnterGame(game));
+    const actions = el("div", "last-game__actions");
+    actions.appendChild(cta);
+    if (nClips) actions.appendChild(el("span", "last-game__clips", `${icon("play", { size: "sm" })}<span>${esc(t("home.lastGame.clips", { n: nClips }))}</span>`));
+    section.querySelector(".last-game__result")!.appendChild(actions);
+    return section;
   }
 
-  private renderSchedule(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "home-schedule";
+  private countdownUnit(key: string, value: string, label: string): string {
+    return `<div class="countdown__unit">
+      <span class="countdown__value num--display" data-part="${key}">${value}</span>
+      <span class="countdown__label">${label}</span>
+    </div>`;
+  }
 
-    const heading = document.createElement("h2");
-    heading.textContent = t("home.schedule.title");
-    section.appendChild(heading);
+  /** Same states as the old game card: view/edit, predict, or a locked/not-yet grey button. */
+  private buildHeroCta(game: ScheduleGame): HTMLElement {
+    const btn = el("button", "btn hero__cta");
+    btn.type = "button";
+    const alreadyPredicted = this.myPredictions.has(game.id);
+    const isActive = game.id === getActiveGameId(this.games);
 
-    const upcomingGames = this.games.filter((g) => !g.result);
-    const finishedGames = this.games.filter((g) => g.result);
-    const nextGame = upcomingGames[0];
-    const activeGameId = getActiveGameId(this.games);
-
-    const tabs = document.createElement("div");
-    tabs.className = "schedule-tabs";
-
-    const upcomingTab = document.createElement("button");
-    upcomingTab.type = "button";
-    upcomingTab.className =
-      "schedule-tab" + (this.activeTab === "upcoming" ? " active" : "");
-    upcomingTab.textContent = t("home.tab.upcoming", {
-      n: upcomingGames.length,
-    });
-    upcomingTab.addEventListener("click", () => {
-      this.activeTab = "upcoming";
-      this.render();
-    });
-    tabs.appendChild(upcomingTab);
-
-    const finishedTab = document.createElement("button");
-    finishedTab.type = "button";
-    finishedTab.className =
-      "schedule-tab" + (this.activeTab === "finished" ? " active" : "");
-    finishedTab.textContent = t("home.tab.finished", {
-      n: finishedGames.length,
-    });
-    finishedTab.addEventListener("click", () => {
-      this.activeTab = "finished";
-      this.render();
-    });
-    tabs.appendChild(finishedTab);
-
-    section.appendChild(tabs);
-
-    const list = document.createElement("div");
-    list.className = "schedule-list";
-
-    if (this.activeTab === "upcoming") {
-      upcomingGames.forEach((game) => {
-        list.appendChild(
-          this.buildGameCard(game, game === nextGame, game.id === activeGameId),
-        );
-      });
+    if (alreadyPredicted) {
+      btn.classList.add("btn--primary");
+      btn.innerHTML = `${icon("check")}<span>${
+        isScoreLocked(game) ? t("home.game.viewMyPrediction") : t("home.hero.viewOrEdit")
+      }</span>`;
+      btn.addEventListener("click", () => this.actions.onEnterGame(game));
+    } else if (isActive) {
+      btn.classList.add("btn--primary");
+      btn.innerHTML = `<span>${t("home.game.predict")}</span>${icon("arrowForward")}`;
+      btn.addEventListener("click", () => this.actions.onEnterGame(game));
     } else {
-      finishedGames
-        .slice()
-        .reverse()
-        .forEach((game) => {
-          list.appendChild(this.buildGameCard(game, false, false));
-        });
+      btn.classList.add("btn--locked");
+      btn.disabled = true;
+      btn.innerHTML = `${icon("lock")}<span>${
+        isScoreLocked(game) ? t("home.game.locked") : t("home.game.opensAfterPrevious")
+      }</span>`;
+    }
+    return btn;
+  }
+
+  // ---- 2. Personal strip ----
+  private renderPersonalStrip(): HTMLElement {
+    const strip = el("section", "card personal-strip");
+    strip.setAttribute("aria-label", t("home.strip.label"));
+    strip.appendChild(el("header", "card__head", `<h2>${t("home.strip.title")}</h2>`));
+    const cellsWrap = el("div", "personal-strip__cells");
+    strip.appendChild(cellsWrap);
+    const rank = this.myRank;
+    const cells: [string, string, () => void][] = [
+      [String(this.myTotalScore), t("home.strip.score"), () => this.actions.onOpenLeaderboard()],
+      [rank !== null ? `#${rank}` : "–", t("home.strip.rank"), () => this.actions.onOpenLeaderboard()],
+      [String(this.myLeagues.length), t("home.strip.leagues"), () => this.actions.onOpenLeagues()],
+    ];
+    cells.forEach(([value, label, fn]) => {
+      const b = el("button", "stat personal-strip__cell", `<span class="stat__value">${ltr(value)}</span><span class="stat__label">${label}</span>`);
+      b.type = "button";
+      b.addEventListener("click", fn);
+      cellsWrap.appendChild(b);
+    });
+    return strip;
+  }
+
+  private renderSignInCard(): HTMLElement {
+    const card = el(
+      "section",
+      "card signin-card",
+      `<div class="signin-card__text">
+         <h2 class="t-h3">${t("home.signInCard.title")}</h2>
+         <p class="c-2 t-small">${t("home.signInCard.text")}</p>
+       </div>`,
+    );
+    const btn = el("button", "btn btn--secondary btn--block", `${icon("logIn", { className: "icon--dir" })}<span>${t("home.signIn")}</span>`);
+    btn.type = "button";
+    btn.addEventListener("click", () => this.actions.onSignIn());
+    card.appendChild(btn);
+    return card;
+  }
+
+  // ---- 3. VIP tournament ticket ----
+  private renderTournamentTicket(): HTMLElement {
+    const ticket = el("section", "ticket");
+    const desc = this.currentUser ? t("home.tournamentDescRules") : t("home.tournamentDesc");
+    ticket.innerHTML = `
+      <div class="ticket__body">
+        <span class="tag tag--gold">${icon("ticket")}${t("home.tournamentBadge")}</span>
+        <h2 class="t-h3 ticket__title">${t("home.tournamentTitle")}</h2>
+        <p class="ticket__desc c-2 t-small">${desc}</p>
+      </div>
+      <div class="ticket__stub">
+        <p class="ticket__prize">${icon("trophy", { size: "sm" })}<span>${t("home.tournamentPrize")}</span></p>
+      </div>`;
+    const btn = el("button", "btn btn--secondary btn--block btn--sm ticket__btn", `<span>${t("home.tournamentBtn")}</span>${icon("arrowForward", { size: "sm" })}`);
+    btn.type = "button";
+    btn.addEventListener("click", () => this.actions.onOpenTournament());
+    ticket.querySelector(".ticket__stub")!.appendChild(btn);
+    return ticket;
+  }
+
+  // ---- 4. Season schedule ----
+  private renderSchedule(): HTMLElement {
+    const section = el("section", "card card--flush home-schedule");
+    section.setAttribute("aria-labelledby", "schedule-title");
+    const head = el("header", "card__head", `<h2 id="schedule-title">${t("home.schedule.title")}</h2>`);
+    section.appendChild(head);
+
+    const upcoming = this.upcomingGames;
+    const finished = this.finishedGames;
+
+    const seg = el("div", "tabs home-schedule__tabs");
+    seg.setAttribute("role", "group");
+    const tabs: ["upcoming" | "finished", string, number][] = [
+      ["upcoming", t("home.tab.upcomingShort"), upcoming.length],
+      ["finished", t("home.tab.finishedShort"), finished.length],
+    ];
+    tabs.forEach(([id, label, n]) => {
+      const b = el("button", "tabs__btn", `<span>${label}</span><span class="tabs__count">${n}</span>`);
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(this.activeTab === id));
+      b.addEventListener("click", () => {
+        if (this.activeTab === id) return;
+        this.activeTab = id;
+        this.render();
+      });
+      seg.appendChild(b);
+    });
+    head.appendChild(seg);
+
+    // List | calendar
+    const views = el("div", "segmented segmented--sm home-schedule__views");
+    views.setAttribute("role", "group");
+    ([
+      ["list", "list", t("home.schedule.view.list")],
+      ["calendar", "calendar", t("home.schedule.view.calendar")],
+    ] as const).forEach(([id, ic, label]) => {
+      const b = el("button", "segmented__btn", `${icon(ic, { size: "sm" })}<span>${label}</span>`);
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(this.scheduleView === id));
+      b.addEventListener("click", () => {
+        if (this.scheduleView === id) return;
+        this.scheduleView = id;
+        try {
+          localStorage.setItem("scheduleView", id);
+        } catch {
+          /* private mode - the choice just isn't remembered */
+        }
+        this.render();
+      });
+      views.appendChild(b);
+    });
+    head.appendChild(views);
+
+    if (this.scheduleView === "calendar") {
+      seg.remove();
+      section.classList.add("is-calendar");
+      section.appendChild(this.renderCalendar());
+      return section;
     }
 
+    const list = el("div", "schedule-list");
+    const rows =
+      this.activeTab === "upcoming" ? upcoming : finished.slice().reverse();
+    const heroId = this.heroGame?.id;
+    const activeId = getActiveGameId(this.games);
+    // The next few games; the rest of the season is one tap (or the calendar) away.
+    const LIMIT = 6;
+    const shown = this.showAllGames ? rows : rows.slice(0, LIMIT);
+    shown.forEach((game) => list.appendChild(this.buildGameRow(game, game.id === heroId, game.id === activeId)));
+    if (rows.length === 0) {
+      list.appendChild(el("p", "list-row c-2", t("home.schedule.empty")));
+    }
+    if (rows.length > LIMIT) {
+      const more = el(
+        "button",
+        "schedule-more",
+        `<span>${this.showAllGames ? t("home.schedule.showLess") : t("home.schedule.showAll", { n: rows.length })}</span>${icon("chevronForward", { size: "sm", className: this.showAllGames ? "is-up" : "is-down" })}`,
+      );
+      more.type = "button";
+      more.addEventListener("click", () => {
+        this.showAllGames = !this.showAllGames;
+        this.render();
+      });
+      list.appendChild(more);
+    }
     section.appendChild(list);
     return section;
   }
 
-  private buildGameCard(
-    game: ScheduleGame,
-    isNext: boolean,
-    isActive: boolean,
-  ): HTMLElement {
-    const home = TEAMS[game.homeTeamId];
-    const away = TEAMS[game.awayTeamId];
+  /**
+   * One game, EuroLeague results-list style: date and competition, then the
+   * home team on the start side and the away team on the end side, with the
+   * two scores (winner filled) or "vs" between them.
+   */
+  private buildGameRow(game: ScheduleGame, isHero: boolean, isActive: boolean): HTMLElement {
+    const prize = PRIZE_GAME_IDS.get(game.id);
+    const predicted = this.myPredictions.has(game.id);
+    const enterable = !!game.result || predicted || isActive;
 
-    const card = document.createElement("div");
-    card.className = "game-card" + (isNext ? " next-game" : "");
+    const row = el("button", `list-row game-row${isHero ? " is-next" : ""}`);
+    row.type = "button";
+    if (enterable) row.addEventListener("click", () => this.actions.onEnterGame(game));
+    else row.disabled = true;
 
-    const meta = document.createElement("div");
-    meta.className = "game-meta";
-    meta.innerHTML = `
-      <span class="game-competition">${tDynamic(game.competition)}</span>
-      <span class="game-date">${game.date}${game.time ? ` &middot; ${game.time}` : ` &middot; ${t("home.game.timeTBD")}`}</span>
-    `;
-    card.appendChild(meta);
+    const r = game.result;
+    const homeWon = !!r && r.home > r.away;
+    const awayWon = !!r && r.away > r.home;
+    const side = (teamId: string, score: number | undefined, won: boolean, role: "home" | "away") => {
+      const tm = TEAMS[teamId];
+      return `<span class="game-row__team is-${role}${won ? " is-winner" : ""}${teamId === "jerusalem" ? " is-us" : ""}">
+          <span class="game-row__logo">${tm ? `<img src="${tm.logo}" alt="" width="28" height="28" loading="lazy" />` : ""}</span>
+          <span class="game-row__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+          ${score !== undefined ? `<span class="game-row__score">${score}</span>` : ""}
+        </span>`;
+    };
 
-    if (isNext && !game.result) {
-      const lockAt = gameDateTime(game).getTime() - SCORE_LOCK_MS;
-      const countdown = document.createElement("div");
-      countdown.className = "game-countdown";
-      countdown.dataset.lockAt = String(lockAt);
-      countdown.textContent = formatCountdown(lockAt - Date.now());
-      card.appendChild(countdown);
-    }
-
-    const prizeDescription = PRIZE_GAME_IDS.get(game.id);
-    if (prizeDescription) {
-      const prizeBadge = document.createElement("span");
-      prizeBadge.className = "prize-game-badge";
-      prizeBadge.title = tDynamic(prizeDescription);
-      prizeBadge.textContent = t("home.game.prizeBadge");
-      card.appendChild(prizeBadge);
-
-      const prizeCaption = document.createElement("p");
-      prizeCaption.className = "prize-game-caption";
-      prizeCaption.dir = "auto";
-      prizeCaption.textContent = t("home.game.prizeLabel", {
-        prize: tDynamic(prizeDescription),
-      });
-      card.appendChild(prizeCaption);
-
-      const linkUrl = PRIZE_LINK_URLS.get(game.id);
-      if (linkUrl) {
-        const linkBtn = document.createElement("a");
-        linkBtn.className = "btn-secondary prize-link-btn";
-        linkBtn.href = linkUrl;
-        linkBtn.target = "_blank";
-        linkBtn.rel = "noopener noreferrer";
-        linkBtn.textContent = t("home.game.festivalDetails");
-        linkBtn.addEventListener("click", () =>
-          trackLinkEvent(`prize_link_${game.id}`),
-        );
-        card.appendChild(linkBtn);
-      }
-    }
-
-    if (isNext) {
-      const badge = document.createElement("span");
-      badge.className = "next-game-badge";
-      badge.textContent = t("home.game.nextBadge");
-      card.appendChild(badge);
-    }
-
-    const matchup = document.createElement("div");
-    matchup.className = "game-matchup";
-    matchup.innerHTML = `
-      <div class="game-team">
-          <img src="${home.logo}" alt="${teamName(home)}" />
-          <span dir="auto">${teamName(home)}</span>
-      </div>
-      <span class="game-vs">${t("home.game.vs")}</span>
-      <div class="game-team">
-          <img src="${away.logo}" alt="${teamName(away)}" />
-          <span dir="auto">${teamName(away)}</span>
-      </div>
-    `;
-    card.appendChild(matchup);
-
-    if (game.result) {
-      const resultEl = document.createElement("div");
-      resultEl.className = "game-result";
-      resultEl.textContent = `${game.result.home} - ${game.result.away}`;
-      card.appendChild(resultEl);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "btn-secondary game-guess-btn";
-      btn.textContent = this.myPredictions.has(game.id)
-        ? t("home.game.viewMyPrediction")
-        : t("home.game.viewAveragePrediction");
-      btn.addEventListener("click", () => this.onEnterGame(game));
-      card.appendChild(btn);
+    let end = "";
+    if (r) {
+      const mine = this.myPredictions.get(game.id);
+      const pts = mine?.score;
+      end = mine
+        ? `<span class="game-row__pts${pts ? " is-earned" : ""}"><span class="num">${pts != null ? `+${pts}` : "–"}</span><span>${t("home.row.myPoints")}</span></span>`
+        : `<span class="game-row__later">${t("home.row.noPrediction")}</span>`;
+    } else if (predicted) {
+      end = `<span class="tag tag--success">${icon("check")}${t("home.row.predicted")}</span>`;
+    } else if (isActive) {
+      end = `<span class="btn btn--primary btn--sm game-row__cta">${t("home.row.predict")}</span>`;
+    } else if (isScoreLocked(game)) {
+      end = `<span class="tag">${icon("lock")}${t("home.row.locked")}</span>`;
     } else {
-      const alreadyPredicted = this.myPredictions.has(game.id);
-      if (alreadyPredicted) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn-primary game-guess-btn";
-        btn.textContent = t("home.game.viewPrediction");
-        btn.addEventListener("click", () => this.onEnterGame(game));
-        card.appendChild(btn);
-      } else if (isActive) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn-primary game-guess-btn";
-        btn.textContent = t("home.game.predict");
-        btn.addEventListener("click", () => this.onEnterGame(game));
-        card.appendChild(btn);
-      } else {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn-secondary game-guess-btn";
-        btn.disabled = true;
-        btn.textContent = isScoreLocked(game)
-          ? t("home.game.locked")
-          : t("home.game.opensAfterPrevious");
-        card.appendChild(btn);
-      }
-
-      if (CHALLENGE_FEATURE_ENABLED && this.currentUser && isActive) {
-        const alreadyInChallenge =
-          this.challengeEligibilityGameId === game.id &&
-          this.challengeEligibility?.alreadyInChallenge;
-        if (!alreadyInChallenge) {
-          const challengeBtn = document.createElement("button");
-          challengeBtn.type = "button";
-          challengeBtn.className = "btn-secondary challenge-game-btn";
-          challengeBtn.textContent = t("challenge.gameBtn");
-          challengeBtn.addEventListener("click", () =>
-            this.onChallengeGame(game),
-          );
-          card.appendChild(challengeBtn);
-        }
-      }
+      end = `<span class="game-row__later">${t("home.row.later")}</span>`;
     }
 
-    return card;
+    row.innerHTML = `
+      <span class="game-row__info">
+        <span class="game-row__when"><span class="num">${shortDate(game.date)}</span> · <span class="num">${game.time ?? t("home.row.tbd")}</span></span>
+        <span class="game-row__comp" dir="auto">${esc(tDynamic(game.competition))}${
+          prize ? ` <span class="game-row__prize" title="${esc(tDynamic(prize))}">${icon("gift", { size: "sm" })}</span>` : ""
+        }</span>
+      </span>
+      <span class="game-row__match${r ? " is-final" : ""}">
+        ${side(game.homeTeamId, r?.home, homeWon, "home")}
+        ${r ? "" : `<span class="game-row__vs">${t("home.game.vs")}</span>`}
+        ${side(game.awayTeamId, r?.away, awayWon, "away")}
+      </span>
+      <span class="game-row__end">${end}</span>
+    `;
+    return row;
+  }
+
+  /**
+   * Month grid, Sunday first (Israeli week). Every game day carries the
+   * opponent's crest, home/away and the tip-off time - or the result once
+   * it's played. Arrows move between the season's months only.
+   */
+  private renderCalendar(): HTMLElement {
+    const wrap = el("div", "calendar");
+    if (this.games.length === 0) {
+      wrap.appendChild(el("p", "list-row c-2", t("home.schedule.empty")));
+      return wrap;
+    }
+    const dates = this.games.map((g) => parseGameDate(g.date));
+    const first = new Date(Math.min(...dates.map(Number)));
+    const last = new Date(Math.max(...dates.map(Number)));
+    const firstMonth = new Date(first.getFullYear(), first.getMonth(), 1);
+    const lastMonth = new Date(last.getFullYear(), last.getMonth(), 1);
+    if (!this.calendarMonth) {
+      const anchor = this.heroGame ? parseGameDate(this.heroGame.date) : new Date();
+      const m = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+      this.calendarMonth = m < firstMonth ? firstMonth : m > lastMonth ? lastMonth : m;
+    }
+    const month = this.calendarMonth;
+    const locale = getLang() === "he" ? "he-IL" : "en-GB";
+
+    const byDay = new Map<string, ScheduleGame[]>();
+    this.games.forEach((g, i) => {
+      const k = dayKey(dates[i]);
+      byDay.set(k, [...(byDay.get(k) ?? []), g]);
+    });
+
+    // Header: ‹ month year ›
+    const nav = el("div", "calendar__nav");
+    const step = (delta: number) => {
+      this.calendarMonth = new Date(month.getFullYear(), month.getMonth() + delta, 1);
+      this.render();
+    };
+    const prev = el("button", "btn btn--ghost btn--icon calendar__arrow", icon("chevronForward", { className: "calendar__prev" }));
+    prev.type = "button";
+    prev.setAttribute("aria-label", t("calendar.prev"));
+    prev.disabled = month <= firstMonth;
+    prev.addEventListener("click", () => step(-1));
+    const next = el("button", "btn btn--ghost btn--icon calendar__arrow", icon("chevronForward", { className: "calendar__next" }));
+    next.type = "button";
+    next.setAttribute("aria-label", t("calendar.next"));
+    next.disabled = month >= lastMonth;
+    next.addEventListener("click", () => step(1));
+    const title = el("h3", "calendar__title");
+    title.textContent = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(month);
+    const monthGames = this.games.filter((_, i) => dates[i].getMonth() === month.getMonth() && dates[i].getFullYear() === month.getFullYear()).length;
+    const count = el("span", "calendar__count", esc(t("calendar.gamesInMonth", { n: monthGames })));
+    const titles = el("div", "calendar__titles");
+    titles.append(title, count);
+    nav.append(prev, titles, next);
+    wrap.appendChild(nav);
+
+    // Weekday row
+    const grid = el("div", "calendar__grid");
+    grid.setAttribute("role", "grid");
+    const wd = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    for (let i = 0; i < 7; i++) {
+      // 2023-01-01 was a Sunday
+      grid.appendChild(el("span", "calendar__wd", esc(wd.format(new Date(2023, 0, 1 + i)))));
+    }
+
+    const lead = month.getDay();
+    const daysIn = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const todayKey = dayKey(new Date());
+    const heroId = this.heroGame?.id;
+    const activeId = getActiveGameId(this.games);
+    for (let i = 0; i < lead; i++) grid.appendChild(el("span", "calendar__day is-blank"));
+
+    for (let d = 1; d <= daysIn; d++) {
+      const date = new Date(month.getFullYear(), month.getMonth(), d);
+      const games = byDay.get(dayKey(date)) ?? [];
+      const game = games[0];
+      const isToday = dayKey(date) === todayKey;
+      if (!game) {
+        grid.appendChild(el("span", `calendar__day${isToday ? " is-today" : ""}`, `<span class="calendar__date">${d}</span>`));
+        continue;
+      }
+      const { team: opp, isHome } = opponentOf(game);
+      const predicted = this.myPredictions.has(game.id);
+      const isActive = game.id === activeId;
+      const enterable = !!game.result || predicted || isActive;
+      const r = game.result;
+      let status = `<span class="calendar__time">${game.time ?? t("home.row.tbd")}</span>`;
+      let won: boolean | null = null;
+      if (r) {
+        const us = isHome ? r.home : r.away;
+        const them = isHome ? r.away : r.home;
+        won = us > them;
+        status = `<span class="calendar__result ${won ? "is-win" : "is-loss"}"><b>${won ? t("home.row.win") : t("home.row.loss")}</b><span dir="ltr">${us}-${them}</span></span>`;
+      } else if (predicted) {
+        status = `<span class="calendar__time">${icon("check", { size: "sm" })}${game.time ?? ""}</span>`;
+      }
+      const cell = el(
+        enterable ? "button" : "div",
+        `calendar__day has-game${isHome ? " is-home" : " is-away"}${game.id === heroId ? " is-next" : ""}${isToday ? " is-today" : ""}${PRIZE_GAME_IDS.has(game.id) ? " has-prize" : ""}`,
+        `<span class="calendar__date">${d}</span>
+         <span class="calendar__crest">${opp ? `<img src="${opp.logo}" alt="" loading="lazy" />` : ""}</span>
+         <span class="calendar__opp" dir="auto">${esc(opp ? teamName(opp) : "")}</span>
+         <span class="calendar__ha">${isHome ? t("home.row.home") : t("home.row.away")}</span>
+         ${status}`,
+      );
+      cell.setAttribute(
+        "aria-label",
+        `${d} – ${opp ? teamName(opp) : ""}, ${isHome ? t("home.row.home") : t("home.row.away")}`,
+      );
+      if (cell instanceof HTMLButtonElement) {
+        cell.type = "button";
+        cell.addEventListener("click", () => this.actions.onEnterGame(game));
+      }
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+
+    wrap.appendChild(
+      el(
+        "p",
+        "calendar__legend",
+        `<span><i class="calendar__key is-home"></i>${t("home.row.home")}</span>
+         <span><i class="calendar__key is-away"></i>${t("home.row.away")}</span>
+         <span><i class="calendar__key is-next"></i>${t("home.hero.next")}</span>`,
+      ),
+    );
+    return wrap;
+  }
+
+  // ---- 5. Leaderboard preview ----
+  private renderLeadersPreview(): HTMLElement {
+    const section = el("section", "card card--flush home-leaders");
+    section.setAttribute("aria-labelledby", "leaders-title");
+    const head = el("header", "card__head", `<h2 id="leaders-title">${t("home.leaders.title")}</h2>`);
+    const all = el("button", "link-arrow", `<span>${t("home.leaders.all")}</span>${icon("arrowForward", { size: "sm" })}`);
+    all.type = "button";
+    all.addEventListener("click", () => this.actions.onOpenLeaderboard());
+    head.appendChild(all);
+    section.appendChild(head);
+
+    if (this.leaderboard === null && !this.leaderboardError) {
+      const list = el("div", "list");
+      for (let i = 0; i < 5; i++) list.appendChild(el("span", "skeleton skeleton--row"));
+      section.appendChild(list);
+    } else if (!this.leaderboard || this.leaderboard.length === 0) {
+      section.appendChild(el("p", "card c-2 t-small", this.leaderboardError ? t("leaderboard.error") : t("leaderboard.empty")));
+    } else {
+      section.appendChild(
+        rankList(this.leaderboard, {
+          meUid: this.currentUser?.uid,
+          limit: 5,
+          appendMe: true,
+          compact: true,
+        }),
+      );
+    }
+
+    return section;
+  }
+
+  // ---- 6. Footer ----
+  private renderFooter(): HTMLElement {
+    const footer = el("footer", "site-footer");
+    const inner = el("div", "site-footer__inner");
+    footer.appendChild(inner);
+
+    const wa = el(
+      "a",
+      "card wa-card",
+      `<span class="wa-card__icon">${icon("whatsapp", { size: "lg" })}</span>
+       <span class="list-row__main">
+         <span class="list-row__title">${t("home.whatsappGroup.title")}</span>
+         <span class="list-row__meta">${t("home.whatsappGroup.text")}</span>
+       </span>
+       ${icon("chevronForward", { className: "c-3" })}`,
+    );
+    wa.href = WHATSAPP_GROUP_URL;
+    wa.target = "_blank";
+    wa.rel = "noopener noreferrer";
+    wa.setAttribute("aria-label", t("home.whatsappGroup.label"));
+    inner.appendChild(wa);
+
+    const links = el("nav", "home-footer__links");
+    links.setAttribute("aria-label", t("home.footer.label"));
+    const add = (label: string, fn: () => void, lang?: string) => {
+      const b = el("button", "link-btn");
+      b.type = "button";
+      b.textContent = label;
+      if (lang) b.lang = lang;
+      b.addEventListener("click", fn);
+      links.appendChild(b);
+    };
+    add(t("home.about"), () => this.actions.onOpenAbout());
+    add(t("home.privacy"), () => this.actions.onOpenPrivacy());
+    if (!isRunningStandalone()) add(t("home.installShort"), () => this.actions.onInstallClick());
+    const other = getLang() === "he" ? "en" : "he";
+    add(t(`lang.${other}`), () => setLang(other), other);
+    inner.appendChild(links);
+    inner.appendChild(el("div", "site-footer__brand", logoSVG({ className: "site-footer__logo" })));
+    return footer;
   }
 }

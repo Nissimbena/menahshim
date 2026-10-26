@@ -1,11 +1,14 @@
 import { auth, signOutUser } from "../firebase/firebase";
 import { deleteMyAccount, reportClientError } from "../api/backend";
 import { t } from "../i18n/i18n";
+import { screenHeader } from "../ui/ScreenHeader";
+import { icon } from "../ui/icons";
+import { el } from "../ui/dom";
 
 /**
  * Static privacy-policy explanation screen ("מדיניות פרטיות") - what data the
  * app collects, why, and how a user can ask to delete/access it. Same visual
- * pattern as ScoringInfoScreen (shared .leaderboard-wrapper/.prediction-header).
+ * pattern as the other info screens (shared screenHeader + .reading column).
  */
 export class PrivacyPolicyScreen {
   private container: HTMLElement;
@@ -25,26 +28,11 @@ export class PrivacyPolicyScreen {
     this.container.classList.add("hidden");
   }
 
-  private renderHeader(): HTMLElement {
-    const header = document.createElement("div");
-    header.className = "prediction-header";
-    header.innerHTML = `
-      <button class="btn-back" type="button">&rarr; ${t("common.back")}</button>
-      <div class="prediction-title"><h1>${t("privacy.title")}</h1></div>
-      <div class="prediction-header-spacer"></div>
-    `;
-    header
-      .querySelector(".btn-back")
-      ?.addEventListener("click", () => this.onBack());
-    return header;
-  }
-
   private render() {
     this.container.innerHTML = "";
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "leaderboard-wrapper";
-    wrapper.appendChild(this.renderHeader());
+    const wrapper = el("div", "screen reading");
+    wrapper.appendChild(screenHeader({ title: t("privacy.title"), onBack: () => this.onBack() }));
 
     const sections: { title: string; rows: string[] }[] = [
       {
@@ -71,10 +59,9 @@ export class PrivacyPolicyScreen {
     ];
 
     sections.forEach(({ title, rows }) => {
-      const section = document.createElement("div");
-      section.className = "scoring-rule-card";
+      const section = el("section", "reading__section");
 
-      const heading = document.createElement("h4");
+      const heading = document.createElement("h2");
       heading.textContent = title;
       section.appendChild(heading);
 
@@ -94,10 +81,9 @@ export class PrivacyPolicyScreen {
   }
 
   private renderDeleteSection(): HTMLElement {
-    const section = document.createElement("div");
-    section.className = "scoring-rule-card";
+    const section = el("section", "reading__section card danger-zone");
 
-    const heading = document.createElement("h4");
+    const heading = document.createElement("h2");
     heading.textContent = t("privacy.delete.title");
     section.appendChild(heading);
 
@@ -108,8 +94,8 @@ export class PrivacyPolicyScreen {
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn-secondary privacy-delete-btn";
-    btn.textContent = t("privacy.delete.title");
+    btn.className = "btn btn--secondary privacy-delete-btn";
+    btn.innerHTML = `${icon("alert")}<span>${t("privacy.delete.title")}</span>`;
     btn.addEventListener("click", () => {
       if (!confirm(t("privacy.delete.confirm"))) return;
       deleteMyAccount()
