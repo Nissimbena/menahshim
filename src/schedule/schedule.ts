@@ -1,3 +1,5 @@
+import type { VideoClip } from "../config/videos";
+
 export interface ScheduleGame {
   id: string;
   date: string; // DD/MM/YYYY
@@ -9,6 +11,8 @@ export interface ScheduleGame {
   result?: { home: number; away: number };
   /** Optional yes/no bonus question for this game, set by an admin. */
   bonusQuestion?: string;
+  /** Video clips added by an admin for this game. */
+  videos?: VideoClip[];
 }
 
 /**
