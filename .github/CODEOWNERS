@@ -1,5 +1,6 @@
-# Changes to deployment logic need the owner's review (enable "Require review from
-# Code Owners" in the branch protection rule for main).
+# Every change needs the owner's review. Enable "Require review from Code Owners"
+# in the branch protection of main and test.
+* @Nissimbena
 /.github/ @Nissimbena
 /scripts/ @Nissimbena
 /firebase.json @Nissimbena
