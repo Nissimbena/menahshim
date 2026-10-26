@@ -46,6 +46,7 @@ import {
 } from "./api/backend";
 import type { ScheduleGame } from "./schedule/schedule";
 import { registerBonusQuestions } from "./schedule/schedule";
+import { registerGameVideos } from "./config/videos";
 import type { Player } from "./prediction/types";
 import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
@@ -271,6 +272,7 @@ async function bootstrap() {
     console.error("Could not load games/players:", err);
   }
   registerBonusQuestions(games);
+  registerGameVideos(games);
 
   const goHome = () => navTo.home();
 

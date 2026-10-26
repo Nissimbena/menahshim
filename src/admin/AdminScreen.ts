@@ -7,12 +7,15 @@ import {
   resolveChallenge,
   cancelChallenge,
   setGameBonusQuestion,
+  addGameVideo,
+  deleteGameVideo,
   type LinkEventStat,
   type Challenge,
 } from "../api/backend";
 import type { ScheduleGame } from "../schedule/schedule";
 import { getBonusQuestion, setBonusQuestion } from "../schedule/schedule";
 import { TEAMS, HAPOEL_JERUSALEM_TEAM_ID, teamName } from "../schedule/teams";
+import { adminClipsForGame, setAdminClips, type VideoClip } from "../config/videos";
 import { t } from "../i18n/i18n";
 import { screenHeader } from "../ui/ScreenHeader";
 
@@ -42,6 +45,10 @@ export class AdminScreen {
   private bonusAnswer: boolean | null = null;
   private bonusQuestionDraft: string | null = null;
   private bonusStatus = "";
+  private videoTitleDraft = "";
+  private videoLinkDraft = "";
+  private videoDurationDraft = "";
+  private videoStatus = "";
   private statusMessage = "";
   private predictionCounts: Record<string, number> = {};
   private linkEventStats: LinkEventStat[] = [];
@@ -116,6 +123,7 @@ export class AdminScreen {
 
     if (this.gameId) {
       wrapper.appendChild(this.renderBonusQuestionSetup());
+      wrapper.appendChild(this.renderVideosSetup());
       wrapper.appendChild(this.renderStatsForm());
       wrapper.appendChild(this.renderTeamStatsForm());
       wrapper.appendChild(this.renderScoreForm());
@@ -438,6 +446,10 @@ export class AdminScreen {
       this.bonusAnswer = null;
       this.bonusQuestionDraft = null;
       this.bonusStatus = "";
+      this.videoTitleDraft = "";
+      this.videoLinkDraft = "";
+      this.videoDurationDraft = "";
+      this.videoStatus = "";
       this.statusMessage = "";
       this.render();
     });
@@ -532,6 +544,141 @@ export class AdminScreen {
       section.appendChild(status);
     }
     return section;
+  }
+
+  private renderVideosSetup(): HTMLElement {
+    const section = document.createElement("div");
+    section.className = "prediction-section";
+    const gameId = this.gameId!;
+
+    const title = document.createElement("p");
+    title.className = "counter-text";
+    title.textContent = t("admin.videos.title");
+    section.appendChild(title);
+
+    const hint = document.createElement("p");
+    hint.className = "counter-text";
+    hint.textContent = t("admin.videos.hint");
+    section.appendChild(hint);
+
+    for (const clip of adminClipsForGame(gameId)) {
+      const row = document.createElement("div");
+      row.className = "prediction-nav";
+      const name = document.createElement("p");
+      name.className = "counter-text";
+      name.dir = "auto";
+      name.textContent = clip.title;
+      row.appendChild(name);
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "btn-secondary";
+      del.textContent = t("admin.videos.remove");
+      del.addEventListener("click", async () => {
+        if (clip.id === undefined) return;
+        try {
+          await deleteGameVideo(gameId, clip.id);
+          this.updateGameVideos(
+            gameId,
+            adminClipsForGame(gameId).filter((c) => c.id !== clip.id),
+          );
+          this.videoStatus = t("admin.videos.removed");
+        } catch (err) {
+          console.error("Failed to remove video:", err);
+          this.videoStatus = t("admin.videos.failed");
+        }
+        this.render();
+      });
+      row.appendChild(del);
+      section.appendChild(row);
+    }
+
+    const makeInput = (
+      placeholder: string,
+      value: string,
+      maxLength: number,
+      onInput: (v: string) => void,
+      dir = "auto",
+    ) => {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "nickname-input";
+      input.maxLength = maxLength;
+      input.dir = dir;
+      input.placeholder = placeholder;
+      input.value = value;
+      input.addEventListener("input", () => onInput(input.value));
+      section.appendChild(input);
+    };
+    makeInput(t("admin.videos.titlePlaceholder"), this.videoTitleDraft, 200, (v) => {
+      this.videoTitleDraft = v;
+    });
+    makeInput(
+      t("admin.videos.linkPlaceholder"),
+      this.videoLinkDraft,
+      200,
+      (v) => {
+        this.videoLinkDraft = v;
+      },
+      "ltr",
+    );
+    makeInput(
+      t("admin.videos.durationPlaceholder"),
+      this.videoDurationDraft,
+      10,
+      (v) => {
+        this.videoDurationDraft = v;
+      },
+      "ltr",
+    );
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "btn-primary";
+    addBtn.textContent = t("admin.videos.add");
+    addBtn.addEventListener("click", async () => {
+      const clipTitle = this.videoTitleDraft.trim();
+      const link = this.videoLinkDraft.trim();
+      if (!clipTitle || !link) {
+        this.videoStatus = t("admin.videos.missing");
+        this.render();
+        return;
+      }
+      addBtn.disabled = true;
+      try {
+        const created = await addGameVideo(gameId, {
+          title: clipTitle,
+          youtube: link,
+          duration: this.videoDurationDraft.trim() || undefined,
+        });
+        this.updateGameVideos(gameId, [...adminClipsForGame(gameId), created]);
+        this.videoTitleDraft = "";
+        this.videoLinkDraft = "";
+        this.videoDurationDraft = "";
+        this.videoStatus = t("admin.videos.added");
+      } catch (err) {
+        console.error("Failed to add video:", err);
+        this.videoStatus = t("admin.videos.failed");
+      }
+      this.render();
+    });
+    section.appendChild(addBtn);
+
+    if (this.videoStatus) {
+      const status = document.createElement("p");
+      status.className = "counter-text";
+      status.textContent = this.videoStatus;
+      section.appendChild(status);
+    }
+    return section;
+  }
+
+  private updateGameVideos(
+    gameId: string,
+    clips: VideoClip[],
+  ): void {
+    setAdminClips(gameId, clips);
+    const game = this.games.find((g) => g.id === gameId);
+    if (game) game.videos = clips.length ? clips : undefined;
   }
 
   private renderStatsForm(): HTMLElement {

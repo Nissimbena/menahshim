@@ -17,6 +17,8 @@
  *   ],
  */
 export interface VideoClip {
+  /** Set for clips added from the admin panel (stored in the database). */
+  id?: number;
   title: string;
   /** YouTube link (watch, youtu.be or shorts) or bare video id. */
   youtube?: string;
@@ -25,7 +27,7 @@ export interface VideoClip {
   /** Poster image for `src` clips, under /public. */
   poster?: string;
   /** Optional length shown on the thumbnail, e.g. "1:24". */
-  duration?: string;
+  duration?: string | null;
 }
 
 export const GAME_VIDEOS: Record<string, VideoClip[]> = {
@@ -34,6 +36,27 @@ export const GAME_VIDEOS: Record<string, VideoClip[]> = {
   // ],
 };
 
+// Clips added by the admin from the admin panel (loaded with the games list).
+const adminClips = new Map<string, VideoClip[]>();
+
+export function registerGameVideos(
+  games: { id: string; videos?: VideoClip[] }[],
+): void {
+  adminClips.clear();
+  for (const g of games) {
+    if (g.videos?.length) adminClips.set(g.id, g.videos);
+  }
+}
+
+export function setAdminClips(gameId: string, clips: VideoClip[]): void {
+  if (clips.length) adminClips.set(gameId, clips);
+  else adminClips.delete(gameId);
+}
+
+export function adminClipsForGame(gameId: string): VideoClip[] {
+  return adminClips.get(gameId) ?? [];
+}
+
 export function clipsForGame(gameId: string): VideoClip[] {
-  return GAME_VIDEOS[gameId] ?? [];
+  return [...adminClipsForGame(gameId), ...(GAME_VIDEOS[gameId] ?? [])];
 }

@@ -525,6 +525,35 @@ export function setGameBonusQuestion(
   );
 }
 
+export interface GameVideo {
+  id: number;
+  title: string;
+  youtube: string;
+  duration?: string | null;
+}
+
+// Admin-only - attaches a YouTube clip to a game.
+export function addGameVideo(
+  gameId: string,
+  video: { title: string; youtube: string; duration?: string },
+): Promise<GameVideo> {
+  return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/videos`, {
+    method: "POST",
+    body: JSON.stringify(video),
+  });
+}
+
+// Admin-only - removes a clip from a game.
+export function deleteGameVideo(
+  gameId: string,
+  videoId: number,
+): Promise<{ ok: boolean }> {
+  return authedFetch(
+    `/admin/games/${encodeURIComponent(gameId)}/videos/${videoId}`,
+    { method: "DELETE" },
+  );
+}
+
 // Authed - cancelled challenges involving the signed-in user that they
 // haven't been shown a notice for yet - checked once per app load.
 export function getUnseenCancellations(): Promise<Challenge[]> {
