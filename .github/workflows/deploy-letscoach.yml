@@ -1,10 +1,14 @@
-name: Deploy to letscoach.net/hapoel-jerusalem (manual, owner-approved)
+name: Deploy PRODUCTION (letscoach.net/hapoel-jerusalem) from main
 
-# Manual only. The job uses the "letscoach-production" environment, which must be
-# configured in GitHub with: required reviewer = the repo owner, deployment branch
-# = main only, and the secret LETSCOACH_DEPLOY_SA_KEY stored as an ENVIRONMENT
-# secret. Nobody else can run it to completion or read the key.
+# Production only ever receives what was already tested on the `test` branch:
+# main is protected (PR + owner approval) and this workflow refuses to deploy
+# unless main is byte-for-byte identical to test. It uses the
+# "letscoach-production" environment, restricted to the main branch, which
+# holds the secret LETSCOACH_DEPLOY_SA_KEY (environment secret).
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -17,6 +21,15 @@ jobs:
     environment: letscoach-production
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require that main equals the tested test branch
+        run: |
+          git fetch origin test
+          if ! git diff --quiet origin/test HEAD; then
+            echo "::error::main differs from test. Promote with a pull request from test to main - nothing goes to production without passing through test."
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 20
