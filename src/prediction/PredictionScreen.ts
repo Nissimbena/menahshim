@@ -55,7 +55,6 @@ import {
   CATEGORY_ICON,
   TEAM_STAT_ICON,
   resultHeader,
-  crowdCompare,
 } from "./recap";
 import { el, esc } from "../ui/dom";
 import { logoMarkSVG } from "../brand/Logo";
@@ -884,7 +883,7 @@ export class PredictionScreen {
     if (game?.result || this.actualResult) {
       // Finished game = a game page. One masthead, then sections in a fixed
       // order, each with the same h2 level and listed in a jump bar:
-      //   my prediction -> team stats -> videos -> everyone
+      //   my prediction -> team stats -> videos
       heading.remove();
       section.classList.add("game-page");
       section.appendChild(resultHeader(game!, this.actualResult));
@@ -921,17 +920,6 @@ export class PredictionScreen {
           id: "gp-videos",
           label: t("videos.title"),
           build: () => videoClips(clipsForGame(game!.id)),
-        },
-        {
-          id: "gp-crowd",
-          label: t("gamePage.crowd"),
-          build: () => {
-            const box = el("div", "game-page__body");
-            if (this.actualResult && this.aggregate && this.aggregate.totalPredictions > 0) {
-              box.appendChild(crowdCompare(this.aggregate, this.actualResult, game, (id) => this.playerById(id)));
-            } else this.buildAggregateContent(box);
-            return box.childElementCount ? box : null;
-          },
         },
       ];
 
