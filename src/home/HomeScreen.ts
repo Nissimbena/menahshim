@@ -26,6 +26,8 @@ import { el, esc, shortDate, ltr, opponentOf } from "../ui/dom";
 import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
+import { clipsForGame } from "../config/videos";
+import { videoClips } from "../ui/VideoClips";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -251,6 +253,8 @@ export class HomeScreen {
     // One 12-column grid: my season across the top, schedule (8) beside the
     // leaders (4), then the VIP tournament as a full-width photo banner.
     const grid = el("div", "home-grid");
+    const last = this.renderLastGame();
+    if (last) grid.appendChild(last);
     grid.appendChild(this.currentUser ? this.renderPersonalStrip() : this.renderSignInCard());
     grid.appendChild(this.renderSchedule());
     grid.appendChild(this.renderLeadersPreview());
@@ -420,6 +424,61 @@ export class HomeScreen {
     }
 
     return hero;
+  }
+
+  /**
+   * The most recent finished game stays on the home page: final score with
+   * both crests, my points for it, a way into the full breakdown, and its
+   * video clips (src/config/videos.ts).
+   */
+  private renderLastGame(): HTMLElement | null {
+    const finished = this.finishedGames;
+    const game = finished[finished.length - 1];
+    if (!game?.result) return null;
+    const home = TEAMS[game.homeTeamId];
+    const away = TEAMS[game.awayTeamId];
+    const r = game.result;
+    const usHome = game.homeTeamId === "jerusalem";
+    const us = usHome ? r.home : r.away;
+    const them = usHome ? r.away : r.home;
+    const won = us > them;
+    const mine = this.myPredictions.get(game.id);
+    const pts = mine?.score;
+
+    const section = el("section", "card last-game");
+    section.setAttribute("aria-labelledby", "last-game-title");
+    const side = (tm: typeof home, score: number, winner: boolean) => `
+      <div class="last-game__team${winner ? " is-winner" : ""}">
+        ${tm ? `<span class="logo-disc logo-disc--lg"><img src="${tm.logo}" alt="" /></span>` : ""}
+        <span class="last-game__name" dir="auto">${esc(tm ? teamName(tm) : "")}</span>
+        <span class="last-game__score num--display">${score}</span>
+      </div>`;
+    section.innerHTML = `
+      <div class="last-game__result">
+        <header class="last-game__head">
+          <h2 id="last-game-title">${t("home.lastGame.title")}</h2>
+          <span class="last-game__badge ${won ? "is-win" : "is-loss"}">${won ? t("home.lastGame.win") : t("home.lastGame.loss")}</span>
+        </header>
+        <p class="last-game__meta" dir="auto">${esc(tDynamic(game.competition))} · <span class="num">${shortDate(game.date)}</span></p>
+        <div class="last-game__teams">
+          ${side(home, r.home, r.home > r.away)}
+          ${side(away, r.away, r.away > r.home)}
+        </div>
+        ${
+          mine
+            ? `<p class="last-game__mine${pts ? " is-earned" : ""}"><span class="num--display">${pts != null ? `+${pts}` : "–"}</span><span>${t("home.lastGame.myPoints")}</span></p>`
+            : `<p class="last-game__mine is-none">${t("home.lastGame.noPrediction")}</p>`
+        }
+      </div>
+      <div class="last-game__media">
+        <h3 class="last-game__media-title">${icon("play", { size: "sm" })}<span>${t("videos.title")}</span></h3>
+      </div>`;
+    const cta = el("button", "btn btn--secondary last-game__cta", `<span>${t("home.lastGame.open")}</span>${icon("arrowForward", { size: "sm" })}`);
+    cta.type = "button";
+    cta.addEventListener("click", () => this.actions.onEnterGame(game));
+    section.querySelector(".last-game__result")!.appendChild(cta);
+    section.querySelector(".last-game__media")!.appendChild(videoClips(clipsForGame(game.id)));
+    return section;
   }
 
   private countdownUnit(key: string, value: string, label: string): string {

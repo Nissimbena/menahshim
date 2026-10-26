@@ -116,6 +116,7 @@ export class AppNav {
     inner.appendChild(nav);
 
     const end = el("div", "topbar__end");
+    end.appendChild(this.langSwitch());
     if (this.user) {
       const chip = el(
         "button",
@@ -136,6 +137,21 @@ export class AppNav {
     inner.appendChild(end);
 
     this.topbar.replaceChildren(inner);
+  }
+
+  /** Flag + short label for the *other* language - one tap switches. */
+  private langSwitch(): HTMLElement {
+    const other: Lang = getLang() === "he" ? "en" : "he";
+    const btn = el(
+      "button",
+      "lang-switch",
+      `${flagSVG(other)}<span class="lang-switch__label">${other === "en" ? "EN" : "עב"}</span>`,
+    );
+    btn.type = "button";
+    btn.lang = other;
+    btn.setAttribute("aria-label", t(`lang.${other}`));
+    btn.addEventListener("click", () => setLang(other));
+    return btn;
   }
 
   private renderTabbar() {
@@ -297,4 +313,33 @@ export class AppNav {
     });
     return list;
   }
+}
+
+/** Small round flags, drawn inline (emoji flags don't render on Windows). */
+function flagSVG(lang: Lang): string {
+  if (lang === "he") {
+    return `<svg class="flag" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="12" fill="var(--flag-white)"/>
+      <rect x="0" y="4.2" width="24" height="2.6" fill="var(--flag-il-blue)"/>
+      <rect x="0" y="17.2" width="24" height="2.6" fill="var(--flag-il-blue)"/>
+      <path d="M12 8.2 15.3 13.9H8.7Z M12 15.8 8.7 10.1h6.6Z" fill="none" stroke="var(--flag-il-blue)" stroke-width="1.1" stroke-linejoin="round"/>
+    </svg>`;
+  }
+  const stripes = Array.from({ length: 7 }, (_, i) =>
+    `<rect x="0" y="${(i * 24) / 6.5}" width="24" height="${24 / 13}" fill="var(--flag-us-red)"/>`,
+  ).join("");
+  return `<svg class="flag" viewBox="0 0 24 24" aria-hidden="true">
+    <clipPath id="flag-us-clip"><circle cx="12" cy="12" r="12"/></clipPath>
+    <g clip-path="url(#flag-us-clip)">
+      <rect width="24" height="24" fill="var(--flag-white)"/>
+      ${stripes}
+      <rect width="11" height="12.9" fill="var(--flag-us-blue)"/>
+      <g fill="var(--flag-white)">
+        <circle cx="2.5" cy="2.6" r=".7"/><circle cx="5.5" cy="2.6" r=".7"/><circle cx="8.5" cy="2.6" r=".7"/>
+        <circle cx="4" cy="5.2" r=".7"/><circle cx="7" cy="5.2" r=".7"/>
+        <circle cx="2.5" cy="7.8" r=".7"/><circle cx="5.5" cy="7.8" r=".7"/><circle cx="8.5" cy="7.8" r=".7"/>
+        <circle cx="4" cy="10.4" r=".7"/><circle cx="7" cy="10.4" r=".7"/>
+      </g>
+    </g>
+  </svg>`;
 }

@@ -1,4 +1,6 @@
 import type { Player, GamePrediction } from "./types";
+import { clipsForGame } from "../config/videos";
+import { videoClips } from "../ui/VideoClips";
 import { EMPTY_PREDICTION } from "./types";
 import type { ScheduleGame, BonusQuestion } from "../schedule/schedule";
 import { BONUS_QUESTIONS } from "../schedule/schedule";
@@ -885,6 +887,16 @@ export class PredictionScreen {
       this.buildResultBreakdownTable(section);
     } else if (this.hasOwnPrediction) {
       this.buildSummaryContent(section);
+    }
+    // Video clips from this game, right after the result and my prediction
+    if (this.currentGame?.result) {
+      const clips = clipsForGame(this.currentGame.id);
+      if (clips.length) {
+        const box = el("section", "card game-videos");
+        box.innerHTML = `<h2 class="game-videos__title">${t("videos.title")}</h2>`;
+        box.appendChild(videoClips(clips));
+        section.appendChild(box);
+      }
     }
     if (this.actualResult && this.aggregate && this.aggregate.totalPredictions > 0) {
       section.appendChild(crowdCompare(this.aggregate, this.actualResult, this.currentGame, (id) => this.playerById(id)));

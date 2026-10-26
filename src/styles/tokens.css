@@ -119,6 +119,10 @@
   --focus: #ffffff;
   --focus-on-ink: #ffffff;
   --whatsapp: #1fa855;
+  --flag-white: #ffffff;
+  --flag-il-blue: #0038b8;
+  --flag-us-red: #b22234;
+  --flag-us-blue: #3c3b6e;
 
   /* ---- Spacing: 4px grid ---- */
   --s-1: 4px;

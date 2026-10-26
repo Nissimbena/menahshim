@@ -22,6 +22,13 @@ UI-only redesign. No changes to `src/api/`, `src/firebase/`, `firestore.rules`,
 - **Accessibility:** axe WCAG 2.1 AA - 0 violations on the main screens (he/en,
   desktop/phone); skip link, main landmark, focus management, AA contrast.
 
+## Adding game videos
+Edit `src/config/videos.ts` - add the game's id and its clips (a YouTube link,
+or an mp4 in `public/videos/`). The latest finished game shows its clips on
+the home page ("Last game"); every finished game shows them on its own page.
+YouTube clips load only when tapped (privacy-enhanced embed). Commit + push
+and the site updates on the next deploy.
+
 ## Before going live
 1. **Adobe Fonts:** add the production domain to kit `pdv5cou`, or Peshka
    won't load (the layout falls back to Karantina / Barlow Condensed).
