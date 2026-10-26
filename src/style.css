@@ -5260,8 +5260,7 @@ h1[tabindex="-1"]:focus {
 }
 
 .game-page__jump {
-  position: sticky;
-  inset-block-start: calc(var(--topbar-h) + var(--s-2));
+  position: relative;
   z-index: 5;
   display: flex;
   gap: var(--s-2);
@@ -5278,12 +5277,6 @@ h1[tabindex="-1"]:focus {
 
 .game-page__jump::-webkit-scrollbar {
   display: none;
-}
-
-@media (max-width: 767px) {
-  .game-page__jump {
-    inset-block-start: var(--s-2);
-  }
 }
 
 .game-page__jump-link {
