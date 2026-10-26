@@ -36,14 +36,19 @@ jobs:
       - run: npm ci
       - run: npx tsc
       - run: npx vite build --base=/hapoel-jerusalem/ --outDir dist-subpath
-      - id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: "${{ secrets.LETSCOACH_DEPLOY_SA_KEY }}"
-          token_format: access_token
+      - name: Get a Google access token straight from the service-account key
+        env:
+          SA_KEY: ${{ secrets.LETSCOACH_DEPLOY_SA_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$SA_KEY" > "$RUNNER_TEMP/sa.json"
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json"
+          TOKEN="$(gcloud auth print-access-token)"
+          echo "::add-mask::$TOKEN"
+          echo "ACCESS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/sa.json"
       - name: Deploy only /hapoel-jerusalem/ (rest of letscoach.net untouched)
         env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           SITE: letscoachfront
           SUBPATH: hapoel-jerusalem
           DIST_DIR: dist-subpath
