@@ -5,7 +5,7 @@ import { icon } from "./icons";
 
 /**
  * One standings table for every ranking in the app (overall, per game,
- * leagues, VIP tournament, home preview): a column header, a fixed-width
+ * leagues, home preview): a column header, a fixed-width
  * rank column in scoreboard digits, the leader marked in gold, and the
  * signed-in user's row highlighted - it sticks to the bottom of the viewport
  * while it's off-screen on the full tables.

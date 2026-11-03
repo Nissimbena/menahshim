@@ -15,7 +15,6 @@ import { initLang, t } from "./i18n/i18n";
 import { HomeScreen } from "./home/HomeScreen";
 import { PredictionScreen } from "./prediction/PredictionScreen";
 import { LeaderboardScreen } from "./leaderboard/LeaderboardScreen";
-import { TournamentScreen } from "./tournament/TournamentScreen";
 import { AdminScreen } from "./admin/AdminScreen";
 import { ScoringInfoScreen } from "./scoring/ScoringInfoScreen";
 import { TimeKillerScreen } from "./media/TimeKillerScreen";
@@ -190,7 +189,6 @@ const navTo: Record<
   | "home"
   | "leaderboard"
   | "leagues"
-  | "tournament"
   | "scoring"
   | "timeKiller"
   | "sports"
@@ -203,7 +201,6 @@ const navTo: Record<
   home: () => {},
   leaderboard: () => {},
   leagues: () => {},
-  tournament: () => {},
   scoring: () => {},
   timeKiller: () => {},
   sports: () => {},
@@ -285,8 +282,6 @@ async function bootstrap() {
 
   const leaderboardScreen = new LeaderboardScreen(root("leaderboard-root"), goHome, games);
 
-  const tournamentScreen = new TournamentScreen(root("tournament-root"), goHome);
-
   createLeagueModal = new CreateLeagueModal(() => refreshMyLeagues());
   const joinLeaguePrompt = new JoinLeaguePrompt();
   const createChallengeModal = new CreateChallengeModal();
@@ -327,7 +322,6 @@ async function bootstrap() {
     onOpenLeague: (league) =>
       open(() => leaderboardScreen.showLeague(league.id), { tab: "leagues", reshowOnLang: true }),
     onCreateLeague: () => createLeagueModal?.show(),
-    onOpenTournament: () => navTo.tournament(),
     onOpenMyChallenges: () => navTo.myChallenges(),
     onSignIn: signIn,
   });
@@ -336,7 +330,6 @@ async function bootstrap() {
   const homeScreen = new HomeScreen(homeRootEl, games, {
     onEnterGame: (game) => open(() => predictionScreen.show(game), { tab: null, flow: true }),
     onOpenLeaderboard: () => navTo.leaderboard(),
-    onOpenTournament: () => navTo.tournament(),
     onOpenLeagues: () => navTo.leagues(),
     onInstallClick: () => installPrompt.showManual(),
     onOpenPrivacy: () => navTo.privacy(),
@@ -353,7 +346,6 @@ async function bootstrap() {
     homeScreen,
     predictionScreen,
     leaderboardScreen,
-    tournamentScreen,
     adminScreen,
     scoringInfoScreen,
     timeKillerScreen,
@@ -371,7 +363,6 @@ async function bootstrap() {
     home: () => open(() => homeScreen.show(), { tab: "home" }),
     leaderboard: () => open(() => leaderboardScreen.show(), { tab: "leaderboard", reshowOnLang: true }),
     leagues: () => open(() => leaguesHub.show(), { tab: "leagues" }),
-    tournament: () => open(() => tournamentScreen.show(), { tab: "leagues", reshowOnLang: true }),
     scoring: () => open(() => scoringInfoScreen.show(), { tab: "more", reshowOnLang: true }),
     timeKiller: () => open(() => timeKillerScreen.show(), { tab: "more", reshowOnLang: true }),
     sports: () => open(() => sportsHomeScreen.show(), { tab: "more" }),

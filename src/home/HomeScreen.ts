@@ -31,7 +31,6 @@ import { clipsForGame } from "../config/videos";
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
   onOpenLeaderboard: () => void;
-  onOpenTournament: () => void;
   onOpenLeagues: () => void;
   onInstallClick: () => void;
   onOpenPrivacy: () => void;
@@ -73,11 +72,11 @@ const LEADERBOARD_TTL_MS = 60 * 1000;
 
 /**
  * Home: the next game as a hero with one clear action, a personal strip,
- * the VIP tournament ticket, the season schedule as compact rows, a
+ * the season schedule as compact rows, a
  * leaderboard preview and a quiet footer.
  *
- * Mobile is a single column in that order; from 1024px the personal strip,
- * VIP ticket and leaderboard preview move into a 340px sidebar.
+ * Mobile is a single column in that order; from 1024px the personal strip
+ * and leaderboard preview move into a 340px sidebar.
  */
 export class HomeScreen {
   private container: HTMLElement;
@@ -250,14 +249,13 @@ export class HomeScreen {
     }
 
     // One 12-column grid: my season across the top, schedule (8) beside the
-    // leaders (4), then the VIP tournament as a full-width photo banner.
+    // leaders (4).
     const grid = el("div", "home-grid");
     const last = this.renderLastGame();
     if (last) grid.appendChild(last);
     grid.appendChild(this.currentUser ? this.renderPersonalStrip() : this.renderSignInCard());
     grid.appendChild(this.renderSchedule());
     grid.appendChild(this.renderLeadersPreview());
-    grid.appendChild(this.renderTournamentTicket());
     page.appendChild(grid);
 
     this.container.appendChild(this.renderTicker());
@@ -555,26 +553,6 @@ export class HomeScreen {
     btn.addEventListener("click", () => this.actions.onSignIn());
     card.appendChild(btn);
     return card;
-  }
-
-  // ---- 3. VIP tournament ticket ----
-  private renderTournamentTicket(): HTMLElement {
-    const ticket = el("section", "ticket");
-    const desc = this.currentUser ? t("home.tournamentDescRules") : t("home.tournamentDesc");
-    ticket.innerHTML = `
-      <div class="ticket__body">
-        <span class="tag tag--gold">${icon("ticket")}${t("home.tournamentBadge")}</span>
-        <h2 class="t-h3 ticket__title">${t("home.tournamentTitle")}</h2>
-        <p class="ticket__desc c-2 t-small">${desc}</p>
-      </div>
-      <div class="ticket__stub">
-        <p class="ticket__prize">${icon("trophy", { size: "sm" })}<span>${t("home.tournamentPrize")}</span></p>
-      </div>`;
-    const btn = el("button", "btn btn--secondary btn--block btn--sm ticket__btn", `<span>${t("home.tournamentBtn")}</span>${icon("arrowForward", { size: "sm" })}`);
-    btn.type = "button";
-    btn.addEventListener("click", () => this.actions.onOpenTournament());
-    ticket.querySelector(".ticket__stub")!.appendChild(btn);
-    return ticket;
   }
 
   // ---- 4. Season schedule ----

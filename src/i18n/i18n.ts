@@ -29,13 +29,6 @@ const translations: Record<Lang, Dict> = {
     "home.myScore": "הניקוד שלי",
     "home.about": "מי אנחנו",
     "home.privacy": "מדיניות פרטיות",
-    "home.tournamentBadge": "טורניר מיוחד",
-    "home.tournamentTitle": "טורניר ה-VIP",
-    "home.tournamentDescRules": "6 המשחקים הקרובים בלבד - אותם חוקי ניקוד",
-    "home.tournamentDesc": "6 המשחקים הקרובים בלבד",
-    "home.tournamentPrize":
-      "הפרס לזוכה: זוג כרטיסי VIP למשחק מול הפועל אילת",
-    "home.tournamentBtn": "לטבלת הטורניר",
     "home.schedule.title": 'לו"ז העונה',
     "home.tab.upcoming": "משחקים קרובים ({n})",
     "home.tab.finished": "משחקים שהסתיימו ({n})",
@@ -151,15 +144,6 @@ const translations: Record<Lang, Dict> = {
     "leaderboard.userPrediction.none": "לא נמצא ניחוש של המשתמש הזה למשחק הזה.",
     "leaderboard.userPrediction.error": "שגיאה בטעינת הניחוש.",
 
-    "tournament.title": "טורניר ה-VIP",
-    "tournament.badge": "טורניר מיוחד",
-    "tournament.desc":
-      "הניקוד נספר רק על פני 6 המשחקים הבאים, לפי אותם חוקי ניקוד הרגילים",
-    "tournament.prize": "הפרס לזוכה: {prize}",
-    "tournament.loading": "טוען טבלת טורניר…",
-    "tournament.error": "שגיאה בטעינת טבלת הטורניר.",
-    "tournament.empty":
-      "עדיין אין תוצאות בטורניר. חזרו אחרי המשחק הראשון מתוך השישה!",
 
     "privacy.title": "מדיניות פרטיות",
     "privacy.s1.title": "אילו נתונים אנחנו אוספים",
@@ -458,7 +442,6 @@ const translations: Record<Lang, Dict> = {
     "leaguesHub.empty": "עדיין לא הצטרפתם לאף ליגה. צרו ליגה ושלחו לחברים את הקישור.",
     "leaguesHub.openTable": "לטבלת הליגה",
     "leaguesHub.competitions": "תחרויות מיוחדות",
-    "tournament.tableTitle": "טבלת הטורניר",
     "prediction.progress": "שלב {n} מתוך {total}",
     "prediction.squadNote": "שחקני הסגל הרשמי למשחק מסומנים",
     "prediction.inSquad": "בסגל",
@@ -573,13 +556,6 @@ const translations: Record<Lang, Dict> = {
     "home.myScore": "My score",
     "home.about": "About us",
     "home.privacy": "Privacy policy",
-    "home.tournamentBadge": "Special tournament",
-    "home.tournamentTitle": "The VIP Tournament",
-    "home.tournamentDescRules": "Next 6 games only - same scoring rules",
-    "home.tournamentDesc": "Next 6 games only",
-    "home.tournamentPrize":
-      "Prize for the winner: a pair of VIP tickets vs. Hapoel Eilat",
-    "home.tournamentBtn": "Tournament table",
     "home.schedule.title": "Season Schedule",
     "home.tab.upcoming": "Upcoming games ({n})",
     "home.tab.finished": "Finished games ({n})",
@@ -698,15 +674,6 @@ const translations: Record<Lang, Dict> = {
     "leaderboard.userPrediction.none": "This user didn't submit a prediction for this game.",
     "leaderboard.userPrediction.error": "Failed to load the prediction.",
 
-    "tournament.title": "The VIP Tournament",
-    "tournament.badge": "Special tournament",
-    "tournament.desc":
-      "Scoring counts only across these next 6 games, using the usual scoring rules",
-    "tournament.prize": "Prize for the winner: {prize}",
-    "tournament.loading": "Loading tournament table…",
-    "tournament.error": "Failed to load the tournament table.",
-    "tournament.empty":
-      "No tournament results yet. Check back after the first of the six games!",
 
     "privacy.title": "Privacy Policy",
     "privacy.s1.title": "What data we collect",
@@ -1024,7 +991,6 @@ const translations: Record<Lang, Dict> = {
     "leaguesHub.empty": "You haven't joined a league yet. Create one and send your friends the link.",
     "leaguesHub.openTable": "League table",
     "leaguesHub.competitions": "Special competitions",
-    "tournament.tableTitle": "Tournament table",
     "prediction.progress": "Step {n} of {total}",
     "prediction.squadNote": "Players in the official game squad are marked",
     "prediction.inSquad": "Squad",
@@ -1207,8 +1173,6 @@ const DYNAMIC_TRANSLATIONS: Dict = {
     "Will Roi Huber make at least one three-pointer?",
   "האם נקלע מעל 72% מהקו?":
     "Will the team shoot over 72% from the free-throw line?",
-  "זוג כרטיסי VIP למשחק הפועל ירושלים מול הפועל אילת":
-    "A pair of VIP tickets to the Hapoel Jerusalem vs. Hapoel Eilat game",
   "זוג כרטיסים לפסטיבל הקומדיה הישראלי":
     "A pair of tickets to the Israeli Comedy Festival",
 };
