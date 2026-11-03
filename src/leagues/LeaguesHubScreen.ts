@@ -8,7 +8,7 @@ import { el, esc } from "../ui/dom";
 
 /**
  * "Leagues & challenges" tab: the user's private leagues (each opens its
- * table), creating a league, the VIP tournament and - when the feature is
+ * table), creating a league and - when the feature is
  * on - "my challenges". Pure navigation; every action reuses an existing
  * screen or modal.
  */
@@ -19,7 +19,6 @@ export class LeaguesHubScreen {
     onBack: () => void;
     onOpenLeague: (league: LeagueInfo) => void;
     onCreateLeague: () => void;
-    onOpenTournament: () => void;
     onOpenMyChallenges: () => void;
     onSignIn: () => void;
   };
@@ -104,21 +103,10 @@ export class LeaguesHubScreen {
     }
     page.appendChild(mine);
 
-    // Competitions
+    // Competitions (only shown when there is something to list)
     const comps = el("section", "section leagues-hub__section");
     comps.innerHTML = `<div class="section-head"><h2>${t("leaguesHub.competitions")}</h2></div>`;
     const list = el("div", "list");
-    const vip = el(
-      "button",
-      "list-row",
-      `<span class="list-row__icon list-row__icon--gold">${icon("ticket")}</span>
-       <span class="list-row__main"><span class="list-row__title">${t("home.tournamentTitle")}</span>
-       <span class="list-row__meta">${t("home.tournamentDesc")}</span></span>
-       ${icon("chevronForward", { size: "sm", className: "c-3" })}`,
-    );
-    vip.type = "button";
-    vip.addEventListener("click", () => this.actions.onOpenTournament());
-    list.appendChild(vip);
 
     if (CHALLENGE_FEATURE_ENABLED && auth.currentUser) {
       const ch = el(
@@ -133,7 +121,7 @@ export class LeaguesHubScreen {
       list.appendChild(ch);
     }
     comps.appendChild(list);
-    page.appendChild(comps);
+    if (list.childElementCount) page.appendChild(comps);
 
     this.container.appendChild(page);
   }

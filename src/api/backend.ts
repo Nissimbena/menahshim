@@ -370,17 +370,6 @@ export function getLeagueLeaderboard(
   return authedFetch(`/leagues/${encodeURIComponent(leagueId)}/leaderboard`);
 }
 
-/** Public endpoint - the special "טורניר ה-VIP" tournament leaderboard (fixed set of 6 games). */
-export function getTournamentLeaderboard(): Promise<{
-  overall: LeaderboardRow[];
-}> {
-  return fetch(`${API_BASE_URL}/tournaments/kipa-aduma-100`).then((res) => {
-    if (!res.ok)
-      throw new Error(`API /tournaments/kipa-aduma-100 failed (${res.status})`);
-    return res.json();
-  });
-}
-
 export function submitGameResult(payload: {
   gameId: string;
   actualForeignPlayerIds: string[];

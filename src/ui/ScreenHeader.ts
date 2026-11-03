@@ -11,7 +11,7 @@ export function screenHeader(opts: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
-  /** Seed for a match-photo masthead (leaderboards, tournament, leagues). */
+  /** Seed for a match-photo masthead (leaderboards, leagues). */
   photo?: string;
 }): HTMLElement {
   const header = el("header", `screen-header${opts.photo ? " screen-header--photo" : ""}`);

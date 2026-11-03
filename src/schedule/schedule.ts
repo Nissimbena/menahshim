@@ -76,28 +76,3 @@ export function getBonusQuestion(gameId: string): BonusQuestion | undefined {
     : undefined;
 }
 
-/**
- * Special one-off tournament scoring only the next 6 games (same scoring
- * rules as always) - winner gets a pair of VIP tickets to the Eilat game.
- */
-export const KIPA_ADUMA_100_GAME_IDS = [
-  "26647",
-  "ec-3",
-  "26653",
-  "ec-4",
-  "26662",
-  "ec-5",
-];
-
-/** Opponent team ids for those 6 games, in schedule order - used to show logos on the tournament screen. */
-export const KIPA_ADUMA_100_OPPONENT_IDS = [
-  "holon",
-  "burgos",
-  "beersheva",
-  "riga",
-  "telaviv-hapoel",
-  "lemans",
-];
-
-export const KIPA_ADUMA_100_PRIZE =
-  "זוג כרטיסי VIP למשחק הפועל ירושלים מול הפועל אילת";
