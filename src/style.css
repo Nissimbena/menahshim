@@ -1677,14 +1677,11 @@ button.standings__row:hover {
   font-size: 11px;
 }
 
-.pcard__squad {
-  color: var(--success);
-  font-weight: 700;
-}
-
-/* Not in tonight's squad: same card, the squad tag simply isn't there */
+/* Not in tonight's squad: grayed out and not selectable */
 .pcard.is-out {
-  opacity: 1;
+  opacity: 0.4;
+  filter: grayscale(1);
+  pointer-events: none;
 }
 
 /* Selected: red outline, red number, the name bar turns red */
@@ -1707,8 +1704,7 @@ button.standings__row:hover {
 }
 
 .pcard.is-selected .pname__first,
-.pcard.is-selected .pcard__meta,
-.pcard.is-selected .pcard__squad {
+.pcard.is-selected .pcard__meta {
   color: var(--on-red-2);
 }
 
@@ -4145,20 +4141,6 @@ button.calendar__day:hover {
   font-size: 11px;
 }
 
-.pcard__squad {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.pcard__squad::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: var(--r-full);
-  background: var(--success);
-}
-
 .pcard:hover .pcard__media .pmedia img {
   transform: translateY(4%) scale(1.07);
 }
@@ -4181,8 +4163,7 @@ button.calendar__day:hover {
 }
 
 .pcard.is-selected .pname__first,
-.pcard.is-selected .pcard__meta,
-.pcard.is-selected .pcard__squad {
+.pcard.is-selected .pcard__meta {
   color: var(--text-2);
 }
 

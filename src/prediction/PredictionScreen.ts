@@ -565,6 +565,7 @@ export class PredictionScreen {
     if (this.players.length === 0) {
       section.appendChild(skeleton("cards", 2));
     } else {
+      this.ensureSquadPick(category);
       const index = this.carouselIndex[category] % this.players.length;
       const player = this.players[index];
       if (this.prediction[config.playerKey] !== player.id) {
@@ -629,6 +630,21 @@ export class PredictionScreen {
     return [section, nav];
   }
 
+  /** True/false once tonight's squad is known and usable, otherwise null (no restriction). */
+  private inSquad(player: Player): boolean | null {
+    const squad = this.squadPlayerIds;
+    if (!squad || !this.players.some((p) => squad.has(p.id))) return null;
+    return squad.has(player.id);
+  }
+
+  /** A player outside tonight's squad can't be picked, so move the pick to one who is in it. */
+  private ensureSquadPick(category: CarouselKey) {
+    const current = this.players[this.carouselIndex[category] % this.players.length];
+    if (this.inSquad(current) !== false) return;
+    const next = this.players.findIndex((p) => this.inSquad(p));
+    if (next >= 0) this.carouselIndex[category] = next;
+  }
+
   /** Roster cards (photo on a Hapoel-red field, name, shirt number) - pick one. */
   private renderPlayerGrid(category: CarouselKey): HTMLElement {
     const grid = el("div", "roster-grid");
@@ -638,12 +654,13 @@ export class PredictionScreen {
 
     this.players.forEach((player, index) => {
       const isSelected = index === selected;
-      const inSquad = this.squadPlayerIds?.has(player.id) ?? null;
+      const inSquad = this.inSquad(player);
       const card = el(
         "button",
         "pcard" + (isSelected ? " is-selected" : "") + (inSquad === false ? " is-out" : ""),
       );
       card.type = "button";
+      card.disabled = inSquad === false;
       card.setAttribute("role", "radio");
       card.setAttribute("aria-checked", String(isSelected));
       card.setAttribute("aria-label", `${player.jerseyNumber} ${tDynamic(player.name)}`);
@@ -657,7 +674,6 @@ export class PredictionScreen {
           ${playerNameHTML(player)}
           <span class="pcard__meta">
             <span class="pcard__pos">${esc(tDynamic(player.position))}</span>
-            ${inSquad ? `<span class="pcard__squad">${t("prediction.inSquad")}</span>` : ""}
           </span>
         </span>
       `;
