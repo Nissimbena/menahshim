@@ -5661,3 +5661,99 @@ h1[tabindex="-1"]:focus {
 .game-page .clips:not(.clips--many) {
   max-width: 860px;
 }
+
+/* ------------------------------------------------------------------
+   Israeli league: registered vs. not registered for the game.
+   Registered players come first; the ones left out sit in their own
+   group below, greyed out but still pickable.
+   ------------------------------------------------------------------ */
+.squad-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  margin-block-end: var(--s-4);
+}
+
+.squad-group .roster-grid {
+  margin-block-end: 0;
+}
+
+.squad-group__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-block-end: var(--s-3);
+  padding-block-end: var(--s-2);
+  border-block-end: 1px solid var(--line);
+}
+
+.squad-group__title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.squad-group__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding-inline: 7px;
+  border-radius: var(--r-full);
+  background: var(--success-tint);
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.squad-group__hint {
+  margin-inline-start: auto;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.squad-group--out .squad-group__title {
+  color: var(--text-2);
+}
+
+.squad-group--out .squad-group__count {
+  background: var(--glass-pill);
+  color: var(--text-2);
+}
+
+/* Not registered: photo goes grey and the card steps back */
+.pcard.is-out .pcard__media .pmedia img {
+  filter: grayscale(1) brightness(0.75);
+}
+
+.pcard.is-out .pcard__media,
+.pcard.is-out .pcard__body {
+  opacity: 0.55;
+}
+
+.pcard.is-out:hover .pcard__media,
+.pcard.is-out:hover .pcard__body,
+.pcard.is-out.is-selected .pcard__media,
+.pcard.is-out.is-selected .pcard__body {
+  opacity: 0.85;
+}
+
+.pcard__squad--out {
+  color: var(--text-3);
+}
+
+.pcard__squad--out::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--text-3);
+}
+
+.amount-card__warn {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-block-start: var(--s-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+}
