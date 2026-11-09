@@ -78,6 +78,8 @@ const translations: Record<Lang, Dict> = {
     "prediction.category.assist.amount": "אסיסטים",
     "prediction.loadingMyPrediction": "טוען את הניחוש שלכם…",
     "prediction.header.title": "נחשו את המשחק",
+    "prediction.share": "שיתוף המשחק",
+    "prediction.share.copied": "הקישור למשחק הועתק",
     "prediction.header.subtitle":
       "הפועל ירושלים נגד {opponent} · {date}",
     "prediction.squadPanelTitle": "הסגל הרשמי למשחק הערב",
@@ -643,6 +645,8 @@ const translations: Record<Lang, Dict> = {
     "prediction.category.assist.amount": "assists",
     "prediction.loadingMyPrediction": "Loading your prediction…",
     "prediction.header.title": "Predict the game",
+    "prediction.share": "Share this game",
+    "prediction.share.copied": "Game link copied",
     "prediction.header.subtitle":
       "Hapoel Jerusalem vs {opponent} · {date}",
     "prediction.squadPanelTitle": "Tonight's official game squad",

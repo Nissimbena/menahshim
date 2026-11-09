@@ -5839,3 +5839,40 @@ h1[tabindex="-1"]:focus {
   background: transparent;
   box-shadow: inset 0 0 0 1.5px var(--text-3);
 }
+
+/* Personal link per game */
+.game-row-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  border-block-start: 1px solid var(--line);
+}
+
+.schedule-list > .game-row-wrap:first-child {
+  border-block-start: 0;
+}
+
+.game-row-wrap > .game-row {
+  flex: 1;
+  min-width: 0;
+  border-block-start: 0;
+}
+
+.game-row__share {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.game-row__share:hover {
+  color: var(--text);
+}
+
+.hero__share,
+.last-game__share {
+  color: var(--text-2);
+}
+
+.screen-header__share {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}

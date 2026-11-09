@@ -59,6 +59,7 @@ import {
 import { el, esc } from "../ui/dom";
 import { track } from "../analytics";
 import { isSponsoredGame, sponsorStrip } from "../sponsor/sponsor";
+import { gameUrl, setGameInUrl, shareGameButton } from "../ui/gameLink";
 import { logoMarkSVG } from "../brand/Logo";
 
 type StepKey = "score" | "stats" | "team" | "summary";
@@ -160,6 +161,7 @@ export class PredictionScreen {
       home: game.homeTeamId,
       away: game.awayTeamId,
     });
+    setGameInUrl(game.id);
     this.steps = ["score", "stats", "team", "summary"];
     this.stepIndex = 0;
     this.statSubStep = 0;
@@ -338,6 +340,14 @@ export class PredictionScreen {
       onBack: () => this.onBack(),
     });
     header.classList.add("screen-header--compact");
+    if (this.currentGame)
+      header.appendChild(
+        shareGameButton({
+          url: gameUrl(this.currentGame.id),
+          text: subtitle,
+          className: "screen-header__share",
+        }),
+      );
     return header;
   }
 
