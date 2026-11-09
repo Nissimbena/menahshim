@@ -3,7 +3,7 @@ import { boxScoreForGame } from "../config/boxscores";
 import { teamStatsSection } from "./gameStats";
 import { clipsForGame } from "../config/videos";
 import { videoClips } from "../ui/VideoClips";
-import { EMPTY_PREDICTION } from "./types";
+import { EMPTY_PREDICTION, EUROPE_COMPETITION_ID } from "./types";
 import type { ScheduleGame, BonusQuestion } from "../schedule/schedule";
 import { getBonusQuestion } from "../schedule/schedule";
 import {
@@ -565,19 +565,36 @@ export class PredictionScreen {
     if (this.players.length === 0) {
       section.appendChild(skeleton("cards", 2));
     } else {
+      const squad = this.leagueSquad();
+      // Players left out of a league game can't be picked: a fresh prediction
+      // starts on the first registered player instead (a pick saved before the
+      // squad came out is kept, with a warning, until the user changes it).
+      if (squad && !this.hasOwnPrediction) {
+        const current = this.players[this.carouselIndex[category] % this.players.length];
+        const first = this.players.findIndex((pl) => squad.has(pl.id));
+        if (!squad.has(current.id) && first >= 0) this.carouselIndex[category] = first;
+      }
       const index = this.carouselIndex[category] % this.players.length;
       const player = this.players[index];
       if (this.prediction[config.playerKey] !== player.id) {
         this.prediction[config.playerKey] = player.id;
       }
 
-      if (this.squadPlayerIds && this.squadPlayerIds.size > 0) {
+      if (squad) {
+        const inCount = this.players.filter((pl) => squad.has(pl.id)).length;
         section.appendChild(
-          el("p", "squad-note", `${icon("info", { size: "sm" })}<span>${t("prediction.squadNote")}</span>`),
+          el(
+            "p",
+            "squad-note",
+            `${icon("info", { size: "sm" })}<span>${esc(
+              t("prediction.squad.note", { in: String(inCount), out: String(this.players.length - inCount) }),
+            )}</span>`,
+          ),
         );
+        section.appendChild(this.renderSquadGroups(category, squad));
+      } else {
+        section.appendChild(this.renderPlayerGrid(category));
       }
-
-      section.appendChild(this.renderPlayerGrid(category));
 
       const amount = el("div", "card amount-card");
       amount.innerHTML = `
@@ -587,7 +604,12 @@ export class PredictionScreen {
             <span class="amount-card__q">${esc(t("prediction.amountFor", { label: t(config.amountLabelKey) }))}</span>
             ${playerNameHTML(player)}
           </div>
-        </div>`;
+        </div>
+        ${
+          squad && !squad.has(player.id)
+            ? `<p class="amount-card__warn">${icon("info", { size: "sm" })}<span>${esc(t("prediction.squad.pickedOut"))}</span></p>`
+            : ""
+        }`;
       const { root, error, presets } = numberStepper({
         value: this.prediction[config.amountKey],
         max: MAX_PLAYER_STAT[category],
@@ -629,25 +651,91 @@ export class PredictionScreen {
     return [section, nav];
   }
 
+  /**
+   * The official squad for a domestic (Israeli league) game, once the club
+   * has published it - null otherwise (EuroCup has no registration limit).
+   */
+  private leagueSquad(): Set<string> | null {
+    if (!this.squadPlayerIds || this.squadPlayerIds.size === 0) return null;
+    if (this.currentGame?.competitionId === EUROPE_COMPETITION_ID) return null;
+    return this.squadPlayerIds;
+  }
+
+  /** Israeli league: registered players first, the ones left out in their own muted group. */
+  private renderSquadGroups(category: CarouselKey, squad: Set<string>): HTMLElement {
+    const wrap = el("div", "squad-groups");
+    wrap.setAttribute("role", "radiogroup");
+    wrap.setAttribute("aria-label", t(CATEGORY_CONFIG[category].labelKey));
+    const indexes = this.players.map((_, i) => i);
+    const groups: [boolean, number[]][] = [
+      [true, indexes.filter((i) => squad.has(this.players[i].id))],
+      [false, indexes.filter((i) => !squad.has(this.players[i].id))],
+    ];
+    groups.forEach(([registered, list]) => {
+      if (list.length === 0) return;
+      const group = el("div", `squad-group${registered ? "" : " squad-group--out"}`);
+      group.innerHTML = `
+        <div class="squad-group__head">
+          <span class="squad-group__title">${esc(t(registered ? "prediction.squad.groupIn" : "prediction.squad.groupOut"))}</span>
+          <span class="squad-group__count num">${list.length}</span>
+          ${registered ? "" : `<span class="squad-group__hint">${esc(t("prediction.squad.groupOutHint"))}</span>`}
+        </div>`;
+      group.appendChild(this.renderPlayerGrid(category, list, squad, false, !registered));
+      wrap.appendChild(group);
+    });
+    return wrap;
+  }
+
   /** Roster cards (photo on a Hapoel-red field, name, shirt number) - pick one. */
-  private renderPlayerGrid(category: CarouselKey): HTMLElement {
-    const grid = el("div", "roster-grid");
-    grid.setAttribute("role", "radiogroup");
-    grid.setAttribute("aria-label", t(CATEGORY_CONFIG[category].labelKey));
+  private renderPlayerGrid(
+    category: CarouselKey,
+    only: number[] | null = null,
+    squad: Set<string> | null = null,
+    asGroup = true,
+    compact = false,
+  ): HTMLElement {
+    const grid = el("div", compact ? "chip-grid" : "roster-grid");
+    if (compact) grid.setAttribute("role", "list");
+    if (asGroup) {
+      grid.setAttribute("role", "radiogroup");
+      grid.setAttribute("aria-label", t(CATEGORY_CONFIG[category].labelKey));
+    }
     const selected = this.carouselIndex[category] % this.players.length;
 
     this.players.forEach((player, index) => {
+      if (only && !only.includes(index)) return;
       const isSelected = index === selected;
-      const inSquad = this.squadPlayerIds?.has(player.id) ?? null;
+      const inSquad = squad ? squad.has(player.id) : null;
       const card = el(
-        "button",
-        "pcard" + (isSelected ? " is-selected" : "") + (inSquad === false ? " is-out" : ""),
+        compact ? "div" : "button",
+        (compact ? "pchip" : "pcard") + (isSelected ? " is-selected" : "") + (inSquad === false ? " is-out" : ""),
       );
-      card.type = "button";
-      card.setAttribute("role", "radio");
-      card.setAttribute("aria-checked", String(isSelected));
-      card.setAttribute("aria-label", `${player.jerseyNumber} ${tDynamic(player.name)}`);
-      card.innerHTML = `
+      card.dataset.pick = String(index);
+      if (compact) {
+        // Not playing - shown for completeness, not pickable.
+        card.setAttribute("role", "listitem");
+      } else {
+        (card as HTMLButtonElement).type = "button";
+        card.setAttribute("role", "radio");
+        card.setAttribute("aria-checked", String(isSelected));
+      }
+      card.setAttribute(
+        "aria-label",
+        `${player.jerseyNumber} ${tDynamic(player.name)}${
+          inSquad === null ? "" : `, ${t(inSquad ? "prediction.squad.registered" : "prediction.squad.notRegistered")}`
+        }`,
+      );
+      if (compact) {
+        card.innerHTML = `
+          <span class="pchip__media">${playerMedia(player, "sm")}</span>
+          <span class="pchip__body">
+            ${playerNameHTML(player)}
+            <span class="pchip__meta"><span class="num">#${player.jerseyNumber}</span> · ${esc(tDynamic(player.position))}</span>
+          </span>
+          <span class="pchip__tag">${esc(t("prediction.squad.notRegistered"))}</span>
+          <span class="pchip__check">${icon("check", { size: "sm" })}</span>
+        `;
+      } else card.innerHTML = `
         <span class="pcard__media">
           <span class="pcard__num num--display" aria-hidden="true">${player.jerseyNumber}</span>
           ${playerMedia(player, "lg")}
@@ -657,18 +745,24 @@ export class PredictionScreen {
           ${playerNameHTML(player)}
           <span class="pcard__meta">
             <span class="pcard__pos">${esc(tDynamic(player.position))}</span>
-            ${inSquad ? `<span class="pcard__squad">${t("prediction.inSquad")}</span>` : ""}
+            ${
+              inSquad === null
+                ? ""
+                : `<span class="pcard__squad${inSquad ? "" : " pcard__squad--out"}">${esc(
+                    t(inSquad ? "prediction.squad.registered" : "prediction.squad.notRegistered"),
+                  )}</span>`
+            }
           </span>
         </span>
       `;
-      card.addEventListener("click", () => {
+      if (!compact) card.addEventListener("click", () => {
         if (this.carouselIndex[category] === index) return;
         this.carouselIndex[category] = index;
         this.prediction[CATEGORY_CONFIG[category].playerKey] = player.id;
         const y = window.scrollY;
         this.render();
         window.scrollTo({ top: y });
-        (this.container.querySelectorAll<HTMLElement>(".pcard")[index])?.focus({ preventScroll: true });
+        this.container.querySelector<HTMLElement>(`[data-pick="${index}"]`)?.focus({ preventScroll: true });
         // On phones the amount sits below the roster - bring it into view.
         const amountCard = this.container.querySelector<HTMLElement>(".amount-card");
         if (amountCard) {
