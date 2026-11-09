@@ -392,6 +392,36 @@ export function submitGameResult(payload: {
   });
 }
 
+/** A finished game's result pulled automatically from a public box score - only pre-fills the admin form. */
+export interface ResultDraft {
+  gameId: string;
+  /** False while the game is still being played (partial numbers). */
+  final: boolean;
+  actualHomeScore: number;
+  actualAwayScore: number;
+  actualTeamThrees: number | null;
+  actualTeamRebounds: number | null;
+  actualTeamAssists: number | null;
+  actualTopScorerPlayerId: string | null;
+  actualTopScorerPoints: number | null;
+  actualTopRebounderPlayerId: string | null;
+  actualTopRebounds: number | null;
+  actualTopAssistPlayerId: string | null;
+  actualTopAssists: number | null;
+  /** Tie-break explanations / things the admin should double-check. */
+  notes: string[];
+}
+
+// Admin-only.
+export function getResultDraft(
+  gameId: string,
+  refresh = false,
+): Promise<{ draft: ResultDraft | null; reason: string | null }> {
+  return authedFetch(
+    `/admin/games/${encodeURIComponent(gameId)}/result-draft${refresh ? "?refresh=true" : ""}`,
+  );
+}
+
 // ---------- Friend challenges (per-game 10-point side bets) ----------
 
 export interface Challenge {
