@@ -565,13 +565,21 @@ export class PredictionScreen {
     if (this.players.length === 0) {
       section.appendChild(skeleton("cards", 2));
     } else {
+      const squad = this.leagueSquad();
+      // Players left out of a league game can't be picked: a fresh prediction
+      // starts on the first registered player instead (a pick saved before the
+      // squad came out is kept, with a warning, until the user changes it).
+      if (squad && !this.hasOwnPrediction) {
+        const current = this.players[this.carouselIndex[category] % this.players.length];
+        const first = this.players.findIndex((pl) => squad.has(pl.id));
+        if (!squad.has(current.id) && first >= 0) this.carouselIndex[category] = first;
+      }
       const index = this.carouselIndex[category] % this.players.length;
       const player = this.players[index];
       if (this.prediction[config.playerKey] !== player.id) {
         this.prediction[config.playerKey] = player.id;
       }
 
-      const squad = this.leagueSquad();
       if (squad) {
         const inCount = this.players.filter((pl) => squad.has(pl.id)).length;
         section.appendChild(
@@ -687,6 +695,7 @@ export class PredictionScreen {
     compact = false,
   ): HTMLElement {
     const grid = el("div", compact ? "chip-grid" : "roster-grid");
+    if (compact) grid.setAttribute("role", "list");
     if (asGroup) {
       grid.setAttribute("role", "radiogroup");
       grid.setAttribute("aria-label", t(CATEGORY_CONFIG[category].labelKey));
@@ -698,13 +707,18 @@ export class PredictionScreen {
       const isSelected = index === selected;
       const inSquad = squad ? squad.has(player.id) : null;
       const card = el(
-        "button",
+        compact ? "div" : "button",
         (compact ? "pchip" : "pcard") + (isSelected ? " is-selected" : "") + (inSquad === false ? " is-out" : ""),
       );
-      card.type = "button";
       card.dataset.pick = String(index);
-      card.setAttribute("role", "radio");
-      card.setAttribute("aria-checked", String(isSelected));
+      if (compact) {
+        // Not playing - shown for completeness, not pickable.
+        card.setAttribute("role", "listitem");
+      } else {
+        (card as HTMLButtonElement).type = "button";
+        card.setAttribute("role", "radio");
+        card.setAttribute("aria-checked", String(isSelected));
+      }
       card.setAttribute(
         "aria-label",
         `${player.jerseyNumber} ${tDynamic(player.name)}${
@@ -741,7 +755,7 @@ export class PredictionScreen {
           </span>
         </span>
       `;
-      card.addEventListener("click", () => {
+      if (!compact) card.addEventListener("click", () => {
         if (this.carouselIndex[category] === index) return;
         this.carouselIndex[category] = index;
         this.prediction[CATEGORY_CONFIG[category].playerKey] = player.id;
