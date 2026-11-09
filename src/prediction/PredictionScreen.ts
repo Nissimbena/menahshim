@@ -672,7 +672,7 @@ export class PredictionScreen {
           <span class="squad-group__count num">${list.length}</span>
           ${registered ? "" : `<span class="squad-group__hint">${esc(t("prediction.squad.groupOutHint"))}</span>`}
         </div>`;
-      group.appendChild(this.renderPlayerGrid(category, list, squad, false));
+      group.appendChild(this.renderPlayerGrid(category, list, squad, false, !registered));
       wrap.appendChild(group);
     });
     return wrap;
@@ -684,8 +684,9 @@ export class PredictionScreen {
     only: number[] | null = null,
     squad: Set<string> | null = null,
     asGroup = true,
+    compact = false,
   ): HTMLElement {
-    const grid = el("div", "roster-grid");
+    const grid = el("div", compact ? "chip-grid" : "roster-grid");
     if (asGroup) {
       grid.setAttribute("role", "radiogroup");
       grid.setAttribute("aria-label", t(CATEGORY_CONFIG[category].labelKey));
@@ -698,10 +699,10 @@ export class PredictionScreen {
       const inSquad = squad ? squad.has(player.id) : null;
       const card = el(
         "button",
-        "pcard" + (isSelected ? " is-selected" : "") + (inSquad === false ? " is-out" : ""),
+        (compact ? "pchip" : "pcard") + (isSelected ? " is-selected" : "") + (inSquad === false ? " is-out" : ""),
       );
       card.type = "button";
-      card.dataset.index = String(index);
+      card.dataset.pick = String(index);
       card.setAttribute("role", "radio");
       card.setAttribute("aria-checked", String(isSelected));
       card.setAttribute(
@@ -710,7 +711,17 @@ export class PredictionScreen {
           inSquad === null ? "" : `, ${t(inSquad ? "prediction.squad.registered" : "prediction.squad.notRegistered")}`
         }`,
       );
-      card.innerHTML = `
+      if (compact) {
+        card.innerHTML = `
+          <span class="pchip__media">${playerMedia(player, "sm")}</span>
+          <span class="pchip__body">
+            ${playerNameHTML(player)}
+            <span class="pchip__meta"><span class="num">#${player.jerseyNumber}</span> · ${esc(tDynamic(player.position))}</span>
+          </span>
+          <span class="pchip__tag">${esc(t("prediction.squad.notRegistered"))}</span>
+          <span class="pchip__check">${icon("check", { size: "sm" })}</span>
+        `;
+      } else card.innerHTML = `
         <span class="pcard__media">
           <span class="pcard__num num--display" aria-hidden="true">${player.jerseyNumber}</span>
           ${playerMedia(player, "lg")}
@@ -737,7 +748,7 @@ export class PredictionScreen {
         const y = window.scrollY;
         this.render();
         window.scrollTo({ top: y });
-        this.container.querySelector<HTMLElement>(`.pcard[data-index="${index}"]`)?.focus({ preventScroll: true });
+        this.container.querySelector<HTMLElement>(`[data-pick="${index}"]`)?.focus({ preventScroll: true });
         // On phones the amount sits below the roster - bring it into view.
         const amountCard = this.container.querySelector<HTMLElement>(".amount-card");
         if (amountCard) {
