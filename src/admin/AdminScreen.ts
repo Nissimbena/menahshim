@@ -4,6 +4,7 @@ import {
   getPredictionCounts,
   getLinkEventStats,
   getAdminChallenges,
+  getResultDraft,
   resolveChallenge,
   cancelChallenge,
   setGameBonusQuestion,
@@ -11,6 +12,7 @@ import {
   deleteGameVideo,
   type LinkEventStat,
   type Challenge,
+  type ResultDraft,
 } from "../api/backend";
 import type { ScheduleGame } from "../schedule/schedule";
 import { getBonusQuestion, setBonusQuestion } from "../schedule/schedule";
@@ -56,6 +58,9 @@ export class AdminScreen {
   private challengeFilterGameId: string | null = null;
   private challengeShowClosed = false;
   private saveBtn: HTMLButtonElement | null = null;
+  private draft: ResultDraft | null = null;
+  private draftState: "idle" | "loading" | "ready" | "unavailable" = "idle";
+  private draftReason = "";
 
   constructor(
     container: HTMLElement,
@@ -122,6 +127,7 @@ export class AdminScreen {
     wrapper.appendChild(this.renderGameSelect());
 
     if (this.gameId) {
+      wrapper.appendChild(this.renderDraftBanner());
       wrapper.appendChild(this.renderBonusQuestionSetup());
       wrapper.appendChild(this.renderVideosSetup());
       wrapper.appendChild(this.renderStatsForm());
@@ -402,6 +408,78 @@ export class AdminScreen {
     return section;
   }
 
+  /** Pulls the auto-fetched result draft and loads it into the form; nothing is submitted. */
+  private async loadDraft(refresh: boolean) {
+    const gameId = this.gameId;
+    if (!gameId) return;
+    this.draftState = "loading";
+    this.render();
+    try {
+      const { draft, reason } = await getResultDraft(gameId, refresh);
+      if (this.gameId !== gameId) return;
+      if (!draft) {
+        this.draftState = "unavailable";
+        this.draftReason = reason ?? "";
+      } else {
+        this.draft = draft;
+        this.draftState = "ready";
+        this.homeScore = draft.actualHomeScore;
+        this.awayScore = draft.actualAwayScore;
+        this.teamThrees = draft.actualTeamThrees;
+        this.teamRebounds = draft.actualTeamRebounds;
+        this.teamAssists = draft.actualTeamAssists;
+        this.topScorerPlayerId = draft.actualTopScorerPlayerId;
+        this.topScorerPoints = draft.actualTopScorerPoints;
+        this.topRebounderPlayerId = draft.actualTopRebounderPlayerId;
+        this.topRebounds = draft.actualTopRebounds;
+        this.topAssistPlayerId = draft.actualTopAssistPlayerId;
+        this.topAssists = draft.actualTopAssists;
+      }
+    } catch (err) {
+      if (this.gameId !== gameId) return;
+      console.warn("Could not load result draft:", err);
+      this.draftState = "unavailable";
+      this.draftReason = err instanceof Error ? err.message : String(err);
+    }
+    this.render();
+  }
+
+  private renderDraftBanner(): HTMLElement {
+    const box = document.createElement("div");
+    box.className = "prediction-section";
+    if (this.draftState === "idle") return box;
+
+    const text = document.createElement("p");
+    text.className = "counter-text";
+    if (this.draftState === "loading") {
+      text.textContent = t("admin.draft.loading");
+      box.appendChild(text);
+      return box;
+    }
+    if (this.draftState === "unavailable") {
+      text.textContent = t("admin.draft.unavailable", { reason: this.draftReason });
+    } else {
+      text.textContent = this.draft?.final ? t("admin.draft.loaded") : t("admin.draft.partial");
+    }
+    box.appendChild(text);
+
+    this.draft?.notes.forEach((note) => {
+      const line = document.createElement("p");
+      line.className = "counter-text";
+      line.dir = "auto";
+      line.textContent = `• ${note}`;
+      box.appendChild(line);
+    });
+
+    const refresh = document.createElement("button");
+    refresh.type = "button";
+    refresh.className = "btn-secondary";
+    refresh.textContent = t("admin.draft.refresh");
+    refresh.addEventListener("click", () => void this.loadDraft(true));
+    box.appendChild(refresh);
+    return box;
+  }
+
   private renderGameSelect(): HTMLElement {
     const section = document.createElement("div");
     section.className = "prediction-section";
@@ -451,7 +529,10 @@ export class AdminScreen {
       this.videoDurationDraft = "";
       this.videoStatus = "";
       this.statusMessage = "";
+      this.draft = null;
+      this.draftState = this.gameId ? "loading" : "idle";
       this.render();
+      if (this.gameId) void this.loadDraft(false);
     });
 
     section.appendChild(select);

@@ -225,6 +225,11 @@ const translations: Record<Lang, Dict> = {
     "admin.saving": "שומר ודרג…",
     "admin.saved": "נשמר! דורגו {count} ניחושים.",
     "admin.saveFailed": "שגיאה בשמירה. נסו שוב.",
+    "admin.draft.loading": "שולף את נתוני המשחק…",
+    "admin.draft.loaded": "התוצאה והמובילים נשלפו אוטומטית וטעונים בטופס למטה. בדקו ולחצו על השמירה כדי לדרג - שום דבר לא נשלח עד אז.",
+    "admin.draft.partial": "המשחק עדיין לא הסתיים - הנתונים חלקיים. משכו שוב בסוף המשחק.",
+    "admin.draft.unavailable": "אין עדיין נתונים אוטומטיים למשחק הזה ({reason}).",
+    "admin.draft.refresh": "משכו שוב",
 
     "nickname.title": "ברוכים הבאים!",
     "nickname.subtitle": "בחרו כינוי שיוצג בלוח המובילים",
@@ -765,6 +770,11 @@ const translations: Record<Lang, Dict> = {
     "admin.saving": "Saving and grading…",
     "admin.saved": "Saved! Graded {count} predictions.",
     "admin.saveFailed": "Save failed. Please try again.",
+    "admin.draft.loading": "Fetching the game stats…",
+    "admin.draft.loaded": "The score and leaders were fetched automatically and loaded into the form below. Review them and press the save button to grade - nothing is sent until then.",
+    "admin.draft.partial": "The game is not over yet - the numbers are partial. Fetch again after the final buzzer.",
+    "admin.draft.unavailable": "No automatic data for this game yet ({reason}).",
+    "admin.draft.refresh": "Fetch again",
 
     "nickname.title": "Welcome!",
     "nickname.subtitle": "Choose a nickname to show on the leaderboard",
