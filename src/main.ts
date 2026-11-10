@@ -50,6 +50,7 @@ import type { Player } from "./prediction/types";
 import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
 import { initHoverEffects } from "./ui/hover";
+import { identifyUser, initAnalytics, resetUser } from "./analytics";
 
 initHoverEffects();
 
@@ -62,6 +63,7 @@ if ("serviceWorker" in navigator) {
 }
 
 initLang();
+initAnalytics("hapoel-jerusalem");
 
 // Logs one "site_visit" link-event per browser tab session, tagged with the
 // `?src=` query param if the entry link had one (e.g. `?src=wa-main-group`) -
@@ -236,11 +238,13 @@ async function refreshMyLeagues() {
 
 onAuthChange(async (user) => {
   if (!user) {
+    resetUser();
     homeScreenRef?.setMyPredictions([]);
     homeScreenRef?.setMyLeagues([]);
     leaguesHubRef?.setLeagues([]);
     return;
   }
+  identifyUser(user.uid);
   homeScreenRef?.setAuthError(null);
   try {
     const me = await getMe();

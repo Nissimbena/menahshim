@@ -163,6 +163,8 @@ const translations: Record<Lang, Dict> = {
       "המידע מאוחסן אצל ספקי תשתית (Google Firebase / Google Cloud) ואינו מועבר לגורם שלישי לצורכי שיווק.",
     "privacy.s3.r2":
       "שם/כינוי וניקוד גלויים לשאר המשתמשים באפליקציה (טבלת מובילים).",
+    "privacy.s3.r3":
+      "אנו משתמשים ב-PostHog (שרתים באיחוד האירופי) לסטטיסטיקת שימוש: אילו משחקים נפתחים וכמה ניחושים נשלחים. לא נשלחים אליו שם, אימייל או תוכן הניחושים; משתמש מחובר מזוהה רק במזהה פנימי.",
     "privacy.s4.title": "הזכויות שלכם",
     "privacy.s4.r1":
       'ניתן לבקש בכל עת למחוק את החשבון ואת כל המידע האישי המשויך אליו - ראו כפתור "מחיקת חשבון" בתחתית עמוד זה (למשתמשים מחוברים).',
@@ -707,6 +709,8 @@ const translations: Record<Lang, Dict> = {
       "Data is stored with infrastructure providers (Google Firebase / Google Cloud) and is not passed to third parties for marketing purposes.",
     "privacy.s3.r2":
       "Your name/nickname and score are visible to other users of the app (leaderboard).",
+    "privacy.s3.r3":
+      "We use PostHog (servers in the EU) for usage statistics: which games are opened and how many predictions are submitted. It never receives your name, email or the content of your predictions; a signed-in user is identified only by an internal ID.",
     "privacy.s4.title": "Your rights",
     "privacy.s4.r1":
       'You may request at any time to delete your account and all personal data associated with it - see the "Delete account" button at the bottom of this page (for signed-in users).',
