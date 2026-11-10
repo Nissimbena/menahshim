@@ -1,0 +1,63 @@
+.sponsor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3, 12px);
+}
+
+.sponsor__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* The logo is black on white, so it always sits on its own white plate. */
+.sponsor__plate {
+  display: inline-flex;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.sponsor__logo {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+
+.sponsor--hero {
+  margin-block: var(--s-4, 16px);
+}
+
+.sponsor--flow {
+  margin-block-end: var(--s-4, 16px);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-1);
+}
+
+.sponsor--flow .sponsor__plate {
+  box-shadow: none;
+}
+
+.sponsor--flow .sponsor__logo {
+  height: 30px;
+}
+
+@media (min-width: 768px) {
+  .sponsor__label {
+    font-size: 13px;
+  }
+
+  .sponsor--hero .sponsor__logo {
+    height: 56px;
+  }
+
+  .sponsor--flow .sponsor__logo {
+    height: 36px;
+  }
+}

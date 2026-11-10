@@ -27,6 +27,7 @@ import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
 import { clipsForGame } from "../config/videos";
+import { isSponsoredGame, sponsorStrip } from "../sponsor/matchday";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -389,6 +390,7 @@ export class HomeScreen {
       </div>
     `;
 
+    if (isSponsoredGame(game.id)) hero.querySelector(".hero__countdown")?.after(sponsorStrip("hero"));
     const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
     actions.appendChild(this.buildHeroCta(game));
 

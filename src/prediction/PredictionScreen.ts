@@ -58,6 +58,7 @@ import {
 } from "./recap";
 import { el, esc } from "../ui/dom";
 import { track } from "../analytics";
+import { isSponsoredGame, sponsorStrip } from "../sponsor/matchday";
 import { logoMarkSVG } from "../brand/Logo";
 
 type StepKey = "score" | "stats" | "team" | "summary";
@@ -268,6 +269,7 @@ export class PredictionScreen {
 
     const page = el("div", "screen prediction");
     page.appendChild(this.renderHeader());
+    if (isSponsoredGame(this.currentGame?.id)) page.appendChild(sponsorStrip("flow"));
 
     if (this.loading) {
       page.appendChild(skeleton("text", 4));
