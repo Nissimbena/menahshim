@@ -587,3 +587,77 @@ export function acknowledgeCancellation(
     { method: "POST" },
   );
 }
+
+// ---------- Game sponsorship (sponsor logo + link, prize) ----------
+
+export interface SponsorshipInfo {
+  sponsorId: number;
+  sponsor: { name: string; linkUrl: string; logoUrl: string };
+  prize: { text: string | null; assetId: number | null; imageUrl: string | null } | null;
+}
+
+export interface Sponsor {
+  id: number;
+  name: string;
+  linkUrl: string;
+  logoUrl: string;
+  /** The prize of the sponsor's most recent game, offered again when the sponsor is reused. */
+  lastPrize: { text: string | null; assetId: number | null; imageUrl: string | null } | null;
+}
+
+const sponsorUrl = (path: string | null | undefined): string => (path ? `${API_BASE_URL}${path}` : "");
+
+// Public - every game that has a sponsor.
+export async function getSponsorships(): Promise<Record<string, SponsorshipInfo>> {
+  const res = await fetch(`${API_BASE_URL}/sponsorships`);
+  if (!res.ok) throw new Error("sponsorships unavailable");
+  const raw = (await res.json()) as Record<string, any>;
+  const out: Record<string, SponsorshipInfo> = {};
+  for (const [gameId, s] of Object.entries(raw)) {
+    out[gameId] = {
+      sponsorId: s.sponsorId,
+      sponsor: { name: s.sponsor.name, linkUrl: s.sponsor.linkUrl, logoUrl: sponsorUrl(s.sponsor.logoPath) },
+      prize: s.prize
+        ? { text: s.prize.text, assetId: s.prize.assetId, imageUrl: s.prize.imagePath ? sponsorUrl(s.prize.imagePath) : null }
+        : null,
+    };
+  }
+  return out;
+}
+
+// Admin-only.
+export async function getSponsors(): Promise<Sponsor[]> {
+  const raw = (await authedFetch("/admin/sponsors")) as any[];
+  return raw.map((s) => ({
+    id: s.id,
+    name: s.name,
+    linkUrl: s.linkUrl,
+    logoUrl: sponsorUrl(s.logoPath),
+    lastPrize: s.lastPrize
+      ? { text: s.lastPrize.text, assetId: s.lastPrize.assetId, imageUrl: s.lastPrize.imagePath ? sponsorUrl(s.lastPrize.imagePath) : null }
+      : null,
+  }));
+}
+
+export async function uploadSponsorAsset(dataUrl: string): Promise<number> {
+  const res = await authedFetch("/admin/sponsor-assets", { method: "POST", body: JSON.stringify({ dataUrl }) });
+  return res.id as number;
+}
+
+export function createSponsor(payload: { name: string; linkUrl: string; logoAssetId: number }): Promise<{ id: number }> {
+  return authedFetch("/admin/sponsors", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function setGameSponsorship(
+  gameId: string,
+  payload: { sponsorId: number; prizeText: string | null; prizeAssetId: number | null },
+): Promise<{ ok: boolean }> {
+  return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/sponsorship`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function clearGameSponsorship(gameId: string): Promise<{ ok: boolean }> {
+  return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/sponsorship`, { method: "DELETE" });
+}
