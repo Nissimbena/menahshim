@@ -27,6 +27,7 @@ import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
 import { clipsForGame } from "../config/videos";
+import { activePromo } from "../config/promo";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -251,6 +252,8 @@ export class HomeScreen {
     // One 12-column grid: my season across the top, schedule (8) beside the
     // leaders (4).
     const grid = el("div", "home-grid");
+    const promo = this.renderPromo();
+    if (promo) grid.appendChild(promo);
     const last = this.renderLastGame();
     if (last) grid.appendChild(last);
     grid.appendChild(this.currentUser ? this.renderPersonalStrip() : this.renderSignInCard());
@@ -326,6 +329,33 @@ export class HomeScreen {
     track.scrollLeft += rtl ? tile.right - box.right : tile.left - box.left;
   }
 
+  // ---- Sponsor strip: one line, right under the hero ----
+  private renderPromo(): HTMLElement | null {
+    const promo = activePromo();
+    if (!promo) return null;
+    const box = el("aside", "promo glass");
+    box.id = "home-promo";
+    box.setAttribute("aria-label", t("promo.label", { partner: promo.partner }));
+    box.innerHTML = `
+      <span class="promo__logo">
+        <img src="${import.meta.env.BASE_URL}${esc(promo.logo)}" alt="${esc(promo.partner)}" />
+      </span>
+      <div class="promo__text">
+        <p class="promo__eyebrow">${icon("gift", { size: "sm" })}<span>${esc(t("promo.eyebrow", { partner: promo.partner }))}</span></p>
+        <p class="promo__title">${esc(t("promo.title"))}</p>
+        <p class="promo__sub">${esc(t("promo.sub", { partner: promo.partner }))}</p>
+      </div>
+      <a class="btn btn--secondary btn--sm promo__cta" href="${esc(promo.url)}" target="_blank" rel="noopener sponsored">
+        <span>${esc(t("promo.cta"))}</span>${icon("external", { size: "sm" })}
+      </a>`;
+    const img = box.querySelector<HTMLImageElement>(".promo__logo img")!;
+    img.addEventListener("error", () => {
+      img.replaceWith(el("span", "promo__wordmark", esc(promo.partner)));
+    });
+    box.querySelector("a")!.addEventListener("click", () => trackLinkEvent(promo.trackKey));
+    return box;
+  }
+
   // ---- 1. Hero: the next game, full-bleed over a match photo ----
   private renderHero(): HTMLElement {
     const game = this.heroGame;
@@ -391,6 +421,25 @@ export class HomeScreen {
 
     const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
     actions.appendChild(this.buildHeroCta(game));
+
+    // Sponsor gift, as a small pill above the matchup - seen above the fold on phones.
+    const promo = activePromo();
+    if (promo) {
+      const line = el("a", "hero__promo");
+      line.setAttribute("href", "#home-promo");
+      line.innerHTML = `
+        <span class="hero__promo-logo"><img src="${import.meta.env.BASE_URL}${esc(promo.logo)}" alt="" /></span>
+        <span>${esc(t("promo.heroLine", { partner: promo.partner }))}</span>
+        ${icon("gift", { size: "sm" })}`;
+      line.querySelector("img")!.addEventListener("error", (e) => (e.target as HTMLElement).parentElement!.remove());
+      line.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = this.container.querySelector<HTMLElement>("#home-promo");
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        target?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      });
+      hero.querySelector(".hero__top")!.before(line);
+    }
 
     if (prize) {
       const prizeLine = el("p", "hero__prize", `${icon("gift", { size: "sm" })}<span dir="auto"></span>`);

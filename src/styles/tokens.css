@@ -94,6 +94,9 @@
   --gold: #ffcc4d;
   --gold-bright: #f0b93b;
   --gold-tint: rgba(240, 185, 59, 0.18);
+  --gold-glow: rgba(255, 204, 77, 0.22);
+  --promo-logo-bg: #ffffff;
+  --promo-logo-ink: #0a0a0a;
   --gold-line: rgba(255, 204, 77, 0.45);
 
   /* ---- Medals: metallic gradients for the podium ---- */
