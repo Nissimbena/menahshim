@@ -390,7 +390,7 @@ export class HomeScreen {
       </div>
     `;
 
-    if (isSponsoredGame(game.id)) hero.querySelector(".hero__countdown")?.after(sponsorStrip("hero"));
+    if (isSponsoredGame(game.id)) hero.querySelector(".hero__countdown")?.after(sponsorStrip("hero", game.id));
     const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
     actions.appendChild(this.buildHeroCta(game));
 

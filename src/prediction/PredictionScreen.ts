@@ -269,7 +269,7 @@ export class PredictionScreen {
 
     const page = el("div", "screen prediction");
     page.appendChild(this.renderHeader());
-    if (isSponsoredGame(this.currentGame?.id)) page.appendChild(sponsorStrip("flow"));
+    if (isSponsoredGame(this.currentGame?.id)) page.appendChild(sponsorStrip("flow", this.currentGame!.id));
 
     if (this.loading) {
       page.appendChild(skeleton("text", 4));
