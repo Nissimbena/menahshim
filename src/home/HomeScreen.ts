@@ -27,6 +27,8 @@ import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
 import { clipsForGame } from "../config/videos";
+import { isSponsoredGame, sponsorStrip } from "../sponsor/sponsor";
+import { gameUrl, shareGameButton } from "../ui/gameLink";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -389,8 +391,10 @@ export class HomeScreen {
       </div>
     `;
 
+    if (isSponsoredGame(game.id)) hero.querySelector(".hero__countdown")?.after(sponsorStrip("hero", game.id));
     const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
     actions.appendChild(this.buildHeroCta(game));
+    actions.appendChild(this.shareButtonFor(game, "hero__share", true));
 
     if (prize) {
       const prizeLine = el("p", "hero__prize", `${icon("gift", { size: "sm" })}<span dir="auto"></span>`);
@@ -478,6 +482,7 @@ export class HomeScreen {
     cta.addEventListener("click", () => this.actions.onEnterGame(game));
     const actions = el("div", "last-game__actions");
     actions.appendChild(cta);
+    actions.appendChild(this.shareButtonFor(game, "last-game__share", true));
     if (nClips) actions.appendChild(el("span", "last-game__clips", `${icon("play", { size: "sm" })}<span>${esc(t("home.lastGame.clips", { n: nClips }))}</span>`));
     section.querySelector(".last-game__result")!.appendChild(actions);
     return section;
@@ -488,6 +493,16 @@ export class HomeScreen {
       <span class="countdown__value num--display" data-part="${key}">${value}</span>
       <span class="countdown__label">${label}</span>
     </div>`;
+  }
+
+  /** Personal link of one game, shareable from any card that shows it. */
+  private shareButtonFor(game: ScheduleGame, className: string, labeled = false): HTMLElement {
+    const opp = opponentOf(game).team;
+    const text = t("prediction.header.subtitle", {
+      opponent: opp ? teamName(opp) : "",
+      date: game.date,
+    });
+    return shareGameButton({ url: gameUrl(game.id), text, className, labeled });
   }
 
   /** Same states as the old game card: view/edit, predict, or a locked/not-yet grey button. */
@@ -702,7 +717,9 @@ export class HomeScreen {
       </span>
       <span class="game-row__end">${end}</span>
     `;
-    return row;
+    const wrap = el("div", "game-row-wrap");
+    wrap.append(row, this.shareButtonFor(game, "game-row__share"));
+    return wrap;
   }
 
   /**

@@ -33,7 +33,7 @@ import { LeaguesScreen } from "./sportsHub/LeaguesScreen";
 import { TeamsScreen } from "./sportsHub/TeamsScreen";
 import { TeamPageScreen } from "./sportsHub/TeamPageScreen";
 import { InstallPrompt } from "./pwa/InstallPrompt";
-import { auth, onAuthChange, signInWithGoogle } from "./firebase/firebase";
+import { auth, onAuthChange, setAdminFlag, signInWithGoogle } from "./firebase/firebase";
 import {
   getMe,
   getGames,
@@ -51,6 +51,9 @@ import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
 import { initHoverEffects } from "./ui/hover";
 import { identifyUser, initAnalytics, resetUser, track } from "./analytics";
+import { getSponsorships } from "./api/backend";
+import { registerSponsorships } from "./sponsor/sponsor";
+import { setGameInUrl } from "./ui/gameLink";
 
 initHoverEffects();
 
@@ -148,6 +151,7 @@ function open(
   nav.setActive(opts.tab);
   nav.setFlowMode(!!opts.flow);
   if (!opts.flow) track("screen_opened", { screen: opts.tab ?? "other" });
+  if (!opts.flow) setGameInUrl(null);
   window.scrollTo({ top: 0 });
   currentShow = show;
   currentReshowsOnLangChange = !!opts.reshowOnLang;
@@ -239,6 +243,7 @@ async function refreshMyLeagues() {
 
 onAuthChange(async (user) => {
   if (!user) {
+    setAdminFlag(false);
     resetUser();
     homeScreenRef?.setMyPredictions([]);
     homeScreenRef?.setMyLeagues([]);
@@ -249,6 +254,7 @@ onAuthChange(async (user) => {
   homeScreenRef?.setAuthError(null);
   try {
     const me = await getMe();
+    setAdminFlag(!!me.isAdmin);
     if (!me.nickname) nicknamePrompt.show(() => {});
   } catch (err) {
     console.warn("Could not check nickname:", err);
@@ -275,6 +281,11 @@ async function bootstrap() {
   }
   registerBonusQuestions(games);
   registerGameVideos(games);
+  try {
+    registerSponsorships(await getSponsorships());
+  } catch {
+    // No sponsorships available: nothing is shown.
+  }
 
   const goHome = () => navTo.home();
 
@@ -378,11 +389,14 @@ async function bootstrap() {
   });
 
   homeRootEl.innerHTML = "";
+  // Read before navTo.home(), which clears any ?game= from the address bar.
+  const urlParams = new URLSearchParams(window.location.search);
   await refreshMyPredictions();
   await refreshMyLeagues();
   navTo.home();
 
-  const urlParams = new URLSearchParams(window.location.search);
+  const deepGame = games.find((g) => g.id === urlParams.get("game"));
+  if (deepGame) open(() => predictionScreen.show(deepGame), { tab: null, flow: true });
   const joinCode = urlParams.get("league");
   const challengeId = urlParams.get("challenge");
   // Invite params are one-shot: drop them so a reload or re-login doesn't re-open the prompt.
