@@ -5841,76 +5841,50 @@ h1[tabindex="-1"]:focus {
 }
 
 /* ------------------------------------------------------------------
-   Sponsor strip (config/promo.ts): one slim row under the hero - logo,
-   a line of copy, a button out to the store. Present, not shouting.
+   Sponsored prize (config/sponsorPrize.ts)
+   On the hero: a ticket - the prize and how to win it on the main part,
+   the sponsor on a tear-off stub (perforation + notches) that links out.
+   While predicting: one "playing for" line under the progress bar.
    ------------------------------------------------------------------ */
-.home-grid > .promo {
-  grid-column: 1 / -1;
-}
-
-.promo {
+.prize-ticket {
+  --stub: 118px;
+  --notch: 9px;
+  --cut: var(--stub);
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "logo text"
-    "cta cta";
-  align-items: center;
-  gap: var(--s-3) var(--s-4);
-  padding: var(--s-3) var(--s-4);
+  grid-template-columns: minmax(0, 1fr) var(--stub);
+  width: min(100%, 520px);
+  margin-block-end: calc(var(--s-3) - var(--s-6));
   border-radius: var(--r-lg);
-  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--gold-wash) 0%, transparent 55%),
+    var(--surface-2);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--gold-edge);
+  text-align: start;
+  /* the two notches at the perforation */
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at var(--cut) 0, transparent 98%, black) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--cut) 100%, transparent 98%, black) bottom / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at var(--cut) 0, transparent 98%, black) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--cut) 100%, transparent 98%, black) bottom / 100% 51% no-repeat;
 }
 
-/* a warm wash behind the logo, so the strip reads as "gift" before it's read */
-.promo::after {
-  content: "";
-  position: absolute;
-  inset-block: -40%;
-  inset-inline-start: -10%;
-  width: 45%;
-  background: radial-gradient(closest-side, var(--gold-glow), transparent);
-  pointer-events: none;
+[dir="ltr"] .prize-ticket {
+  --cut: calc(100% - var(--stub));
 }
 
-.promo > * {
-  position: relative;
-  z-index: 1;
-}
-
-.promo__logo {
-  grid-area: logo;
-  display: grid;
-  place-items: center;
-  width: 72px;
-  height: 72px;
-  padding: var(--s-2);
-  border-radius: var(--r-md);
-  background: var(--promo-logo-bg);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-}
-
-.promo__logo img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.promo__wordmark {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--promo-logo-ink);
-  direction: ltr;
-}
-
-.promo__text {
-  grid-area: text;
+.prize-ticket__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4);
   min-width: 0;
 }
 
-.promo__eyebrow {
+.prize-ticket__eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -5920,79 +5894,158 @@ h1[tabindex="-1"]:focus {
   color: var(--gold);
 }
 
-.promo__title {
-  margin-block-start: 2px;
+.prize-ticket__title {
   font-family: var(--font-display);
   font-variation-settings: var(--display-axes);
-  font-size: clamp(22px, 2.4vw, 28px);
+  font-size: clamp(24px, 6.4vw, 30px);
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1;
   color: var(--text);
+}
+
+.prize-ticket__how {
+  font-size: 12px;
+  color: var(--text-2);
   text-wrap: balance;
 }
 
-.promo__sub {
-  margin-block-start: 4px;
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.promo__cta {
-  grid-area: cta;
-  justify-self: stretch;
-}
-
-@media (min-width: 720px) {
-  .promo {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "logo text cta";
-    padding-inline: var(--s-3) var(--s-5);
-  }
-
-  .promo__cta {
-    justify-self: end;
-  }
-}
-
-.hero__promo {
-  display: inline-flex;
+.prize-ticket__stub {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--s-2);
-  justify-self: center;
-  align-self: center;
-  margin-block-end: calc(var(--s-3) - var(--s-6));
-  padding-block: 6px;
-  padding-inline: 6px var(--s-3);
-  border-radius: var(--r-full);
-  background: var(--glass-pill);
-  border: 1px solid var(--gold-tint);
+  gap: 6px;
+  padding: var(--s-3) var(--s-2);
+  border-inline-start: 2px dashed var(--gold-edge);
   color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
   text-decoration: none;
+  transition: background 160ms var(--ease);
 }
 
-.hero__promo svg {
+.prize-ticket__stub:hover {
+  background: var(--gold-wash);
+}
+
+.prize-ticket__stub:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -4px;
+  border-radius: var(--r-md);
+}
+
+.prize-ticket__logo {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--promo-logo-bg);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 220ms var(--ease);
+}
+
+.prize-ticket__stub:hover .prize-ticket__logo {
+  transform: rotate(-4deg) scale(1.06);
+}
+
+.prize-ticket__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.prize-ticket__by {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 10px;
+  color: var(--text-3);
+  line-height: 1.25;
+}
+
+.prize-ticket__by b {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.prize-ticket__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--gold);
 }
 
-.hero__promo:hover {
-  border-color: var(--gold);
+@media (prefers-reduced-motion: reduce) {
+  .prize-ticket__logo { transition: none; }
+  .prize-ticket__stub:hover .prize-ticket__logo { transform: none; }
 }
 
-.hero__promo-logo {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  padding: 3px;
-  border-radius: var(--r-full);
+/* Prediction flow: "playing for" */
+.prize-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-block-end: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(90deg, var(--gold-wash), transparent 70%),
+    var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--gold-edge);
+  color: var(--text);
+  text-decoration: none;
+}
+
+[dir="rtl"] .prize-line {
+  background:
+    linear-gradient(270deg, var(--gold-wash), transparent 70%),
+    var(--surface-1);
+}
+
+.prize-line > svg {
+  flex: none;
+  color: var(--text-3);
+}
+
+.prize-line__logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
   background: var(--promo-logo-bg);
 }
 
-.hero__promo-logo img {
-  max-width: 100%;
-  max-height: 100%;
+.prize-line__logo img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+}
+
+.prize-line__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.prize-line__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.prize-line__title svg {
+  color: var(--gold);
+}
+
+.prize-line__by {
+  font-size: 12px;
+  color: var(--text-3);
 }

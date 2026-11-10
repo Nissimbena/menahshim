@@ -46,6 +46,7 @@ import {
 import type { ScheduleGame } from "./schedule/schedule";
 import { registerBonusQuestions } from "./schedule/schedule";
 import { registerGameVideos } from "./config/videos";
+import { registerSponsorPrize } from "./config/sponsorPrize";
 import type { Player } from "./prediction/types";
 import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
@@ -275,6 +276,7 @@ async function bootstrap() {
   }
   registerBonusQuestions(games);
   registerGameVideos(games);
+  registerSponsorPrize(games);
 
   const goHome = () => navTo.home();
 

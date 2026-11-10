@@ -21,12 +21,14 @@ import {
   getGameResult,
   getScoringRules,
   getGameSquad,
+  trackLinkEvent,
   type PredictionsAggregate,
   type GameResultData,
   type ScoringRules,
 } from "../api/backend";
 
-import { t, tDynamic } from "../i18n/i18n";
+import { t, tDynamic, getLang } from "../i18n/i18n";
+import { sponsorPrizeFor } from "../config/sponsorPrize";
 import {
   CATEGORY_ORDER,
   CATEGORY_CONFIG,
@@ -292,6 +294,8 @@ export class PredictionScreen {
     }
 
     page.appendChild(this.renderStepIndicator());
+    const prizeLine = this.renderPrizeLine();
+    if (prizeLine) page.appendChild(prizeLine);
 
     const key = this.steps[this.stepIndex];
     let panel: HTMLElement;
@@ -337,6 +341,26 @@ export class PredictionScreen {
     });
     header.classList.add("screen-header--compact");
     return header;
+  }
+
+  /** "Playing for…" - the sponsored prize of this game, kept in view while predicting. */
+  private renderPrizeLine(): HTMLElement | null {
+    const p = sponsorPrizeFor(this.currentGame?.id);
+    if (!p) return null;
+    const lang = getLang() === "en" ? "en" : "he";
+    const line = el("a", "prize-line");
+    line.setAttribute("href", p.url);
+    line.setAttribute("target", "_blank");
+    line.setAttribute("rel", "noopener sponsored");
+    line.innerHTML = `
+      <span class="prize-line__logo"><img src="${import.meta.env.BASE_URL}${esc(p.logo)}" alt="" /></span>
+      <span class="prize-line__text">
+        <span class="prize-line__title">${icon("gift", { size: "sm" })}<span>${esc(t("sponsorPrize.playingFor", { prize: p.prize[lang] }))}</span></span>
+        <span class="prize-line__by">${esc(t("sponsorPrize.by"))} ${esc(p.sponsor[lang])} · ${esc(t("sponsorPrize.howShort"))}</span>
+      </span>
+      ${icon("external", { size: "sm" })}`;
+    line.addEventListener("click", () => trackLinkEvent(p.trackKey));
+    return line;
   }
 
   private renderStepIndicator(): HTMLElement {
