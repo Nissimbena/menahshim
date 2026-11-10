@@ -152,7 +152,13 @@ export class PredictionScreen {
 
   async show(game: ScheduleGame) {
     this.currentGame = game;
-    track("game_opened", { game_id: game.id, finished: !!game.result });
+    track("game_opened", {
+      game_id: game.id,
+      finished: !!game.result,
+      competition_id: game.competitionId,
+      home: game.homeTeamId,
+      away: game.awayTeamId,
+    });
     this.steps = ["score", "stats", "team", "summary"];
     this.stepIndex = 0;
     this.statSubStep = 0;

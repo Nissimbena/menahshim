@@ -50,7 +50,7 @@ import type { Player } from "./prediction/types";
 import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
 import { initHoverEffects } from "./ui/hover";
-import { identifyUser, initAnalytics, resetUser } from "./analytics";
+import { identifyUser, initAnalytics, resetUser, track } from "./analytics";
 
 initHoverEffects();
 
@@ -147,6 +147,7 @@ function open(
   screens.forEach((s) => s.hide());
   nav.setActive(opts.tab);
   nav.setFlowMode(!!opts.flow);
+  if (!opts.flow) track("screen_opened", { screen: opts.tab ?? "other" });
   window.scrollTo({ top: 0 });
   currentShow = show;
   currentReshowsOnLangChange = !!opts.reshowOnLang;

@@ -21,7 +21,9 @@ export function initAnalytics(app: string, team?: string) {
     person_profiles: "identified_only",
   });
   posthog.register({ app, ...(team ? { team } : {}) });
-  posthog.capture("app_opened");
+  // `src` is our own link tag (?src=wa-main-group); the referrer and utm_* come from PostHog itself.
+  const q = new URLSearchParams(location.search);
+  posthog.capture("app_opened", { src: q.get("src"), entry_game: q.get("game"), lang: document.documentElement.lang });
 }
 
 /** Ties events to the Firebase uid only - no email or name is sent. */
