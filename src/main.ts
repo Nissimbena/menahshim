@@ -33,7 +33,7 @@ import { LeaguesScreen } from "./sportsHub/LeaguesScreen";
 import { TeamsScreen } from "./sportsHub/TeamsScreen";
 import { TeamPageScreen } from "./sportsHub/TeamPageScreen";
 import { InstallPrompt } from "./pwa/InstallPrompt";
-import { auth, onAuthChange, signInWithGoogle } from "./firebase/firebase";
+import { auth, onAuthChange, setAdminFlag, signInWithGoogle } from "./firebase/firebase";
 import {
   getMe,
   getGames,
@@ -243,6 +243,7 @@ async function refreshMyLeagues() {
 
 onAuthChange(async (user) => {
   if (!user) {
+    setAdminFlag(false);
     resetUser();
     homeScreenRef?.setMyPredictions([]);
     homeScreenRef?.setMyLeagues([]);
@@ -253,6 +254,7 @@ onAuthChange(async (user) => {
   homeScreenRef?.setAuthError(null);
   try {
     const me = await getMe();
+    setAdminFlag(!!me.isAdmin);
     if (!me.nickname) nicknamePrompt.show(() => {});
   } catch (err) {
     console.warn("Could not check nickname:", err);
