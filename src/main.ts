@@ -51,6 +51,8 @@ import { AppNav, type TabId } from "./ui/Nav";
 import { skeleton } from "./ui/ScreenHeader";
 import { initHoverEffects } from "./ui/hover";
 import { identifyUser, initAnalytics, resetUser, track } from "./analytics";
+import { getSponsorships } from "./api/backend";
+import { registerSponsorships } from "./sponsor/sponsor";
 
 initHoverEffects();
 
@@ -275,6 +277,11 @@ async function bootstrap() {
   }
   registerBonusQuestions(games);
   registerGameVideos(games);
+  try {
+    registerSponsorships(await getSponsorships());
+  } catch {
+    // No sponsorships available: nothing is shown.
+  }
 
   const goHome = () => navTo.home();
 
