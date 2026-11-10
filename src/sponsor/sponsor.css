@@ -20,19 +20,31 @@
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
-/* The logo is black on white, so it always sits on its own white plate. */
+/* Logos are often dark on transparent/white, so they always sit on their own white plate. */
 .sponsor__plate {
   display: inline-flex;
   padding: 4px 12px;
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  text-decoration: none;
+}
+
+a.sponsor__plate {
+  cursor: pointer;
+  transition: transform 160ms ease;
+}
+
+a.sponsor__plate:hover {
+  transform: translateY(-1px);
 }
 
 .sponsor__logo {
   display: block;
   height: 40px;
   width: auto;
+  max-width: 180px;
+  object-fit: contain;
 }
 
 /* ---- Prize ---- */
@@ -49,13 +61,26 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 6px 22px rgba(232, 196, 104, 0.12);
 }
 
-.sponsor__jersey {
+.sponsor__prize-img {
   flex: none;
   width: 72px;
   height: 72px;
-  transform: rotate(-6deg);
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px rgba(255, 59, 77, 0.35));
-  animation: sponsor-float 3.2s ease-in-out infinite;
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  transform: rotate(-4deg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.sponsor__prize-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #e8c468;
+  background: rgba(232, 196, 104, 0.14);
 }
 
 .sponsor__prize-text {
@@ -78,22 +103,6 @@
   font-size: 20px;
   line-height: 1.15;
   color: var(--text);
-}
-
-@keyframes sponsor-float {
-  0%,
-  100% {
-    transform: rotate(-6deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-3deg) translateY(-4px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sponsor__jersey {
-    animation: none;
-  }
 }
 
 /* ---- Variants ---- */
@@ -129,11 +138,17 @@
   gap: 8px;
 }
 
-.sponsor--flow .sponsor__jersey {
-  width: 34px;
-  height: 34px;
-  animation: none;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+.sponsor--flow .sponsor__prize-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  transform: none;
+  box-shadow: none;
+}
+
+.sponsor--flow .sponsor__prize-icon {
+  width: 32px;
+  height: 32px;
 }
 
 .sponsor--flow .sponsor__prize-text {
@@ -155,7 +170,7 @@
     height: 56px;
   }
 
-  .sponsor__jersey {
+  .sponsor__prize-img {
     width: 92px;
     height: 92px;
   }
@@ -168,8 +183,62 @@
     height: 36px;
   }
 
-  .sponsor--flow .sponsor__jersey {
-    width: 40px;
-    height: 40px;
+  .sponsor--flow .sponsor__prize-img {
+    width: 42px;
+    height: 42px;
   }
+}
+
+/* ---- Admin form ---- */
+.sponsor-admin {
+  display: grid;
+  gap: var(--s-3, 12px);
+}
+
+.sponsor-admin__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.sponsor-admin__fields {
+  display: grid;
+  gap: var(--s-3, 12px);
+  padding: var(--s-3, 12px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.sponsor-admin__preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sponsor-admin__preview img {
+  max-height: 56px;
+  max-width: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  padding: 4px;
+}
+
+.sponsor-admin__preview img.is-photo {
+  background: none;
+  padding: 0;
+  max-height: 72px;
+}
+
+.sponsor-admin__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.sponsor-admin__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

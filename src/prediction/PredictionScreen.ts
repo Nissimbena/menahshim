@@ -58,7 +58,7 @@ import {
 } from "./recap";
 import { el, esc } from "../ui/dom";
 import { track } from "../analytics";
-import { isSponsoredGame, sponsorStrip } from "../sponsor/matchday";
+import { isSponsoredGame, sponsorStrip } from "../sponsor/sponsor";
 import { logoMarkSVG } from "../brand/Logo";
 
 type StepKey = "score" | "stats" | "team" | "summary";

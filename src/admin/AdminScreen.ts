@@ -20,6 +20,7 @@ import { TEAMS, HAPOEL_JERUSALEM_TEAM_ID, teamName } from "../schedule/teams";
 import { adminClipsForGame, setAdminClips, type VideoClip } from "../config/videos";
 import { t } from "../i18n/i18n";
 import { screenHeader } from "../ui/ScreenHeader";
+import { SponsorAdminSection } from "../sponsor/AdminSponsorSection";
 
 /**
  * Admin-only screen: enter the *actual* outcome for a game (which foreign
@@ -58,6 +59,7 @@ export class AdminScreen {
   private challengeFilterGameId: string | null = null;
   private challengeShowClosed = false;
   private saveBtn: HTMLButtonElement | null = null;
+  private sponsorSection = new SponsorAdminSection();
   private draft: ResultDraft | null = null;
   private draftState: "idle" | "loading" | "ready" | "unavailable" = "idle";
   private draftReason = "";
@@ -128,6 +130,7 @@ export class AdminScreen {
 
     if (this.gameId) {
       wrapper.appendChild(this.renderDraftBanner());
+      wrapper.appendChild(this.sponsorSection.root);
       wrapper.appendChild(this.renderBonusQuestionSetup());
       wrapper.appendChild(this.renderVideosSetup());
       wrapper.appendChild(this.renderStatsForm());
@@ -532,6 +535,7 @@ export class AdminScreen {
       this.draft = null;
       this.draftState = this.gameId ? "loading" : "idle";
       this.render();
+      this.sponsorSection.setGame(this.gameId);
       if (this.gameId) void this.loadDraft(false);
     });
 

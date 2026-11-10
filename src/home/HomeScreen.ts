@@ -27,7 +27,7 @@ import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
 import { clipsForGame } from "../config/videos";
-import { isSponsoredGame, sponsorStrip } from "../sponsor/matchday";
+import { isSponsoredGame, sponsorStrip } from "../sponsor/sponsor";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
