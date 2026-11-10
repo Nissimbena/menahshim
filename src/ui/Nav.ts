@@ -64,6 +64,7 @@ export class AppNav {
       if (!user) this.score = null;
       this.render();
     });
+    window.addEventListener("adminchange", () => this.render());
     window.addEventListener("langchange", () => {
       this.render();
       if (this.sheet) {

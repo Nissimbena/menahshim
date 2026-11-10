@@ -22,11 +22,17 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-/** Only this Gmail account can enter real game results (also enforced server-side). */
-export const ADMIN_EMAILS = ["nissim@letscoach.net"];
+// Set from /users/me (users.is_admin in the DB); the backend enforces it on every admin call.
+let adminFlag = false;
+
+export function setAdminFlag(value: boolean) {
+  if (adminFlag === value) return;
+  adminFlag = value;
+  window.dispatchEvent(new Event("adminchange"));
+}
 
 export function isAdmin(user: User | null): boolean {
-  return !!user?.email && ADMIN_EMAILS.includes(user.email);
+  return !!user && adminFlag;
 }
 
 export async function signInWithGoogle(): Promise<User> {

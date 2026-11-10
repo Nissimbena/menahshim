@@ -194,6 +194,7 @@ export interface MeResponse {
   displayName: string | null;
   photoURL: string | null;
   nickname: string | null;
+  isAdmin?: boolean;
 }
 
 export function getMe(): Promise<MeResponse> {
