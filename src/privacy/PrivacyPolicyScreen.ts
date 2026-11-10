@@ -50,7 +50,7 @@ export class PrivacyPolicyScreen {
       },
       {
         title: t("privacy.s3.title"),
-        rows: [t("privacy.s3.r1"), t("privacy.s3.r2")],
+        rows: [t("privacy.s3.r1"), t("privacy.s3.r2"), t("privacy.s3.r3")],
       },
       {
         title: t("privacy.s4.title"),

@@ -57,6 +57,7 @@ import {
   resultHeader,
 } from "./recap";
 import { el, esc } from "../ui/dom";
+import { track } from "../analytics";
 import { logoMarkSVG } from "../brand/Logo";
 
 type StepKey = "score" | "stats" | "team" | "summary";
@@ -151,6 +152,7 @@ export class PredictionScreen {
 
   async show(game: ScheduleGame) {
     this.currentGame = game;
+    track("game_opened", { game_id: game.id, finished: !!game.result });
     this.steps = ["score", "stats", "team", "summary"];
     this.stepIndex = 0;
     this.statSubStep = 0;
@@ -1123,6 +1125,7 @@ export class PredictionScreen {
       });
 
       this.onSubmitted?.();
+      track("prediction_submitted", { game_id: this.currentGame.id });
 
       try {
         this.aggregate = await getPredictionsAggregate(this.currentGame.id);
