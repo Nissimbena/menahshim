@@ -5847,63 +5847,64 @@ h1[tabindex="-1"]:focus {
    While predicting: one "playing for" line under the progress bar.
    ------------------------------------------------------------------ */
 .prize-banner {
-  --art: 104px;
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: var(--art) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 128px;
   grid-template-areas:
-    "art main"
+    "main art"
     "stub stub";
-  align-items: center;
-  column-gap: var(--s-3);
   margin: var(--s-2) var(--gutter) 0;
   border-radius: var(--r-lg);
   overflow: hidden;
-  background:
-    radial-gradient(120% 140% at var(--glow-x, 100%) 0%, var(--gold-wash), transparent 60%),
-    var(--surface-2);
   background-image:
-    radial-gradient(120% 140% at var(--glow-x, 100%) 0%, var(--gold-wash), transparent 60%),
+    radial-gradient(90% 120% at var(--glow-x, 0%) 30%, var(--gold-wash), transparent 65%),
     var(--glass-sheen);
+  background-color: var(--surface-1);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--gold-edge), var(--glass-drop);
 }
 
 [dir="ltr"] .prize-banner {
-  --glow-x: 0%;
+  --glow-x: 100%;
 }
 
-/* court arc behind the jersey */
-.prize-banner::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset-block-start: -60px;
-  inset-inline-start: -70px;
-  width: 260px;
-  height: 260px;
-  border-radius: 50%;
-  border: 2px solid var(--gold-edge);
-  opacity: 0.45;
-}
-
+/* spotlight + court arc behind the jersey */
 .prize-banner__art {
   grid-area: art;
-  align-self: end;
+  position: relative;
   display: grid;
   place-items: end center;
-  padding-block-start: var(--s-3);
-  padding-inline-start: var(--s-3);
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.prize-banner__art::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 8%;
+  inset-inline: -30%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid var(--gold-edge);
+  background: radial-gradient(closest-side, var(--gold-wash), transparent);
+  opacity: 0.7;
 }
 
 .prize-banner__art img,
 .prize-banner__art .jersey {
-  width: 100%;
+  position: relative;
+  width: 100px;
   height: auto;
-  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.5));
-  transform: rotate(-6deg) translateY(10px);
+  margin-block-end: -22px;
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.55));
+  transform: rotate(-7deg);
+}
+
+[dir="ltr"] .prize-banner__art img,
+[dir="ltr"] .prize-banner__art .jersey {
+  transform: rotate(7deg);
 }
 
 .jersey__num {
@@ -5918,45 +5919,77 @@ h1[tabindex="-1"]:focus {
   grid-area: main;
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
-  padding-block: var(--s-3);
-  padding-inline-end: var(--s-3);
+  padding-block: var(--s-4) var(--s-3);
+  padding-inline: var(--s-4) 0;
 }
 
 .prize-banner__eyebrow {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.prize-banner__date {
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  background: var(--glass-pill);
+  color: var(--text);
   font-size: 12px;
   font-weight: 700;
-  color: var(--gold);
 }
 
 .prize-banner__title {
+  margin-block-start: var(--s-2);
   font-family: var(--font-display);
   font-variation-settings: var(--display-axes);
-  font-size: clamp(28px, 7.4vw, 44px);
-  font-weight: 700;
-  line-height: 0.95;
+  font-size: clamp(44px, 12vw, 72px);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: 0;
   color: var(--text);
-  text-wrap: balance;
+}
+
+.prize-banner__latin {
+  font-family: var(--font-num);
+  font-variation-settings: var(--display-axes);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  unicode-bidi: isolate;
+}
+
+.prize-banner__note {
+  margin-block-start: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
 }
 
 .prize-banner__how {
   margin-block-start: 2px;
   font-size: 13px;
+  line-height: 1.4;
   color: var(--text-2);
   text-wrap: balance;
 }
 
 .prize-banner__stub {
   grid-area: stub;
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  padding-inline-start: var(--s-3);
   border-block-start: 2px dashed var(--gold-edge);
+  background: var(--surface-1);
   color: var(--text);
   text-decoration: none;
   transition: background 160ms var(--ease);
@@ -5973,8 +6006,8 @@ h1[tabindex="-1"]:focus {
 
 .prize-banner__logo {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--promo-logo-bg);
@@ -5994,14 +6027,16 @@ h1[tabindex="-1"]:focus {
 
 .prize-banner__by {
   display: flex;
-  flex-direction: column;
-  font-size: 11px;
-  line-height: 1.2;
-  color: var(--text-3);
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
 }
 
 .prize-banner__by b {
-  font-size: 13px;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -6009,40 +6044,79 @@ h1[tabindex="-1"]:focus {
   margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  box-shadow: inset 0 0 0 1px var(--gold-edge);
+  font-size: 13px;
   font-weight: 700;
   color: var(--gold);
+  white-space: nowrap;
 }
 
 @media (min-width: 760px) {
   .prize-banner {
-    --art: 150px;
-    grid-template-columns: var(--art) minmax(0, 1fr) 150px;
+    grid-template-columns: 240px minmax(0, 1fr) 210px;
     grid-template-areas: "art main stub";
     margin-block-start: var(--s-4);
   }
 
   .prize-banner__main {
-    padding-block: var(--s-4);
+    justify-content: center;
+    padding-block: var(--s-6);
+    padding-inline: 0 var(--s-5);
+  }
+
+  .prize-banner__note {
+    font-size: 17px;
+  }
+
+  .prize-banner__how {
+    font-size: 14px;
+  }
+
+  .prize-banner__art img,
+  .prize-banner__art .jersey {
+    width: 108px;
+    margin-block-end: -30px;
+  }
+
+  .prize-banner__art::before {
+    display: none;
+  }
+
+  [dir="rtl"] .prize-banner {
+    --glow-x: 100%;
+  }
+
+  [dir="ltr"] .prize-banner {
+    --glow-x: 0%;
   }
 
   .prize-banner__stub {
-    align-self: stretch;
     flex-direction: column;
     justify-content: center;
-    text-align: center;
+    gap: var(--s-2);
+    padding: var(--s-4);
     border-block-start: 0;
     border-inline-start: 2px dashed var(--gold-edge);
+    text-align: center;
   }
 
   .prize-banner__by {
+    flex-direction: column;
     align-items: center;
+    gap: 0;
+    font-size: 12px;
+  }
+
+  .prize-banner__by b {
+    font-size: 15px;
   }
 
   .prize-banner__logo {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: var(--r-md);
   }
 

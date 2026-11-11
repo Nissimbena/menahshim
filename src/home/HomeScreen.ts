@@ -3,7 +3,7 @@ import {
   PRIZE_GAME_IDS,
   PRIZE_LINK_URLS,
 } from "../schedule/schedule";
-import { TEAMS, teamName, HAPOEL_JERUSALEM_TEAM_ID } from "../schedule/teams";
+import { TEAMS, teamName } from "../schedule/teams";
 import type { MyPrediction, LeagueInfo, LeaderboardRow } from "../api/backend";
 import {
   trackLinkEvent,
@@ -335,30 +335,27 @@ export class HomeScreen {
     const p = sponsorPrizeFor(game?.id);
     if (!game || !p) return null;
     const lang = getLang() === "en" ? "en" : "he";
-    const prize = p.prize[lang];
     const sponsor = p.sponsor[lang];
-    const opponentId = game.homeTeamId === HAPOEL_JERUSALEM_TEAM_ID ? game.awayTeamId : game.homeTeamId;
-    const opponent = TEAMS[opponentId];
+    // Latin words inside the Hebrew headline get their own span, so they can
+    // sit on the same baseline and weight as the Hebrew letters.
+    const title = esc(p.headline.title[lang]).replace(/([A-Za-z][A-Za-z0-9]*)/g, '<span class="prize-banner__latin">$1</span>');
 
     const box = el("section", "prize-banner");
     box.setAttribute("aria-labelledby", "prize-banner-title");
     box.innerHTML = `
       <div class="prize-banner__art" aria-hidden="true">${
-        p.image
-          ? `<img src="${import.meta.env.BASE_URL}${esc(p.image)}" alt="" />`
-          : jerseySVG()
+        p.image ? `<img src="${import.meta.env.BASE_URL}${esc(p.image)}" alt="" />` : jerseySVG()
       }</div>
       <div class="prize-banner__main">
-        <p class="prize-banner__eyebrow">${icon("gift", { size: "sm" })}<span>${esc(
-          t("sponsorPrize.bannerEyebrow", { opponent: opponent ? teamName(opponent) : "", date: shortDate(game.date) }),
-        )}</span></p>
-        <h2 class="prize-banner__title" id="prize-banner-title">${esc(prize)}</h2>
+        <p class="prize-banner__eyebrow">${icon("gift", { size: "sm" })}<span>${esc(t("sponsorPrize.bannerEyebrow"))}</span><span class="prize-banner__date num">${esc(shortDate(game.date))}</span></p>
+        <h2 class="prize-banner__title" id="prize-banner-title">${title}</h2>
+        <p class="prize-banner__note">${esc(p.headline.note[lang])}</p>
         <p class="prize-banner__how">${esc(t("sponsorPrize.how"))}</p>
       </div>
       <a class="prize-banner__stub" href="${esc(p.url)}" target="_blank" rel="noopener sponsored"
-         aria-label="${esc(t("sponsorPrize.label", { prize, sponsor }))}">
+         aria-label="${esc(t("sponsorPrize.label", { prize: p.prize[lang], sponsor }))}">
         <span class="prize-banner__logo"><img src="${import.meta.env.BASE_URL}${esc(p.logo)}" alt="" /></span>
-        <span class="prize-banner__by">${esc(t("sponsorPrize.by"))}<b>${esc(sponsor)}</b></span>
+        <span class="prize-banner__by"><span>${esc(t("sponsorPrize.by"))}</span><b>${esc(sponsor)}</b></span>
         <span class="prize-banner__go">${esc(t("sponsorPrize.cta"))}${icon("external", { size: "sm" })}</span>
       </a>`;
     box.querySelector("a")!.addEventListener("click", () => trackLinkEvent(p.trackKey));

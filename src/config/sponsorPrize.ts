@@ -14,8 +14,10 @@ export interface SponsorPrize {
   enabled: boolean;
   gameId?: string;
   gameDate?: string;
-  /** The prize itself, he/en. */
+  /** The prize itself, he/en (one line, used in running text). */
   prize: { he: string; en: string };
+  /** The prize as a headline: the name, then a short second line. */
+  headline: { title: { he: string; en: string }; note: { he: string; en: string } };
   /** Sponsor name, he/en. */
   sponsor: { he: string; en: string };
   /** Optional photo of the prize (e.g. the sponsor's product shot), under
@@ -32,6 +34,11 @@ export interface SponsorPrize {
 export const SPONSOR_PRIZE: SponsorPrize = {
   enabled: true,
   prize: { he: "גופיית NBA לבחירה", en: "NBA jersey of your choice" },
+  headline: {
+    title: { he: "גופיית NBA", en: "NBA jersey" },
+    note: { he: "לבחירתכם, מכל הקבוצות", en: "your pick, any team" },
+  },
+  image: "partners/prize-jersey.webp",
   sponsor: { he: "פוטבול ישראל", en: "Futebol IL" },
   logo: "partners/futebol-il.webp",
   url: "https://futebol-il.com/nba/%D7%92%D7%95%D7%A4%D7%99%D7%95%D7%AA-nba",
