@@ -391,13 +391,15 @@ async function bootstrap() {
   homeRootEl.innerHTML = "";
   // Read before navTo.home(), which clears any ?game= from the address bar.
   const urlParams = new URLSearchParams(window.location.search);
+  const deepGame = games.find((g) => g.id === urlParams.get("game"));
+  // Shareable link /hapoel-jerusalem/?page=scoring: open it straight away, never via the home screen.
+  const scoringLink = !deepGame && urlParams.get("page") === "scoring";
+  if (scoringLink) navTo.scoring();
   await refreshMyPredictions();
   await refreshMyLeagues();
-  navTo.home();
+  if (!scoringLink) navTo.home();
 
-  const deepGame = games.find((g) => g.id === urlParams.get("game"));
   if (deepGame) open(() => predictionScreen.show(deepGame), { tab: null, flow: true });
-  else if (urlParams.get("page") === "scoring") navTo.scoring(); // shareable link: /hapoel-jerusalem/?page=scoring
   const joinCode = urlParams.get("league");
   const challengeId = urlParams.get("challenge");
   // Invite params are one-shot: drop them so a reload or re-login doesn't re-open the prompt.
