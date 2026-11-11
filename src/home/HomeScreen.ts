@@ -3,7 +3,7 @@ import {
   PRIZE_GAME_IDS,
   PRIZE_LINK_URLS,
 } from "../schedule/schedule";
-import { TEAMS, teamName } from "../schedule/teams";
+import { TEAMS, teamName, HAPOEL_JERUSALEM_TEAM_ID } from "../schedule/teams";
 import type { MyPrediction, LeagueInfo, LeaderboardRow } from "../api/backend";
 import {
   trackLinkEvent,
@@ -27,7 +27,7 @@ import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
 import { clipsForGame } from "../config/videos";
-import { sponsorPrizeFor, type SponsorPrize } from "../config/sponsorPrize";
+import { sponsorPrizeFor } from "../config/sponsorPrize";
 
 export interface HomeActions {
   onEnterGame: (game: ScheduleGame) => void;
@@ -260,6 +260,8 @@ export class HomeScreen {
     page.appendChild(grid);
 
     this.container.appendChild(this.renderTicker());
+    const banner = this.renderPrizeBanner();
+    if (banner) this.container.appendChild(banner);
     this.container.appendChild(this.renderHero());
     this.container.appendChild(page);
     this.container.appendChild(this.renderFooter());
@@ -327,6 +329,42 @@ export class HomeScreen {
     track.scrollLeft += rtl ? tile.right - box.right : tile.left - box.left;
   }
 
+  // ---- Prize banner: the next game's sponsored prize, first thing on the page ----
+  private renderPrizeBanner(): HTMLElement | null {
+    const game = this.heroGame;
+    const p = sponsorPrizeFor(game?.id);
+    if (!game || !p) return null;
+    const lang = getLang() === "en" ? "en" : "he";
+    const prize = p.prize[lang];
+    const sponsor = p.sponsor[lang];
+    const opponentId = game.homeTeamId === HAPOEL_JERUSALEM_TEAM_ID ? game.awayTeamId : game.homeTeamId;
+    const opponent = TEAMS[opponentId];
+
+    const box = el("section", "prize-banner");
+    box.setAttribute("aria-labelledby", "prize-banner-title");
+    box.innerHTML = `
+      <div class="prize-banner__art" aria-hidden="true">${
+        p.image
+          ? `<img src="${import.meta.env.BASE_URL}${esc(p.image)}" alt="" />`
+          : jerseySVG()
+      }</div>
+      <div class="prize-banner__main">
+        <p class="prize-banner__eyebrow">${icon("gift", { size: "sm" })}<span>${esc(
+          t("sponsorPrize.bannerEyebrow", { opponent: opponent ? teamName(opponent) : "", date: shortDate(game.date) }),
+        )}</span></p>
+        <h2 class="prize-banner__title" id="prize-banner-title">${esc(prize)}</h2>
+        <p class="prize-banner__how">${esc(t("sponsorPrize.how"))}</p>
+      </div>
+      <a class="prize-banner__stub" href="${esc(p.url)}" target="_blank" rel="noopener sponsored"
+         aria-label="${esc(t("sponsorPrize.label", { prize, sponsor }))}">
+        <span class="prize-banner__logo"><img src="${import.meta.env.BASE_URL}${esc(p.logo)}" alt="" /></span>
+        <span class="prize-banner__by">${esc(t("sponsorPrize.by"))}<b>${esc(sponsor)}</b></span>
+        <span class="prize-banner__go">${esc(t("sponsorPrize.cta"))}${icon("external", { size: "sm" })}</span>
+      </a>`;
+    box.querySelector("a")!.addEventListener("click", () => trackLinkEvent(p.trackKey));
+    return box;
+  }
+
   // ---- 1. Hero: the next game, full-bleed over a match photo ----
   private renderHero(): HTMLElement {
     const game = this.heroGame;
@@ -392,7 +430,6 @@ export class HomeScreen {
     `;
 
     const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
-    if (sponsored) actions.before(prizeTicket(sponsored));
     actions.appendChild(this.buildHeroCta(game));
 
 
@@ -912,27 +949,29 @@ export class HomeScreen {
 }
 
 /**
- * The sponsored prize as a ticket: what you can win and how on the main part,
- * the sponsor's logo on a tear-off stub that links to the prize in their store.
+ * A basketball jersey, drawn here (no real team's design): the prize at a
+ * glance. Colours come from the theme tokens.
  */
-export function prizeTicket(p: SponsorPrize): HTMLElement {
-  const lang = getLang() === "en" ? "en" : "he";
-  const prize = p.prize[lang];
-  const sponsor = p.sponsor[lang];
-  const ticket = el("div", "prize-ticket");
-  ticket.innerHTML = `
-    <div class="prize-ticket__main">
-      <p class="prize-ticket__eyebrow">${icon("gift", { size: "sm" })}<span>${esc(t("sponsorPrize.eyebrow"))}</span></p>
-      <p class="prize-ticket__title">${esc(prize)}</p>
-      <p class="prize-ticket__how">${esc(t("sponsorPrize.how"))}</p>
-    </div>
-    <a class="prize-ticket__stub" href="${esc(p.url)}" target="_blank" rel="noopener sponsored"
-       aria-label="${esc(t("sponsorPrize.label", { prize, sponsor }))}">
-      <span class="prize-ticket__logo"><img src="${import.meta.env.BASE_URL}${esc(p.logo)}" alt="" /></span>
-      <span class="prize-ticket__by">${esc(t("sponsorPrize.by"))}<b>${esc(sponsor)}</b></span>
-      <span class="prize-ticket__go">${esc(t("sponsorPrize.cta"))}${icon("external", { size: "sm" })}</span>
-    </a>`;
-  ticket.querySelector("a")!.addEventListener("click", () => trackLinkEvent(p.trackKey));
-  return ticket;
+function jerseySVG(): string {
+  return `<svg class="jersey" viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="jersey-body" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--jersey-1)" />
+        <stop offset="1" stop-color="var(--jersey-2)" />
+      </linearGradient>
+      <linearGradient id="jersey-sheen" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="var(--jersey-sheen)" stop-opacity="0" />
+        <stop offset="0.5" stop-color="var(--jersey-sheen)" stop-opacity="0.35" />
+        <stop offset="1" stop-color="var(--jersey-sheen)" stop-opacity="0" />
+      </linearGradient>
+    </defs>
+    <path class="jersey__body" fill="url(#jersey-body)"
+      d="M38 6 C42 22 78 22 82 6 L96 10 C97 26 102 36 112 42 L110 132 C78 138 42 138 10 132 L8 42 C18 36 23 26 24 10 Z" />
+    <path fill="none" stroke="var(--jersey-trim)" stroke-width="5" stroke-linejoin="round"
+      d="M38 6 C42 22 78 22 82 6 M96 10 C97 26 102 36 112 42 M24 10 C23 26 18 36 8 42" />
+    <path fill="none" stroke="var(--jersey-2)" stroke-width="2" opacity="0.6"
+      d="M38 6 C42 26 78 26 82 6" transform="translate(0 4)" />
+    <text x="60" y="94" text-anchor="middle" class="jersey__num">26</text>
+    <path fill="url(#jersey-sheen)" d="M30 20 L58 20 L40 136 L14 134 Z" opacity="0.8" />
+  </svg>`;
 }
-

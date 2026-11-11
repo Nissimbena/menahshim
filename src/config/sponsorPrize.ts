@@ -18,6 +18,9 @@ export interface SponsorPrize {
   prize: { he: string; en: string };
   /** Sponsor name, he/en. */
   sponsor: { he: string; en: string };
+  /** Optional photo of the prize (e.g. the sponsor's product shot), under
+   *  /public - transparent PNG/WebP works best. Without it a drawn jersey shows. */
+  image?: string;
   /** Sponsor logo, under /public. */
   logo: string;
   /** Link to the prize in the sponsor's store. */

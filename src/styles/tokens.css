@@ -97,6 +97,10 @@
   --gold-wash: rgba(255, 204, 77, 0.14);
   --gold-edge: rgba(255, 204, 77, 0.38);
   --promo-logo-bg: #ffffff;
+  --jersey-1: #e2383e;
+  --jersey-2: #8e1c1f;
+  --jersey-trim: #ffffff;
+  --jersey-sheen: #ffffff;
   --gold-line: rgba(255, 204, 77, 0.45);
 
   /* ---- Medals: metallic gradients for the podium ---- */

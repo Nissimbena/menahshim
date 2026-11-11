@@ -5846,142 +5846,219 @@ h1[tabindex="-1"]:focus {
    the sponsor on a tear-off stub (perforation + notches) that links out.
    While predicting: one "playing for" line under the progress bar.
    ------------------------------------------------------------------ */
-.prize-ticket {
-  --stub: 118px;
-  --notch: 9px;
-  --cut: var(--stub);
+.prize-banner {
+  --art: 104px;
   position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--stub);
-  width: min(100%, 520px);
-  margin-block-end: calc(var(--s-3) - var(--s-6));
+  grid-template-columns: var(--art) minmax(0, 1fr);
+  grid-template-areas:
+    "art main"
+    "stub stub";
+  align-items: center;
+  column-gap: var(--s-3);
+  margin: var(--s-2) var(--gutter) 0;
   border-radius: var(--r-lg);
+  overflow: hidden;
   background:
-    linear-gradient(135deg, var(--gold-wash) 0%, transparent 55%),
+    radial-gradient(120% 140% at var(--glow-x, 100%) 0%, var(--gold-wash), transparent 60%),
     var(--surface-2);
-  backdrop-filter: var(--glass-blur);
+  background-image:
+    radial-gradient(120% 140% at var(--glow-x, 100%) 0%, var(--gold-wash), transparent 60%),
+    var(--glass-sheen);
   -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--gold-edge);
-  text-align: start;
-  /* the two notches at the perforation */
-  -webkit-mask:
-    radial-gradient(circle var(--notch) at var(--cut) 0, transparent 98%, black) top / 100% 51% no-repeat,
-    radial-gradient(circle var(--notch) at var(--cut) 100%, transparent 98%, black) bottom / 100% 51% no-repeat;
-  mask:
-    radial-gradient(circle var(--notch) at var(--cut) 0, transparent 98%, black) top / 100% 51% no-repeat,
-    radial-gradient(circle var(--notch) at var(--cut) 100%, transparent 98%, black) bottom / 100% 51% no-repeat;
+  backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--gold-edge), var(--glass-drop);
 }
 
-[dir="ltr"] .prize-ticket {
-  --cut: calc(100% - var(--stub));
+[dir="ltr"] .prize-banner {
+  --glow-x: 0%;
 }
 
-.prize-ticket__main {
+/* court arc behind the jersey */
+.prize-banner::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -60px;
+  inset-inline-start: -70px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-edge);
+  opacity: 0.45;
+}
+
+.prize-banner__art {
+  grid-area: art;
+  align-self: end;
+  display: grid;
+  place-items: end center;
+  padding-block-start: var(--s-3);
+  padding-inline-start: var(--s-3);
+}
+
+.prize-banner__art img,
+.prize-banner__art .jersey {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.5));
+  transform: rotate(-6deg) translateY(10px);
+}
+
+.jersey__num {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-size: 44px;
+  font-weight: 700;
+  fill: var(--jersey-trim);
+}
+
+.prize-banner__main {
+  grid-area: main;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--s-3) var(--s-4);
   min-width: 0;
+  padding-block: var(--s-3);
+  padding-inline-end: var(--s-3);
 }
 
-.prize-ticket__eyebrow {
+.prize-banner__eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.02em;
   color: var(--gold);
 }
 
-.prize-ticket__title {
+.prize-banner__title {
   font-family: var(--font-display);
   font-variation-settings: var(--display-axes);
-  font-size: clamp(24px, 6.4vw, 30px);
+  font-size: clamp(28px, 7.4vw, 44px);
   font-weight: 700;
-  line-height: 1;
+  line-height: 0.95;
   color: var(--text);
+  text-wrap: balance;
 }
 
-.prize-ticket__how {
-  font-size: 12px;
+.prize-banner__how {
+  margin-block-start: 2px;
+  font-size: 13px;
   color: var(--text-2);
   text-wrap: balance;
 }
 
-.prize-ticket__stub {
-  position: relative;
+.prize-banner__stub {
+  grid-area: stub;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: var(--s-3) var(--s-2);
-  border-inline-start: 2px dashed var(--gold-edge);
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-block-start: 2px dashed var(--gold-edge);
   color: var(--text);
   text-decoration: none;
   transition: background 160ms var(--ease);
 }
 
-.prize-ticket__stub:hover {
+.prize-banner__stub:hover {
   background: var(--gold-wash);
 }
 
-.prize-ticket__stub:focus-visible {
+.prize-banner__stub:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: -4px;
-  border-radius: var(--r-md);
 }
 
-.prize-ticket__logo {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: var(--r-md);
+.prize-banner__logo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--promo-logo-bg);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   transition: transform 220ms var(--ease);
 }
 
-.prize-ticket__stub:hover .prize-ticket__logo {
+.prize-banner__stub:hover .prize-banner__logo {
   transform: rotate(-4deg) scale(1.06);
 }
 
-.prize-ticket__logo img {
+.prize-banner__logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.prize-ticket__by {
+.prize-banner__by {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.2;
   color: var(--text-3);
-  line-height: 1.25;
 }
 
-.prize-ticket__by b {
-  font-size: 12px;
-  font-weight: 700;
+.prize-banner__by b {
+  font-size: 13px;
   color: var(--text);
 }
 
-.prize-ticket__go {
+.prize-banner__go {
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--gold);
 }
 
+@media (min-width: 760px) {
+  .prize-banner {
+    --art: 150px;
+    grid-template-columns: var(--art) minmax(0, 1fr) 150px;
+    grid-template-areas: "art main stub";
+    margin-block-start: var(--s-4);
+  }
+
+  .prize-banner__main {
+    padding-block: var(--s-4);
+  }
+
+  .prize-banner__stub {
+    align-self: stretch;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    border-block-start: 0;
+    border-inline-start: 2px dashed var(--gold-edge);
+  }
+
+  .prize-banner__by {
+    align-items: center;
+  }
+
+  .prize-banner__logo {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--r-md);
+  }
+
+  .prize-banner__go {
+    margin-inline-start: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .prize-ticket__logo { transition: none; }
-  .prize-ticket__stub:hover .prize-ticket__logo { transform: none; }
+  .prize-banner__logo,
+  .prize-banner__stub {
+    transition: none;
+  }
+  .prize-banner__stub:hover .prize-banner__logo {
+    transform: none;
+  }
 }
 
 /* Prediction flow: "playing for" */
