@@ -397,6 +397,7 @@ async function bootstrap() {
 
   const deepGame = games.find((g) => g.id === urlParams.get("game"));
   if (deepGame) open(() => predictionScreen.show(deepGame), { tab: null, flow: true });
+  else if (urlParams.get("page") === "scoring") navTo.scoring(); // shareable link: /hapoel-jerusalem/?page=scoring
   const joinCode = urlParams.get("league");
   const challengeId = urlParams.get("challenge");
   // Invite params are one-shot: drop them so a reload or re-login doesn't re-open the prompt.
