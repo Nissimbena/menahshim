@@ -649,6 +649,14 @@ export function createSponsor(payload: { name: string; linkUrl: string; logoAsse
   return authedFetch("/admin/sponsors", { method: "POST", body: JSON.stringify(payload) });
 }
 
+/** Edits the sponsor itself - applies to every game it is attached to. Omit logoAssetId to keep the logo. */
+export function updateSponsor(
+  id: number,
+  payload: { name: string; linkUrl: string; logoAssetId?: number },
+): Promise<{ id: number }> {
+  return authedFetch(`/admin/sponsors/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
 export function setGameSponsorship(
   gameId: string,
   payload: { sponsorId: number; prizeText: string | null; prizeAssetId: number | null },
