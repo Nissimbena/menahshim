@@ -602,6 +602,8 @@ export interface Sponsor {
   name: string;
   linkUrl: string;
   logoUrl: string;
+  /** Logo clicks counted in our own DB (link_events), independent of PostHog. */
+  clicks: number;
   /** The prize of the sponsor's most recent game, offered again when the sponsor is reused. */
   lastPrize: { text: string | null; assetId: number | null; imageUrl: string | null } | null;
 }
@@ -634,6 +636,7 @@ export async function getSponsors(): Promise<Sponsor[]> {
     name: s.name,
     linkUrl: s.linkUrl,
     logoUrl: sponsorUrl(s.logoPath),
+    clicks: s.clicks ?? 0,
     lastPrize: s.lastPrize
       ? { text: s.lastPrize.text, assetId: s.lastPrize.assetId, imageUrl: s.lastPrize.imagePath ? sponsorUrl(s.lastPrize.imagePath) : null }
       : null,
