@@ -5,6 +5,7 @@ import {
   getSponsors,
   getSponsorships,
   setGameSponsorship,
+  updateSponsor,
   uploadSponsorAsset,
   type Sponsor,
 } from "../api/backend";
@@ -28,6 +29,10 @@ export class SponsorAdminSection {
   private newName = "";
   private newLink = "";
   private newLogoFile: File | null = null;
+  private editing = false; // editing the selected sponsor's own name/link/logo
+  private editName = "";
+  private editLink = "";
+  private editLogoFile: File | null = null;
   private prizeMode: PrizeMode = "custom";
   private prizeText = "";
   private prizeFile: File | null = null;
@@ -55,6 +60,8 @@ export class SponsorAdminSection {
     this.newName = "";
     this.newLink = "";
     this.newLogoFile = null;
+    this.editing = false;
+    this.editLogoFile = null;
     this.prizeMode = "custom";
     this.prizeText = "";
     this.prizeFile = null;
@@ -98,6 +105,8 @@ export class SponsorAdminSection {
   /** Picking a returning sponsor offers its last prize; confirming keeps it, otherwise the admin enters a new one. */
   private onChoiceChange(value: string) {
     this.choice = value;
+    this.editing = false;
+    this.editLogoFile = null;
     const sponsor = this.selected();
     const isCurrent = this.gameId ? getSponsorship(this.gameId)?.sponsorId === sponsor?.id : false;
     if (sponsor?.lastPrize && !isCurrent) {
@@ -216,6 +225,11 @@ export class SponsorAdminSection {
           info.appendChild(link);
           fields.appendChild(info);
         }
+        if (this.editing) {
+          fields.appendChild(this.renderEdit(sponsor));
+        } else {
+          fields.appendChild(this.button(t("admin.sponsor.edit"), "btn-secondary btn--sm", () => this.startEdit(sponsor)));
+        }
       }
 
       if (this.choice === "new") {
@@ -313,6 +327,83 @@ export class SponsorAdminSection {
     const thumb = this.preview(shown, true);
     if (thumb) wrap.appendChild(thumb);
     return wrap;
+  }
+
+  private startEdit(sponsor: Sponsor) {
+    this.editing = true;
+    this.editName = sponsor.name;
+    this.editLink = sponsor.linkUrl;
+    this.editLogoFile = null;
+    this.status = "";
+    this.render();
+  }
+
+  private renderEdit(sponsor: Sponsor): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "sponsor-admin__fields";
+
+    const note = document.createElement("p");
+    note.className = "counter-text";
+    note.textContent = t("admin.sponsor.editNote");
+    wrap.appendChild(note);
+
+    wrap.appendChild(this.field(t("admin.sponsor.name"), this.textInput(this.editName, (v) => (this.editName = v))));
+    wrap.appendChild(
+      this.field(t("admin.sponsor.link"), this.textInput(this.editLink, (v) => (this.editLink = v), "https://", "ltr")),
+    );
+    wrap.appendChild(
+      this.field(
+        t("admin.sponsor.editLogoKeep"),
+        this.fileInput((f) => {
+          this.editLogoFile = f;
+          this.render();
+        }),
+      ),
+    );
+    const logoPreview = this.editLogoFile ? this.preview(URL.createObjectURL(this.editLogoFile)) : null;
+    if (logoPreview) wrap.appendChild(logoPreview);
+
+    const row = document.createElement("div");
+    row.className = "sponsor-admin__row";
+    row.appendChild(this.button(t("admin.sponsor.editSave"), "btn-primary", () => void this.saveEdit(sponsor)));
+    row.appendChild(
+      this.button(t("admin.sponsor.editCancel"), "btn-secondary", () => {
+        this.editing = false;
+        this.editLogoFile = null;
+        this.render();
+      }),
+    );
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  private async saveEdit(sponsor: Sponsor) {
+    if (this.busy) return;
+    if (!this.editName.trim() || !/^https?:\/\//i.test(this.editLink.trim())) {
+      this.status = t("admin.sponsor.editMissing");
+      this.render();
+      return;
+    }
+    this.busy = true;
+    this.status = t("admin.sponsor.saving");
+    this.render();
+    try {
+      const logoAssetId = this.editLogoFile
+        ? await uploadSponsorAsset(await imageFileToDataUrl(this.editLogoFile, 600))
+        : undefined;
+      await updateSponsor(sponsor.id, { name: this.editName.trim(), linkUrl: this.editLink.trim(), logoAssetId });
+      this.sponsors = await getSponsors().catch(() => this.sponsors);
+      await this.refreshRegistry();
+      this.editing = false;
+      this.editLogoFile = null;
+      this.status = t("admin.sponsor.editSaved");
+    } catch (err) {
+      console.error("Could not update sponsor:", err);
+      this.status = err instanceof Error && err.message ? err.message : t("admin.sponsor.saveFailed");
+    } finally {
+      this.busy = false;
+      this.render();
+    }
   }
 
   private async refreshRegistry() {
