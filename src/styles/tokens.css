@@ -12,8 +12,9 @@
  *   CoFo Peshka (Adobe Fonts kit pdv5cou, loaded in index.html) - display,
  *     always at wght 900 / wdth 50. Hebrew + caps-only Latin + digits.
  *   IBM Plex Sans Hebrew (self-hosted, @fontsource) - all text and UI.
- *   Karantina / Barlow Condensed (self-hosted) - fallback while the kit
- *     loads or wherever Adobe Fonts can't be reached.
+ *   Barlow Condensed + IBM Plex Sans Hebrew (self-hosted) - fallback only
+ *     while the kit loads. Peshka is the one display face; no other
+ *     Hebrew display font is used.
  */
 
 :root {
@@ -163,7 +164,7 @@
 
   /* ---- Type ---- */
   --font: "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-display: "cofo-peshka-variable", "Karantina", "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-display: "cofo-peshka-variable", "Barlow Condensed", "IBM Plex Sans Hebrew", "Arial Narrow", sans-serif;
   --font-num: "cofo-peshka-variable", "Barlow Condensed", "Arial Narrow", sans-serif;
   --display-axes: "slnt" 0, "wght" 900, "wdth" 50;
 
