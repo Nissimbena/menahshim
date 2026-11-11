@@ -265,13 +265,21 @@ onAuthChange(async (user) => {
   cancellationNotice.checkAndShow();
 });
 
-homeRootEl.classList.remove("hidden");
-const bootSkeleton = document.createElement("div");
-bootSkeleton.className = "screen screen--wide";
-bootSkeleton.appendChild(skeleton("cards", 3));
-homeRootEl.appendChild(bootSkeleton);
+// /hapoel-jerusalem/?page=scoring goes straight to the scoring page: showing the home skeleton first looked like a jump.
+const bootParams = new URLSearchParams(window.location.search);
+const scoringLinkBoot = bootParams.get("page") === "scoring" && !bootParams.get("game");
+if (!scoringLinkBoot) {
+  homeRootEl.classList.remove("hidden");
+  const bootSkeleton = document.createElement("div");
+  bootSkeleton.className = "screen screen--wide";
+  bootSkeleton.appendChild(skeleton("cards", 3));
+  homeRootEl.appendChild(bootSkeleton);
+}
 
 async function bootstrap() {
+  const earlyScoring = scoringLinkBoot ? new ScoringInfoScreen(root("scoring-info-root"), () => navTo.home()) : null;
+  if (earlyScoring) open(() => earlyScoring.show(), { tab: "more", reshowOnLang: true });
+
   let games: ScheduleGame[] = [];
   let players: Player[] = [];
   try {
@@ -304,7 +312,7 @@ async function bootstrap() {
   const joinChallengePrompt = new JoinChallengePrompt();
 
   const adminScreen = new AdminScreen(root("admin-root"), games, goHome, players);
-  const scoringInfoScreen = new ScoringInfoScreen(root("scoring-info-root"), goHome);
+  const scoringInfoScreen = earlyScoring ?? new ScoringInfoScreen(root("scoring-info-root"), goHome);
   const timeKillerScreen = new TimeKillerScreen(root("time-killer-root"), goHome);
   const privacyScreen = new PrivacyPolicyScreen(root("privacy-root"), goHome);
   const aboutScreen = new AboutScreen(root("about-root"), goHome);
@@ -392,12 +400,9 @@ async function bootstrap() {
   // Read before navTo.home(), which clears any ?game= from the address bar.
   const urlParams = new URLSearchParams(window.location.search);
   const deepGame = games.find((g) => g.id === urlParams.get("game"));
-  // Shareable link /hapoel-jerusalem/?page=scoring: open it straight away, never via the home screen.
-  const scoringLink = !deepGame && urlParams.get("page") === "scoring";
-  if (scoringLink) navTo.scoring();
   await refreshMyPredictions();
   await refreshMyLeagues();
-  if (!scoringLink) navTo.home();
+  if (!earlyScoring) navTo.home(); // the scoring link is already on screen
 
   if (deepGame) open(() => predictionScreen.show(deepGame), { tab: null, flow: true });
   const joinCode = urlParams.get("league");
