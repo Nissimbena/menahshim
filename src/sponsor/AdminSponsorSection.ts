@@ -223,6 +223,10 @@ export class SponsorAdminSection {
           link.dir = "ltr";
           link.textContent = sponsor.linkUrl;
           info.appendChild(link);
+          const clicks = document.createElement("span");
+          clicks.className = "counter-text";
+          clicks.textContent = t("admin.sponsor.clicks", { count: sponsor.clicks });
+          info.appendChild(clicks);
           fields.appendChild(info);
         }
         if (this.editing) {

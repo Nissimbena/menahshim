@@ -3,6 +3,7 @@ import { t } from "../i18n/i18n";
 import { icon } from "../ui/icons";
 import { el } from "../ui/dom";
 import { track } from "../analytics";
+import { trackLinkEvent } from "../api/backend";
 import type { SponsorshipInfo } from "../api/backend";
 
 /**
@@ -45,7 +46,15 @@ export function sponsorStrip(variant: "hero" | "flow", gameId: string): HTMLElem
     a.href = link;
     a.target = "_blank";
     a.rel = "noopener noreferrer sponsored";
-    a.addEventListener("click", () => track("sponsor_clicked", { sponsor: info.sponsor.name, game_id: gameId }));
+    // Counted twice on purpose: PostHog, and our own DB (an ad blocker hides the former). Middle-click only fires auxclick.
+    const counted = () => {
+      track("sponsor_clicked", { sponsor: info.sponsor.name, game_id: gameId, placement: variant });
+      trackLinkEvent(`sponsor:${info.sponsorId}:${info.sponsor.name}`.slice(0, 64), gameId);
+    };
+    a.addEventListener("click", counted);
+    a.addEventListener("auxclick", (e) => {
+      if (e.button === 1) counted();
+    });
     a.appendChild(logo);
     row.appendChild(a);
   } else {
