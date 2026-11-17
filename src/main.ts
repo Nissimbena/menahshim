@@ -52,6 +52,8 @@ import { skeleton } from "./ui/ScreenHeader";
 import { initHoverEffects } from "./ui/hover";
 import { identifyUser, initAnalytics, resetUser, track } from "./analytics";
 import { getSponsorships } from "./api/backend";
+import { getGameMedia } from "./api/backend";
+import { registerHeroMedia } from "./home/heroVideo";
 import { registerSponsorships } from "./sponsor/sponsor";
 import { setGameInUrl } from "./ui/gameLink";
 
@@ -293,6 +295,11 @@ async function bootstrap() {
     registerSponsorships(await getSponsorships());
   } catch {
     // No sponsorships available: nothing is shown.
+  }
+  try {
+    registerHeroMedia(await getGameMedia());
+  } catch {
+    // No match-day videos available: the photo stays.
   }
 
   const goHome = () => navTo.home();

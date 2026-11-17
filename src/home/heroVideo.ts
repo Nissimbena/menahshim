@@ -1,14 +1,20 @@
 import "./heroVideo.css";
 import { t } from "../i18n/i18n";
+import type { GameMedia } from "../api/backend";
 
 /**
- * Match-day video: replaces the hero photo of one game (with sound once the visitor allows it).
- * PREVIEW - fixed list and shown only on the test host until an admin upload exists, so it stays off in production.
+ * Match-day video: replaces the hero photo of a game (with sound once the visitor allows it) and can carry a credit.
+ * Uploaded from Admin -> game -> video; games without one keep the photo.
  */
-const HERO_VIDEOS: Record<string, { src: string; credit?: string }> = {
-  "ec-8": { src: "videos/matchday/ec-8.mp4", credit: "נבו אביצן" },
-};
-const PREVIEW_HOSTS = new Set(["hapoel-jerusalem-guess.web.app", "localhost"]);
+let registry: Record<string, GameMedia> = {};
+
+export function registerHeroMedia(map: Record<string, GameMedia> | null | undefined) {
+  registry = map ?? {};
+}
+
+export function getHeroMedia(gameId: string): GameMedia | undefined {
+  return registry[gameId];
+}
 
 const ICON_ON =
   '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
@@ -16,13 +22,15 @@ const ICON_OFF =
   '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>';
 
 // One element for the whole session: the hero is re-rendered often, and moving the same node keeps it playing.
-let shared: { gameId: string; video: HTMLVideoElement } | null = null;
+let shared: { key: string; video: HTMLVideoElement } | null = null;
 
-function sharedVideo(gameId: string, src: string): HTMLVideoElement {
-  if (shared?.gameId === gameId) return shared.video;
+function sharedVideo(gameId: string, url: string): HTMLVideoElement {
+  const key = `${gameId}|${url}`; // a re-upload changes the url, so the new file replaces the old element
+  if (shared?.key === key) return shared.video;
+  shared?.video.pause();
   const video = document.createElement("video");
   video.className = "photo__video";
-  video.src = `${import.meta.env.BASE_URL}${src}`;
+  video.src = url;
   video.loop = true;
   video.playsInline = true;
   video.preload = "auto";
@@ -54,19 +62,19 @@ function sharedVideo(gameId: string, src: string): HTMLVideoElement {
     if (document.hidden) video.pause();
   });
 
-  shared = { gameId, video };
+  shared = { key, video };
   return video;
 }
 
 /** Puts the game's video over the hero photo (the photo stays underneath as the loading frame). */
 export function attachHeroVideo(hero: HTMLElement, gameId: string) {
-  const entry = HERO_VIDEOS[gameId];
-  if (!entry || !PREVIEW_HOSTS.has(location.hostname)) return;
+  const entry = registry[gameId];
+  if (!entry) return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const photo = hero.querySelector<HTMLElement>(".hero__photo");
   if (!photo) return;
 
-  const video = sharedVideo(gameId, entry.src);
+  const video = sharedVideo(gameId, entry.videoUrl);
   photo.appendChild(video);
 
   const ui = document.createElement("div");
