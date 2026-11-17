@@ -26,6 +26,7 @@ import { el, esc, shortDate, ltr, opponentOf } from "../ui/dom";
 import { rankList } from "../ui/RankList";
 import { logoSVG } from "../brand/Logo";
 import { photoLayer } from "../ui/photos";
+import { attachHeroVideo } from "./heroVideo";
 import { clipsForGame } from "../config/videos";
 import { isSponsoredGame, sponsorStrip } from "../sponsor/sponsor";
 import { gameUrl, shareGameButton } from "../ui/gameLink";
@@ -392,6 +393,7 @@ export class HomeScreen {
     `;
 
     if (isSponsoredGame(game.id)) hero.querySelector(".hero__countdown")?.after(sponsorStrip("hero", game.id));
+    attachHeroVideo(hero, game.id);
     const actions = hero.querySelector<HTMLElement>(".hero__actions")!;
     actions.appendChild(this.buildHeroCta(game));
     actions.appendChild(this.shareButtonFor(game, "hero__share", true));
