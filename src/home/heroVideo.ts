@@ -5,7 +5,9 @@ import { t } from "../i18n/i18n";
  * Match-day video: replaces the hero photo of one game (with sound once the visitor allows it).
  * PREVIEW - fixed list and shown only on the test host until an admin upload exists, so it stays off in production.
  */
-const HERO_VIDEOS: Record<string, string> = { "ec-8": "videos/matchday/ec-8.mp4" };
+const HERO_VIDEOS: Record<string, { src: string; credit?: string }> = {
+  "ec-8": { src: "videos/matchday/ec-8.mp4", credit: "נבו אביצן" },
+};
 const PREVIEW_HOSTS = new Set(["hapoel-jerusalem-guess.web.app", "localhost"]);
 
 const ICON_ON =
@@ -58,14 +60,24 @@ function sharedVideo(gameId: string, src: string): HTMLVideoElement {
 
 /** Puts the game's video over the hero photo (the photo stays underneath as the loading frame). */
 export function attachHeroVideo(hero: HTMLElement, gameId: string) {
-  const src = HERO_VIDEOS[gameId];
-  if (!src || !PREVIEW_HOSTS.has(location.hostname)) return;
+  const entry = HERO_VIDEOS[gameId];
+  if (!entry || !PREVIEW_HOSTS.has(location.hostname)) return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const photo = hero.querySelector<HTMLElement>(".hero__photo");
   if (!photo) return;
 
-  const video = sharedVideo(gameId, src);
+  const video = sharedVideo(gameId, entry.src);
   photo.appendChild(video);
+
+  const ui = document.createElement("div");
+  ui.className = "hero__video-ui";
+  if (entry.credit) {
+    const credit = document.createElement("span");
+    credit.className = "hero__credit";
+    credit.dir = "auto";
+    credit.textContent = `${t("hero.video.credit")} ${entry.credit}`;
+    ui.appendChild(credit);
+  }
 
   const button = document.createElement("button");
   button.type = "button";
@@ -80,5 +92,6 @@ export function attachHeroVideo(hero: HTMLElement, gameId: string) {
     video.muted = !video.muted;
     if (video.paused) video.play().catch(() => {});
   });
-  hero.appendChild(button);
+  ui.appendChild(button);
+  hero.appendChild(ui);
 }
