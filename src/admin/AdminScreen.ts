@@ -21,6 +21,7 @@ import { adminClipsForGame, setAdminClips, type VideoClip } from "../config/vide
 import { t } from "../i18n/i18n";
 import { screenHeader } from "../ui/ScreenHeader";
 import { SponsorAdminSection } from "../sponsor/AdminSponsorSection";
+import { HeroVideoAdminSection } from "./AdminHeroVideoSection";
 
 /**
  * Admin-only screen: enter the *actual* outcome for a game (which foreign
@@ -60,6 +61,7 @@ export class AdminScreen {
   private challengeShowClosed = false;
   private saveBtn: HTMLButtonElement | null = null;
   private sponsorSection = new SponsorAdminSection();
+  private heroVideoSection = new HeroVideoAdminSection();
   private draft: ResultDraft | null = null;
   private draftState: "idle" | "loading" | "ready" | "unavailable" = "idle";
   private draftReason = "";
@@ -131,6 +133,7 @@ export class AdminScreen {
     if (this.gameId) {
       wrapper.appendChild(this.renderDraftBanner());
       wrapper.appendChild(this.sponsorSection.root);
+      wrapper.appendChild(this.heroVideoSection.root);
       wrapper.appendChild(this.renderBonusQuestionSetup());
       wrapper.appendChild(this.renderVideosSetup());
       wrapper.appendChild(this.renderStatsForm());
@@ -536,6 +539,7 @@ export class AdminScreen {
       this.draftState = this.gameId ? "loading" : "idle";
       this.render();
       this.sponsorSection.setGame(this.gameId);
+      this.heroVideoSection.setGame(this.gameId);
       if (this.gameId) void this.loadDraft(false);
     });
 

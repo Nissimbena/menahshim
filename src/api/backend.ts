@@ -673,3 +673,41 @@ export function setGameSponsorship(
 export function clearGameSponsorship(gameId: string): Promise<{ ok: boolean }> {
   return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/sponsorship`, { method: "DELETE" });
 }
+
+// ---------- Match-day video (replaces the hero photo of a game, with a credit) ----------
+
+export interface GameMedia {
+  videoUrl: string;
+  credit: string | null;
+}
+
+// Public - the games that have a video.
+export async function getGameMedia(): Promise<Record<string, GameMedia>> {
+  const res = await fetch(`${API_BASE_URL}/game-media`);
+  if (!res.ok) throw new Error("game media unavailable");
+  const raw = (await res.json()) as Record<string, { videoPath: string; credit: string | null }>;
+  const out: Record<string, GameMedia> = {};
+  for (const [gameId, m] of Object.entries(raw)) out[gameId] = { videoUrl: `${API_BASE_URL}${m.videoPath}`, credit: m.credit };
+  return out;
+}
+
+// Admin-only - the raw file is the request body.
+export function uploadGameVideo(gameId: string, file: File, mime: string, credit: string): Promise<{ ok: boolean }> {
+  const query = credit.trim() ? `?credit=${encodeURIComponent(credit.trim())}` : "";
+  return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/video${query}`, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": mime },
+  });
+}
+
+export function setGameVideoCredit(gameId: string, credit: string | null): Promise<{ ok: boolean }> {
+  return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/video-credit`, {
+    method: "PUT",
+    body: JSON.stringify({ credit }),
+  });
+}
+
+export function deleteGameHeroVideo(gameId: string): Promise<{ ok: boolean }> {
+  return authedFetch(`/admin/games/${encodeURIComponent(gameId)}/video`, { method: "DELETE" });
+}
